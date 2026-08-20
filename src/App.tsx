@@ -1,5 +1,5 @@
 import './App.css'
-import EditarP from './componets/EditarP'
+import EditarP from './componets/EditarPerfil'
 
 function App() {
   
