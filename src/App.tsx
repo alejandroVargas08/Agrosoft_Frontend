@@ -1,5 +1,5 @@
 import './App.css'
-import { Register } from './pages/register'
+import { Register } from './pages/Register'
 
 
 function App() {
