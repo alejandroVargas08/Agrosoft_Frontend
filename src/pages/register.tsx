@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/axios';
 import logoAgrosoft from '../assets/img/logo-agrosoft.png';
 import logoSena from '../assets/img/logo-sena-blanco.png';
@@ -155,12 +156,12 @@ export const Register = () => {
                 <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
                     <header className="mb-8">
                         {step === 1 ? (
-                            <a
-                                href="/login"
+                            <Link
+                                to="/login"
                                 className="mb-6 inline-flex items-center gap-1 text-sm font-medium text-neutral-500 hover:text-green-700"
                             >
                                 <LuChevronLeft size={16} /> Volver al login
-                            </a>
+                            </Link>
                         ) : (
                             <button
                                 type="button"
@@ -394,9 +395,9 @@ export const Register = () => {
 
                     <p className="mt-6 text-center text-sm text-neutral-600">
                         ¿Ya tienes cuenta?{' '}
-                        <a href="/login" className="font-semibold text-green-700 hover:underline">
+                        <Link to="/login" className="font-semibold text-green-700 hover:underline">
                             Iniciar sesión
-                        </a>
+                        </Link>
                     </p>
 
                     <footer className="mt-10 border-t border-neutral-200 pt-6 text-center text-xs text-neutral-400">
