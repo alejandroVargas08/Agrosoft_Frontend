@@ -31,7 +31,7 @@ function Login() {
                 localStorage.setItem('user', JSON.stringify(data.user ))
             }
 
-            navigate('/Inicio');// se redirecciona
+            navigate('/Asistente');// se redirecciona
         
         } catch (err) {
             const mensaje = isAxiosError(err) ? err.response?.data?.message : undefined;
