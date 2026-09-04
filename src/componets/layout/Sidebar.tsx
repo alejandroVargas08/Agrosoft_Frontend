@@ -39,7 +39,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <>
       <aside className="hidden lg:flex w-64 bg-white h-screen fixed left-0 top-0 border-r border-gray-200 flex-col overflow-y-auto z-30">
-        {/* Cabecera idéntica a la versión móvil para que muestre el logo y textos */}
         <div className="p-4 flex items-center justify-between border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
@@ -54,7 +53,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <SidebarContent />
       </aside>
 
-      {/* Sidebar para Tablet (md a lg) */}
       <aside className="hidden md:flex lg:hidden w-20 bg-white h-screen fixed left-0 top-0 border-r border-gray-200 flex-col items-center py-6 overflow-y-auto z-30">
         <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center mb-8">
           <Sprout className="text-white w-6 h-6" />
@@ -69,7 +67,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
       </aside>
 
-      {/* Sidebar Móvil (< md) */}
       {isOpen && (
         <>
           <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={onClose}/>
