@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import {InicioUsuario} from '../../hooks/useAuth'
+import { useState } from 'react';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -10,22 +10,22 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ 
   children, 
-
   unreadNotifications = 0 
 }: DashboardLayoutProps) {
 
-    const {user} = InicioUsuario();
-
-    const nombreInicio= user?.nombre ||user?.nombres || user?.name || 'Usuario';
+    const [SidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
+      <Sidebar 
+      isOpen={SidebarOpen}
+      onClose={() => setSidebarOpen (false)}
+      />
 
       <div className="flex-1 ml-64">
         
         <Header 
-          userName={nombreInicio} 
+          onMenuClick={() => setSidebarOpen(true)}
           unreadNotifications={unreadNotifications} 
         />
 
