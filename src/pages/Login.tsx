@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { api } from '../api/axios';
 import logoAgrosoft from '../assets/img/logo-agrosoft.png';
@@ -8,6 +8,7 @@ import { LuSprout, LuCpu, LuMail, LuLock, LuEye, LuEyeOff, LuAsterisk } from 're
 import { FiBarChart2 } from 'react-icons/fi';
 
 function Login() {
+    const navigate =useNavigate()
     const [correo, setCorreo] = useState('');
     const [password, setPassword] = useState('');
     const [mostrarPassword, setMostrarPassword] = useState(false);
@@ -23,6 +24,13 @@ function Login() {
             const { data } = await api.post('/usuarios/login', { correo, password });
             console.log('Usuario logueado:', data);
             setExito('Inicio de sesión excelente');
+             
+            if(data.token){
+                localStorage.setItem('token', data.token);
+            }
+
+            navigate('/asistente');// se redirecciona
+        
         } catch (err) {
             const mensaje = isAxiosError(err) ? err.response?.data?.message : undefined;
             setError(mensaje ?? 'Error al iniciar sesión');
