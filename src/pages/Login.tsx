@@ -25,11 +25,13 @@ function Login() {
             console.log('Usuario logueado:', data);
             setExito('Inicio de sesión excelente');
              
-            if(data.token){
-                localStorage.setItem('token', data.token);
+            if(data.usuario){
+                localStorage.setItem('user', JSON.stringify(data.usuario));
+            }else if(data.user){
+                localStorage.setItem('user', JSON.stringify(data.user ))
             }
 
-            navigate('/asistente');// se redirecciona
+            navigate('/Inicio');// se redirecciona
         
         } catch (err) {
             const mensaje = isAxiosError(err) ? err.response?.data?.message : undefined;

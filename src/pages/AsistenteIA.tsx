@@ -12,6 +12,7 @@ function AsistenteIA() {
         <AnalizarImagenCultivo />
       </div>
     </div>
+    
   );
 }
 
