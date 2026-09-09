@@ -1,6 +1,7 @@
 import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, 
   Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3, 
   Bell, History, User, Settings, X} from "lucide-react";
+import logoAgrosoft from "../../assets/img/logo-agrosoft.png"; 
 
 interface MenuItem{
     icon: React.ElementType;
@@ -41,8 +42,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside className="hidden lg:flex w-64 bg-white h-screen fixed left-0 top-0 border-r border-gray-200 flex-col overflow-y-auto z-30">
         <div className="p-4 flex items-center justify-between border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <Sprout className="text-white w-6 h-6" />
+            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+              <img src={logoAgrosoft} alt="AgroSoft" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="font-bold text-gray-900 text-lg leading-tight">AgroSoft</h1>
@@ -54,8 +55,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </aside>
 
       <aside className="hidden md:flex lg:hidden w-20 bg-white h-screen fixed left-0 top-0 border-r border-gray-200 flex-col items-center py-6 overflow-y-auto z-30">
-        <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center mb-8">
-          <Sprout className="text-white w-6 h-6" />
+        <div className="w-10 h-10 rounded-lg overflow-hidden mb-8 flex-shrink-0">
+          <img src={logoAgrosoft} alt="AgroSoft" className="w-full h-full object-cover" />
         </div>
         <nav className="flex flex-col items-center gap-2 w-full px-2">
           {mainItems.slice(0, 8).map((item) => (
@@ -74,8 +75,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <aside className="fixed left-0 top-0 h-screen w-64 bg-white z-50 shadow-xl md:hidden flex flex-col overflow-y-auto">
             <div className="p-4 flex items-center justify-between border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-                  <Sprout className="text-white w-6 h-6" />
+                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+                  <img src={logoAgrosoft} alt="AgroSoft" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h1 className="font-bold text-gray-900 text-lg leading-tight">AgroSoft</h1>
