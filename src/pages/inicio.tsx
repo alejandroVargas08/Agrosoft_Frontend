@@ -45,10 +45,10 @@ export default function Inicio() {
 
   return (
     <DashboardLayout unreadNotifications={2}>
-      <h1 className="text-2xl font-bold text-gray-900">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
         {saludo}, {nombreFormateado} 👋🏻
       </h1>
-      <p className="text-gray-500 mt-1 capitalize">
+      <p className="text-sm sm:text-base text-gray-500 mt-1 capitalize">
         Resumen de hoy - {fechaHoy}
       </p>
 

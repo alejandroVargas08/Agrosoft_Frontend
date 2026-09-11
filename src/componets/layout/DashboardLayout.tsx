@@ -17,20 +17,20 @@ export default function DashboardLayout({
     const [SidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+   <div className="min-h-screen bg-gray-50 flex">
       <Sidebar 
-      isOpen={SidebarOpen}
-      onClose={() => setSidebarOpen (false)}
+        isOpen={SidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="flex-1 ml-64">
+      <div className="flex-1 lg:ml-64">
         
         <Header 
           onMenuClick={() => setSidebarOpen(true)}
           unreadNotifications={unreadNotifications} 
         />
 
-        <main className="pt-20 px-8 pb-8">
+        <main className="pt-20 px-4 sm:px-6 lg:px-8 pb-8">
           {children}
         </main>
         <ChatBotFlotante/>
