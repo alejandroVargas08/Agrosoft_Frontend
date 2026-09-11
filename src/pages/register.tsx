@@ -3,19 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/axios';
 import logoAgrosoft from '../assets/img/logo-agrosoft.png';
 import logoSena from '../assets/img/logo-sena-blanco.png';
-import {
-    LuSprout,
-    LuCpu,
-    LuUser,
-    LuIdCard,
-    LuPhone,
-    LuMail,
-    LuGraduationCap,
-    LuLock,
-    LuHash,
-    LuAsterisk,
-    LuChevronLeft,
-} from 'react-icons/lu';
+import { LuSprout, LuCpu, LuUser, LuIdCard, LuPhone, LuMail, LuGraduationCap, LuLock, LuHash, LuAsterisk, LuChevronLeft } from 'react-icons/lu';
 import { FiBarChart2 } from 'react-icons/fi';
 
 export const Register = () => {
