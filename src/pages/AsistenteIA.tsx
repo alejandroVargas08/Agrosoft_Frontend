@@ -1,5 +1,5 @@
-import { ChatbotIA } from '../componets/ChatBotIA';
-import { AnalizarImagenCultivo } from '../componets/AnalizarImagen';
+import { ChatbotIA } from '../componets/Chatbot/ChatBotIA';
+
 
 function AsistenteIA() {
   return (
@@ -9,7 +9,6 @@ function AsistenteIA() {
       </h1>
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
         <ChatbotIA />
-        <AnalizarImagenCultivo />
       </div>
     </div>
     
