@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useState } from 'react';
+import ChatBotFlotante from '../Chatbot/ChatBotFlotante';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -29,10 +30,11 @@ export default function DashboardLayout({
           unreadNotifications={unreadNotifications} 
         />
 
-        {/*Aqui trabajar*/}
         <main className="pt-20 px-8 pb-8">
           {children}
         </main>
+        <ChatBotFlotante/>
+
       </div>
     </div>
   );
