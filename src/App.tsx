@@ -1,7 +1,7 @@
 import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Register } from '../src/pages/register'
-import { ActividadesAgricolas } from './pages/actividades'
+import { ActividadesAgricolas } from './pages/actividades/actividades'
 import Login from './pages/Login'
 import AsistenteIA from './pages/AsistenteIA'
 import Inicio from './pages/inicio'
