@@ -1,43 +1,49 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, 
-  Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3, 
-  Bell, History, User, Settings, X} from "lucide-react";
-import logoAgrosoft from "../../assets/img/logo-agrosoft.png"; 
+import { Home, Sprout, Map, Layers, ClipboardList, AlertTriangle, FlaskConical,
+  Wheat, Package, Boxes, ArrowLeftRight, BookmarkCheck, ShoppingCart, BookOpen,
+  Radio, BarChart3, Bell, History, User, Settings, X } from "lucide-react";
+import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 
-interface MenuItem{
+interface MenuItem {
     icon: React.ElementType;
     label: string;
     path: string;
 }
-interface SidebarProps{
+interface SidebarProps {
     isOpen: boolean;
-    onClose: ()=> void;
+    onClose: () => void;
 }
 
-const mainItems: MenuItem[]=[
-    {icon: Home, label: 'Inicio', path: '/inicio'},
-    {icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas'},
-    {icon: Map, label: 'Lotes y Sublotes', path: '/lotes'},
-    {icon: ClipboardList, label: 'Actividades', path: '/actividades'},
-    {icon: AlertTriangle, label: 'Incidencias', path: '/incidencias'},
-    {icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos'},
-    {icon: Wheat, label: 'Cosecha', path: '/cosecha'},
-    {icon: Package, label: 'Inventario', path: '/inventario'},
-    {icon: ShoppingCart, label: 'Ventas', path: '/ventas'},
-    {icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa'},
-    {icon: Radio, label: 'Sensores IoT', path: '/sensores-iot'},
-    {icon: BarChart3, label: 'Reportes', path: '/reportes'},
-    {icon: Bell, label: 'Alertas', path: '/alertas'},
-    {icon: History, label: 'Historial', path: '/historial'}
+const mainItems: MenuItem[] = [
+    { icon: Home, label: 'Inicio', path: '/inicio' },
+    { icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas' },
+    { icon: Map, label: 'Lotes', path: '/territorio/lotes' },
+    { icon: Layers, label: 'Sublotes', path: '/territorio/sublotes' },
+    { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
+    { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
+    { icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos' },
+    { icon: Wheat, label: 'Cosecha', path: '/cosecha' },
+    { icon: Boxes, label: 'Catálogos', path: '/inventario/catalogos' },
+    { icon: Package, label: 'Insumos', path: '/inventario/insumos' },
+    { icon: ArrowLeftRight, label: 'Movimientos', path: '/inventario/movimientos' },
+    { icon: BookmarkCheck, label: 'Reservas', path: '/inventario/reservas' },
+    { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
+    { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
+    { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
+    { icon: BarChart3, label: 'Reportes', path: '/reportes' },
+    { icon: Bell, label: 'Alertas', path: '/alertas' },
+    { icon: History, label: 'Historial', path: '/historial' }
 ];
 
-const main2Items: MenuItem[]=[
+const main2Items: MenuItem[] = [
     { icon: Bell, label: 'Notificaciones', path: '/notificaciones' },
     { icon: User, label: 'Perfil', path: '/perfil' },
     { icon: Settings, label: 'Configuración', path: '/configuracion' },
-]
+];
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const location = useLocation();
+
   return (
     <>
       <aside className="hidden lg:flex w-64 bg-white h-screen fixed left-0 top-0 border-r border-gray-200 flex-col overflow-y-auto z-30">
@@ -61,7 +67,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
         <nav className="flex flex-col items-center gap-2 w-full px-2">
           {mainItems.slice(0, 8).map((item) => {
-            const location = useLocation();
             const isActive = location.pathname === item.path;
             return (
               <Link
@@ -79,7 +84,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={onClose}/>
+          <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={onClose} />
 
           <aside className="fixed left-0 top-0 h-screen w-64 bg-white z-50 shadow-xl md:hidden flex flex-col overflow-y-auto">
             <div className="p-4 flex items-center justify-between border-b border-gray-100">
