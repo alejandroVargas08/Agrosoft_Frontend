@@ -1,5 +1,5 @@
 export type EstadoInsumo = 'activo' | 'inactivo' | 'agotado' | 'de_baja';
-export type TipoInsumo = 'consumible' | 'herramienta';
+export type TipoInsumo = 'consumible' | 'herramienta' | 'materia_prima';
 export type TipoMovimiento = 'entrada' | 'salida' | 'traslado' | 'ajuste';
 export type EstadoReserva = 'pendiente' | 'confirmada' | 'cancelada';
 
@@ -69,7 +69,7 @@ export interface CrearInsumoPayload {
     precioUnitarioPresentacion: number;
     precioUnitarioUso: number;
     almacenId: number;
-    proveedorId: number;
+    proveedorId?: number;
     categoriaId: number;
     tipoInsumo: TipoInsumo;
     costoAdquisicion?: number;

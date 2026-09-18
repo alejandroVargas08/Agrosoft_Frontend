@@ -10,11 +10,14 @@ const FILTROS: { label: string; value: 'Todos' | EstadoInsumo }[] = [
     { label: 'Agotado', value: 'agotado' },
     { label: 'Inactivo', value: 'inactivo' },
     { label: 'De baja', value: 'de_baja' },
-    ];
+];
 
-    const inputCls = 'w-full rounded-xl border border-neutral-200 py-2 px-3';
+const labelCls = 'block text-sm font-semibold text-neutral-800 mb-1.5';
+const inputCls =
+    'w-full rounded-lg border border-neutral-300 py-2.5 px-3 text-sm text-neutral-800 ' +
+    'placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-green-700/20 focus:border-green-700';
 
-    const Insumos = () => {
+const Insumos = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const {
@@ -101,105 +104,117 @@ const FILTROS: { label: string; value: 'Todos' | EstadoInsumo }[] = [
             </div>
 
             {isModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 overflow-y-auto">
-                <div className="bg-white rounded-2xl w-full max-w-3xl p-6 my-8">
-                <h2 className="text-xl font-bold mb-4">Nuevo Insumo</h2>
-                {errorForm && <p className="text-red-600 mb-3">{String(errorForm)}</p>}
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-neutral-50">
+                <div className="max-w-2xl mx-auto px-4 py-8">
+                <div className="flex items-center gap-3 mb-6">
+                    <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    aria-label="Volver"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-xl text-neutral-500 hover:bg-neutral-200"
+                    >
+                    ‹
+                    </button>
+                    <h2 className="text-2xl font-bold text-green-900">Nuevo Insumo</h2>
+                </div>
 
-                <form onSubmit={handleCreateSubmit} className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="col-span-2 md:col-span-3">
-                    <label>Nombre</label>
-                    <input required name="nombre" value={form.nombre} onChange={handleFormChange} className={inputCls} />
+                <div className="bg-white rounded-2xl border border-neutral-200 p-6 md:p-8">
+                    {errorForm && (
+                    <p className="text-red-600 text-sm mb-4">{String(errorForm)}</p>
+                    )}
+
+                    <form onSubmit={handleCreateSubmit} className="space-y-5">
+                    <div>
+                        <label className={labelCls}>
+                        Nombre del insumo <span className="text-red-500">*</span>
+                        </label>
+                        <input required name="nombre" value={form.nombre} onChange={handleFormChange} className={inputCls} />
                     </div>
-                    <div className="col-span-2 md:col-span-3">
-                    <label>Descripción</label>
-                    <input name="descripcion" value={form.descripcion} onChange={handleFormChange} className={inputCls} />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div>
+                        <label className={labelCls}>Categoría</label>
+                        <select required name="categoriaId" value={form.categoriaId} onChange={handleFormChange} className={inputCls}>
+                            <option value="">Seleccione...</option>
+                            {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                        </select>
+                        </div>
+                        <div>
+                        <label className={labelCls}>Tipo</label>
+                        <select name="tipoInsumo" value={form.tipoInsumo} onChange={handleFormChange} className={inputCls}>
+                            <option value="consumible">Insumo</option>
+                            <option value="herramienta">Herramienta</option>
+                            <option value="materia_prima">Materia prima</option>
+                        </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div>
+                        <label className={labelCls}>Unidad compra</label>
+                        <input required name="presentacionTipo" placeholder="Bulto 50kg" value={form.presentacionTipo} onChange={handleFormChange} className={inputCls} />
+                        </div>
+                        <div>
+                        <label className={labelCls}>Unidad uso</label>
+                        <input required name="unidadUso" placeholder="kg" value={form.unidadUso} onChange={handleFormChange} className={inputCls} />
+                        </div>
+                        <div>
+                        <label className={labelCls}>Factor conversión</label>
+                        <input required type="number" step="any" name="factorConversionUso" value={form.factorConversionUso} onChange={handleFormChange} className={inputCls} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div>
+                        <label className={labelCls}>Stock mínimo</label>
+                        <input required type="number" step="any" name="stockMinimo" value={form.stockMinimo} onChange={handleFormChange} className={inputCls} />
+                        </div>
+                        <div>
+                        <label className={labelCls}>Precio unitario (COP)</label>
+                        <input required type="number" step="any" name="precioUnitarioPresentacion" value={form.precioUnitarioPresentacion} onChange={handleFormChange} className={inputCls} />
+                        </div>
                     </div>
 
                     <div>
-                    <label>Tipo</label>
-                    <select name="tipoInsumo" value={form.tipoInsumo} onChange={handleFormChange} className={inputCls}>
-                        <option value="consumible">Consumible</option>
-                        <option value="herramienta">Herramienta</option>
-                    </select>
-                    </div>
-                    <div>
-                    <label>Categoría</label>
-                    <select required name="categoriaId" value={form.categoriaId} onChange={handleFormChange} className={inputCls}>
-                        <option value="">Seleccione...</option>
-                        {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                    </select>
-                    </div>
-                    <div>
-                    <label>Almacén</label>
-                    <select required name="almacenId" value={form.almacenId} onChange={handleFormChange} className={inputCls}>
+                        <label className={labelCls}>Almacén</label>
+                        <select required name="almacenId" value={form.almacenId} onChange={handleFormChange} className={inputCls}>
                         <option value="">Seleccione...</option>
                         {almacenes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-                    </select>
+                        </select>
                     </div>
+
                     <div>
-                    <label>Proveedor</label>
-                    <select required name="proveedorId" value={form.proveedorId} onChange={handleFormChange} className={inputCls}>
-                        <option value="">Seleccione...</option>
+                        <label className={labelCls}>Proveedor</label>
+                        <select name="proveedorId" value={form.proveedorId} onChange={handleFormChange} className={inputCls}>
+                        <option value="">Sin proveedor</option>
                         {proveedores.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                    </select>
+                        </select>
                     </div>
 
-                    <div>
-                    <label>Presentación (tipo)</label>
-                    <input required name="presentacionTipo" placeholder="Bulto, Galón..." value={form.presentacionTipo} onChange={handleFormChange} className={inputCls} />
-                    </div>
-                    <div>
-                    <label>Cantidad por presentación</label>
-                    <input required type="number" step="any" name="presentacionCantidad" value={form.presentacionCantidad} onChange={handleFormChange} className={inputCls} />
-                    </div>
-                    <div>
-                    <label>Unidad presentación</label>
-                    <input required name="presentacionUnidad" placeholder="kg, L..." value={form.presentacionUnidad} onChange={handleFormChange} className={inputCls} />
-                    </div>
-                    <div>
-                    <label>Unidad de uso</label>
-                    <input required name="unidadUso" placeholder="g, mL..." value={form.unidadUso} onChange={handleFormChange} className={inputCls} />
-                    </div>
-                    <div>
-                    <label>Factor conversión a uso</label>
-                    <input required type="number" step="any" name="factorConversionUso" value={form.factorConversionUso} onChange={handleFormChange} className={inputCls} />
-                    </div>
-
-                    <div>
-                    <label>Stock (presentación)</label>
-                    <input required type="number" step="any" name="stockPresentacion" value={form.stockPresentacion} onChange={handleFormChange} className={inputCls} />
-                    </div>
-                    <div>
-                    <label>Stock (uso)</label>
-                    <input required type="number" step="any" name="stockUso" value={form.stockUso} onChange={handleFormChange} className={inputCls} />
-                    </div>
-                    <div>
-                    <label>Stock mínimo</label>
-                    <input required type="number" step="any" name="stockMinimo" value={form.stockMinimo} onChange={handleFormChange} className={inputCls} />
-                    </div>
-                    <div>
-                    <label>Precio por presentación</label>
-                    <input required type="number" step="any" name="precioUnitarioPresentacion" value={form.precioUnitarioPresentacion} onChange={handleFormChange} className={inputCls} />
-                    </div>
-                    <div>
-                    <label>Precio por unidad de uso</label>
-                    <input required type="number" step="any" name="precioUnitarioUso" value={form.precioUnitarioUso} onChange={handleFormChange} className={inputCls} />
-                    </div>
-
-                    <div className="col-span-2 md:col-span-3 flex justify-end gap-3 mt-4">
-                    <button type="button" onClick={() => setIsModalOpen(false)}>Cancelar</button>
-                    <button type="submit" disabled={enviando} className="bg-green-800 text-white px-6 py-3 rounded-xl disabled:opacity-50">
+                    <div className="flex gap-3 pt-2">
+                        <button
+                        type="submit"
+                        disabled={enviando}
+                        className="flex-1 rounded-lg bg-green-800 py-2.5 text-sm font-semibold text-white hover:bg-green-900 disabled:opacity-50"
+                        >
                         {enviando ? 'Guardando...' : 'Guardar'}
-                    </button>
+                        </button>
+                        <button
+                        type="button"
+                        onClick={() => setIsModalOpen(false)}
+                        className="rounded-lg border border-neutral-300 px-8 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                        >
+                        Cancelar
+                        </button>
                     </div>
-                </form>
+                    </form>
+                </div>
                 </div>
             </div>
             )}
         </div>
         </DashboardLayout>
     );
-    };
+};
 
 export default Insumos;
