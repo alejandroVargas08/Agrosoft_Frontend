@@ -1,3 +1,4 @@
+import { Link, useLocation } from "react-router-dom";
 import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, 
   Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3, 
   Bell, History, User, Settings, X} from "lucide-react";
@@ -6,7 +7,7 @@ import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 interface MenuItem{
     icon: React.ElementType;
     label: string;
-    active?: boolean;
+    path: string;
 }
 interface SidebarProps{
     isOpen: boolean;
@@ -14,26 +15,26 @@ interface SidebarProps{
 }
 
 const mainItems: MenuItem[]=[
-    {icon: Home, label: 'Inicio', active: true},
-    {icon: Sprout, label: 'Unidades Productivas' },
-    {icon: Map, label: 'Lotes y Sublotes'},
-    {icon: ClipboardList, label: 'Actividades'},
-    {icon: AlertTriangle, label: 'Incidencias'},
-    {icon: FlaskConical, label: 'Tratamientos'},
-    {icon: Wheat, label: 'Cosecha'},
-    {icon: Package, label: 'Inventario'},
-    {icon: ShoppingCart, label: 'Ventas'},
-    {icon: BookOpen, label: 'Wiki EPA'},
-    {icon: Radio, label: 'Sensores IoT'},
-    {icon: BarChart3, label: 'Reportes'},
-    {icon: Bell, label: 'Alertas'},
-    {icon: History, label: 'Historial'}
+    {icon: Home, label: 'Inicio', path: '/inicio'},
+    {icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas'},
+    {icon: Map, label: 'Lotes y Sublotes', path: '/lotes'},
+    {icon: ClipboardList, label: 'Actividades', path: '/actividades'},
+    {icon: AlertTriangle, label: 'Incidencias', path: '/incidencias'},
+    {icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos'},
+    {icon: Wheat, label: 'Cosecha', path: '/cosecha'},
+    {icon: Package, label: 'Inventario', path: '/inventario'},
+    {icon: ShoppingCart, label: 'Ventas', path: '/ventas'},
+    {icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa'},
+    {icon: Radio, label: 'Sensores IoT', path: '/sensores-iot'},
+    {icon: BarChart3, label: 'Reportes', path: '/reportes'},
+    {icon: Bell, label: 'Alertas', path: '/alertas'},
+    {icon: History, label: 'Historial', path: '/historial'}
 ];
 
 const main2Items: MenuItem[]=[
-    { icon: Bell, label: 'Notificaciones' },
-    { icon: User, label: 'Perfil' },
-    { icon: Settings, label: 'Configuración' },
+    { icon: Bell, label: 'Notificaciones', path: '/notificaciones' },
+    { icon: User, label: 'Perfil', path: '/perfil' },
+    { icon: Settings, label: 'Configuración', path: '/configuracion' },
 ]
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -59,12 +60,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <img src={logoAgrosoft} alt="AgroSoft" className="w-full h-full object-cover" />
         </div>
         <nav className="flex flex-col items-center gap-2 w-full px-2">
-          {mainItems.slice(0, 8).map((item) => (
-            <a key={item.label} href="#" title={item.label} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${item.active? 'bg-emerald-50 text-emerald-700': 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}>
-              <item.icon className="w-5 h-5" />
-            </a>
-          ))}
+          {mainItems.slice(0, 8).map((item) => {
+            const location = useLocation();
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.label}
+                to={item.path}
+                title={item.label}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+              >
+                <item.icon className="w-5 h-5" />
+              </Link>
+            );
+          })}
         </nav>
       </aside>
 
@@ -88,7 +97,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </button>
             </div>
             <div className="flex-1 px-3 py-4">
-              <SidebarContent />
+              <SidebarContent onNavigate={onClose} />
             </div>
           </aside>
         </>
@@ -97,23 +106,41 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   );
 }
 
-function SidebarContent() {
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const location = useLocation();
+
   return (
     <nav className="px-3 py-6 space-y-1">
-      {mainItems.map((item) => (
-        <a key={item.label} href="#" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${item.active? 'bg-emerald-50 text-emerald-700': 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
-          <item.icon className="w-5 h-5" />
-          {item.label}
-        </a>
-      ))}
-
-      <div className="pt-4 mt-4 border-t border-gray-100 space-y-1">
-        {main2Items.map((item) => (
-          <a key={item.label} href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+      {mainItems.map((item) => {
+        const isActive = location.pathname === item.path;
+        return (
+          <Link
+            key={item.label}
+            to={item.path}
+            onClick={onNavigate}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+          >
             <item.icon className="w-5 h-5" />
             {item.label}
-          </a>
-        ))}
+          </Link>
+        );
+      })}
+
+      <div className="pt-4 mt-4 border-t border-gray-100 space-y-1">
+        {main2Items.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.label}
+              to={item.path}
+              onClick={onNavigate}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <item.icon className="w-5 h-5" />
+              {item.label}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

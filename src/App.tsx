@@ -7,6 +7,7 @@ import Inicio from './pages/inicio'
 import RecuperarPassword from './pages/RecuperarPassword'
 import VerificarCodigo from './pages/VerificarCodigo'
 import NuevaContrasena from './pages/NuevaContrasena'
+import Perfil from './pages/Perfil'
 
 function App() {
 
@@ -19,6 +20,7 @@ function App() {
       <Route path="/recuperar/verificar" element={<VerificarCodigo />} />
       <Route path='/asistente' element={<AsistenteIA/>}/>
       <Route path="/recuperar/nueva-contrasena" element={<NuevaContrasena />} />
+      <Route path='/perfil' element={<Perfil/>}/>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
