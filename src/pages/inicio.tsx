@@ -15,7 +15,7 @@ export default function Inicio() {
     const actualizarSaludo = () => {
       const h = new Date().getHours();
       if (h >= 6 && h < 12) setSaludo('Buenos días');
-      else if (h >= 12 && h < 19) setSaludo('Buenas tardes');
+      else if (h >= 12 && h < 18) setSaludo('Buenas tardes');
       else setSaludo('Buenas noches');
     };
     actualizarSaludo();

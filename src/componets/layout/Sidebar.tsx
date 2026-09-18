@@ -1,42 +1,63 @@
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, 
-  Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3, 
-  Bell, History, User, Settings, X} from "lucide-react";
-import logoAgrosoft from "../../assets/img/logo-agrosoft.png"; 
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical,
+  Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3,
+  Bell, History, User, Settings, X, ChevronDown } from "lucide-react";
+import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 
-interface MenuItem{
+interface SubItem {
+    label: string;
+    path: string;
+}
+interface MenuItem {
     icon: React.ElementType;
     label: string;
-    active?: boolean;
+    path: string;
+    children?: SubItem[];
 }
-interface SidebarProps{
+interface SidebarProps {
     isOpen: boolean;
-    onClose: ()=> void;
+    onClose: () => void;
 }
 
-const mainItems: MenuItem[]=[
-    {icon: Home, label: 'Inicio', active: true},
-    {icon: Sprout, label: 'Unidades Productivas' },
-    {icon: Map, label: 'Lotes y Sublotes'},
-    {icon: ClipboardList, label: 'Actividades'},
-    {icon: AlertTriangle, label: 'Incidencias'},
-    {icon: FlaskConical, label: 'Tratamientos'},
-    {icon: Wheat, label: 'Cosecha'},
-    {icon: Package, label: 'Inventario'},
-    {icon: ShoppingCart, label: 'Ventas'},
-    {icon: BookOpen, label: 'Wiki EPA'},
-    {icon: Radio, label: 'Sensores IoT'},
-    {icon: BarChart3, label: 'Reportes'},
-    {icon: Bell, label: 'Alertas'},
-    {icon: History, label: 'Historial'}
+const mainItems: MenuItem[] = [
+    { icon: Home, label: 'Inicio', path: '/inicio' },
+    { icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas' },
+    { icon: Map, label: 'Lotes y Sublotes', path: '/territorio', children: [
+        { label: 'Lotes', path: '/territorio/lotes' },
+        { label: 'Sublotes', path: '/territorio/sublotes' },
+    ]},
+    { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
+    { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
+    { icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos' },
+    { icon: Wheat, label: 'Cosecha', path: '/cosecha' },
+    { icon: Package, label: 'Inventario', path: '/inventario', children: [
+        { label: 'Catálogos', path: '/inventario/catalogos' },
+        { label: 'Insumos', path: '/inventario/insumos' },
+        { label: 'Movimientos', path: '/inventario/movimientos' },
+        { label: 'Reservas', path: '/inventario/reservas' },
+    ]},
+    { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
+    { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
+    { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
+    { icon: BarChart3, label: 'Reportes', path: '/reportes' },
+    { icon: Bell, label: 'Alertas', path: '/alertas' },
+    { icon: History, label: 'Historial', path: '/historial' }
 ];
 
-const main2Items: MenuItem[]=[
-    { icon: Bell, label: 'Notificaciones' },
-    { icon: User, label: 'Perfil' },
-    { icon: Settings, label: 'Configuración' },
-]
+const main2Items: MenuItem[] = [
+    { icon: Bell, label: 'Notificaciones', path: '/notificaciones' },
+    { icon: User, label: 'Perfil', path: '/perfil' },
+    { icon: Settings, label: 'Configuración', path: '/configuracion' },
+];
+
+const linkBase = "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors";
+const linkActive = "bg-emerald-50 text-emerald-700";
+const linkIdle = "text-gray-600 hover:bg-gray-50 hover:text-gray-900";
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const location = useLocation();
+
   return (
     <>
       <aside className="hidden lg:flex w-64 bg-white h-screen fixed left-0 top-0 border-r border-gray-200 flex-col overflow-y-auto z-30">
@@ -59,18 +80,26 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <img src={logoAgrosoft} alt="AgroSoft" className="w-full h-full object-cover" />
         </div>
         <nav className="flex flex-col items-center gap-2 w-full px-2">
-          {mainItems.slice(0, 8).map((item) => (
-            <a key={item.label} href="#" title={item.label} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${item.active? 'bg-emerald-50 text-emerald-700': 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}>
-              <item.icon className="w-5 h-5" />
-            </a>
-          ))}
+          {mainItems.slice(0, 8).map((item) => {
+            const target = item.children ? item.children[0].path : item.path;
+            const isActive = location.pathname.startsWith(item.path);
+            return (
+              <Link
+                key={item.label}
+                to={target}
+                title={item.label}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+              >
+                <item.icon className="w-5 h-5" />
+              </Link>
+            );
+          })}
         </nav>
       </aside>
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={onClose}/>
+          <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={onClose} />
 
           <aside className="fixed left-0 top-0 h-screen w-64 bg-white z-50 shadow-xl md:hidden flex flex-col overflow-y-auto">
             <div className="p-4 flex items-center justify-between border-b border-gray-100">
@@ -88,7 +117,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </button>
             </div>
             <div className="flex-1 px-3 py-4">
-              <SidebarContent />
+              <SidebarContent onNavigate={onClose} />
             </div>
           </aside>
         </>
@@ -97,23 +126,86 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   );
 }
 
-function SidebarContent() {
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const location = useLocation();
+  const [abierto, setAbierto] = useState<string | null>(() => {
+    const actual = mainItems.find(
+      (i) => i.children && location.pathname.startsWith(i.path)
+    );
+    return actual ? actual.label : null;
+  });
+
   return (
     <nav className="px-3 py-6 space-y-1">
-      {mainItems.map((item) => (
-        <a key={item.label} href="#" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${item.active? 'bg-emerald-50 text-emerald-700': 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
-          <item.icon className="w-5 h-5" />
-          {item.label}
-        </a>
-      ))}
+      {mainItems.map((item) => {
+        if (item.children) {
+          const estaAbierto = abierto === item.label;
+          const grupoActivo = location.pathname.startsWith(item.path);
+          return (
+            <div key={item.label}>
+              <button
+                onClick={() => setAbierto(estaAbierto ? null : item.label)}
+                className={`${linkBase} w-full justify-between ${grupoActivo ? linkActive : linkIdle}`}
+              >
+                <span className="flex items-center gap-3">
+                  <item.icon className="w-5 h-5" />
+                  {item.label}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${estaAbierto ? 'rotate-180' : ''}`}
+                />
+              </button>
 
-      <div className="pt-4 mt-4 border-t border-gray-100 space-y-1">
-        {main2Items.map((item) => (
-          <a key={item.label} href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+              {estaAbierto && (
+                <div className="mt-1 ml-4 pl-4 border-l border-gray-100 space-y-1">
+                  {item.children.map((sub) => {
+                    const subActivo = location.pathname === sub.path;
+                    return (
+                      <Link
+                        key={sub.path}
+                        to={sub.path}
+                        onClick={onNavigate}
+                        className={`block px-3 py-2 rounded-lg text-sm transition-colors ${subActivo ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                      >
+                        {sub.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        const isActive = location.pathname === item.path;
+        return (
+          <Link
+            key={item.label}
+            to={item.path}
+            onClick={onNavigate}
+            className={`${linkBase} ${isActive ? linkActive : linkIdle}`}
+          >
             <item.icon className="w-5 h-5" />
             {item.label}
-          </a>
-        ))}
+          </Link>
+        );
+      })}
+
+      <div className="pt-4 mt-4 border-t border-gray-100 space-y-1">
+        {main2Items.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.label}
+              to={item.path}
+              onClick={onNavigate}
+              className={`${linkBase} ${isActive ? linkActive : linkIdle}`}
+            >
+              <item.icon className="w-5 h-5" />
+              {item.label}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
