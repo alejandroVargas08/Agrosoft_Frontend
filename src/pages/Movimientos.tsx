@@ -1,11 +1,15 @@
 import DashboardLayout from '../componets/layout/DashboardLayout';
 import { useMovimientos } from '../hooks/useMovimientos';
 
-const inputCls = 'w-full rounded-xl border border-neutral-200 py-2 px-3';
+const labelCls = 'block text-sm font-semibold text-neutral-800 mb-1.5';
+const inputCls =
+    'w-full rounded-lg border border-neutral-300 py-2.5 px-3 text-sm text-neutral-800 ' +
+    'placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-green-700/20 focus:border-green-700';
 
 const Movimientos = () => {
     const {
         form, insumos, almacenes, registrados,
+        insumoSeleccionado, cantidadUsoCalculada,
         enviando, errorForm, handleFormChange, handleSubmit, nombreInsumo,
     } = useMovimientos();
 
@@ -20,84 +24,112 @@ const Movimientos = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <section className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-200">
-                <h2 className="text-lg font-bold mb-4">Registrar movimiento</h2>
-                {errorForm && <p className="text-red-600 mb-3">{String(errorForm)}</p>}
+            <section className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
+                <h2 className="text-lg font-bold mb-5">Registrar movimiento</h2>
+                {errorForm && <p className="text-red-600 text-sm mb-4">{String(errorForm)}</p>}
 
-                <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                    <label>Insumo</label>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                    <label className={labelCls}>
+                    Insumo <span className="text-red-500">*</span>
+                    </label>
                     <select required name="insumoId" value={form.insumoId} onChange={handleFormChange} className={inputCls}>
                     <option value="">Seleccione...</option>
                     {insumos.map((i) => (
-                        <option key={i.id} value={i.id}>{i.nombre} (disp. {i.stockDisponible})</option>
+                        <option key={i.id} value={i.id}>
+                        {i.nombre} (disp. {i.stockDisponible} {i.unidadUso})
+                        </option>
                     ))}
                     </select>
                 </div>
 
-                <div>
-                    <label>Tipo</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                    <label className={labelCls}>Tipo</label>
                     <select name="tipo" value={form.tipo} onChange={handleFormChange} className={inputCls}>
-                    <option value="entrada">Entrada</option>
-                    <option value="salida">Salida</option>
-                    <option value="traslado">Traslado</option>
-                    <option value="ajuste">Ajuste</option>
+                        <option value="entrada">Entrada</option>
+                        <option value="salida">Salida</option>
+                        <option value="traslado">Traslado</option>
+                        <option value="ajuste">Ajuste</option>
                     </select>
+                    </div>
+                    <div>
+                    <label className={labelCls}>
+                        Cantidad {insumoSeleccionado ? `(${insumoSeleccionado.presentacionTipo})` : ''}
+                    </label>
+                    <input
+                        required
+                        type="number"
+                        step="any"
+                        min="0"
+                        name="cantidadPresentacion"
+                        value={form.cantidadPresentacion}
+                        onChange={handleFormChange}
+                        className={inputCls}
+                    />
+                    </div>
                 </div>
-                <div />
 
-                <div>
-                    <label>Cantidad (presentación)</label>
-                    <input required type="number" step="any" name="cantidadPresentacion" value={form.cantidadPresentacion} onChange={handleFormChange} className={inputCls} />
-                </div>
-                <div>
-                    <label>Cantidad (uso)</label>
-                    <input required type="number" step="any" name="cantidadUso" value={form.cantidadUso} onChange={handleFormChange} className={inputCls} />
-                </div>
+                {insumoSeleccionado && form.cantidadPresentacion !== '' && (
+                    <div className="rounded-lg bg-green-50 border border-green-100 px-3 py-2 text-sm text-green-900">
+                    Equivale a <strong>{cantidadUsoCalculada}</strong> {insumoSeleccionado.unidadUso}
+                    <span className="text-green-700">
+                        {' '}· factor {insumoSeleccionado.factorConversionUso}
+                    </span>
+                    </div>
+                )}
 
                 {esTraslado && (
-                    <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                        <label>Almacén origen</label>
+                        <label className={labelCls}>Almacén origen</label>
                         <select required name="almacenOrigenId" value={form.almacenOrigenId} onChange={handleFormChange} className={inputCls}>
                         <option value="">Seleccione...</option>
                         {almacenes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label>Almacén destino</label>
+                        <label className={labelCls}>Almacén destino</label>
                         <select required name="almacenDestinoId" value={form.almacenDestinoId} onChange={handleFormChange} className={inputCls}>
                         <option value="">Seleccione...</option>
                         {almacenes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                         </select>
                     </div>
-                    </>
+                    </div>
                 )}
 
-                <div className="col-span-2">
-                    <label>Descripción</label>
-                    <input name="descripcion" value={form.descripcion} onChange={handleFormChange} className={inputCls} />
+                <div>
+                    <label className={labelCls}>Descripción</label>
+                    <input
+                    name="descripcion"
+                    placeholder="Motivo del movimiento (opcional)"
+                    value={form.descripcion}
+                    onChange={handleFormChange}
+                    className={inputCls}
+                    />
                 </div>
 
-                <div className="col-span-2 flex justify-end">
-                    <button type="submit" disabled={enviando} className="bg-green-800 text-white px-6 py-3 rounded-xl disabled:opacity-50">
+                <button
+                    type="submit"
+                    disabled={enviando}
+                    className="w-full rounded-lg bg-green-800 py-2.5 text-sm font-semibold text-white hover:bg-green-900 disabled:opacity-50"
+                >
                     {enviando ? 'Registrando...' : 'Registrar'}
-                    </button>
-                </div>
+                </button>
                 </form>
             </section>
 
-            <section className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-200">
-                <h2 className="text-lg font-bold mb-4">Registrados en esta sesión</h2>
+            <section className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200">
+                <h2 className="text-lg font-bold mb-5">Registrados en esta sesión</h2>
                 {registrados.length === 0 && (
                 <p className="text-neutral-400 text-sm">Aún no has registrado movimientos.</p>
                 )}
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-3 text-sm">
                 {registrados.map((m) => (
-                    <li key={m.id} className="border-b pb-2">
+                    <li key={m.id} className="border-b border-neutral-100 pb-3">
                     <span className="font-semibold uppercase text-xs px-2 py-0.5 rounded-full bg-neutral-100 mr-2">{m.tipo}</span>
                     {nombreInsumo(m.insumoId)} · {m.cantidadUso} uds de uso
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-neutral-500 mt-1">
                         Costo ${m.costoTotal.toLocaleString()} · Stock resultante {m.stockResultante}
                     </p>
                     </li>

@@ -9,13 +9,12 @@ const FORM_INICIAL = {
     insumoId: '',
     tipo: 'entrada' as TipoMovimiento,
     cantidadPresentacion: '',
-    cantidadUso: '',
     descripcion: '',
     almacenOrigenId: '',
     almacenDestinoId: '',
-    };
+};
 
-    export function useMovimientos() {
+export function useMovimientos() {
     const queryClient = useQueryClient();
     const [form, setForm] = useState(FORM_INICIAL);
     const [registrados, setRegistrados] = useState<Movimiento[]>([]);
@@ -29,6 +28,12 @@ const FORM_INICIAL = {
         queryKey: ['almacenes'],
         queryFn: async () => (await almacenesApi.listar()).data,
     });
+
+    const insumoSeleccionado = insumos.find((i) => i.id === Number(form.insumoId)) ?? null;
+
+    const cantidadUsoCalculada = insumoSeleccionado
+        ? Number(form.cantidadPresentacion || 0) * (insumoSeleccionado.factorConversionUso || 1)
+        : 0;
 
     const registrarMutation = useMutation({
         mutationFn: (payload: RegistrarMovimientoPayload) => movimientosApi.registrar(payload),
@@ -48,16 +53,26 @@ const FORM_INICIAL = {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setErrorLocal(null);
+
         const usuarioId = usuarioActualId();
         if (!usuarioId) {
         setErrorLocal('No se encontró el usuario autenticado. Vuelve a iniciar sesión.');
         return;
         }
+        if (!insumoSeleccionado) {
+        setErrorLocal('Selecciona un insumo.');
+        return;
+        }
+        if (form.tipo === 'traslado' && form.almacenOrigenId === form.almacenDestinoId) {
+        setErrorLocal('El almacén de origen y destino deben ser distintos.');
+        return;
+        }
+
         registrarMutation.mutate({
-        insumoId: Number(form.insumoId),
+        insumoId: insumoSeleccionado.id,
         tipo: form.tipo,
         cantidadPresentacion: Number(form.cantidadPresentacion),
-        cantidadUso: Number(form.cantidadUso),
+        cantidadUso: cantidadUsoCalculada,
         descripcion: form.descripcion || undefined,
         usuarioId,
         almacenOrigenId: form.almacenOrigenId ? Number(form.almacenOrigenId) : undefined,
@@ -77,6 +92,7 @@ const FORM_INICIAL = {
 
     return {
         form, insumos, almacenes, registrados,
+        insumoSeleccionado, cantidadUsoCalculada,
         enviando: registrarMutation.isPending,
         errorForm, handleFormChange, handleSubmit, nombreInsumo,
     };

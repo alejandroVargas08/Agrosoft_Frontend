@@ -40,6 +40,9 @@ export interface CrearProveedorPayload {
 export interface Insumo {
     id: number;
     nombre: string;
+    presentacionTipo: string;
+    unidadUso: string;
+    factorConversionUso: number;
     stockPresentacion: number;
     stockUso: number;
     stockReservado: number;
