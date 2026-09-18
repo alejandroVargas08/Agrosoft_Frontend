@@ -1,73 +1,62 @@
-import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical,
   Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3,
   Bell, History, User, Settings, X, ChevronDown } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 
 interface SubItem {
-  label: string;
-  to: string;
+    label: string;
+    path: string;
 }
 interface MenuItem {
-  icon: React.ElementType;
-  label: string;
-  to?: string;          // ruta directa
-  children?: SubItem[]; // submenú desplegable
+    icon: React.ElementType;
+    label: string;
+    path: string;
+    children?: SubItem[];
 }
 interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
+    isOpen: boolean;
+    onClose: () => void;
 }
 
 const mainItems: MenuItem[] = [
-  { icon: Home, label: 'Inicio', to: '/inicio' },
-  { icon: Sprout, label: 'Unidades Productivas' },
-  {
-    icon: Map, label: 'Lotes y Sublotes',
-    children: [
-      { label: 'Lotes', to: '/territorio/lotes' },
-      { label: 'Sublotes', to: '/territorio/sublotes' },
-    ],
-  },
-  { icon: ClipboardList, label: 'Actividades' },
-  { icon: AlertTriangle, label: 'Incidencias' },
-  { icon: FlaskConical, label: 'Tratamientos' },
-  { icon: Wheat, label: 'Cosecha' },
-  {
-    icon: Package, label: 'Inventario',
-    children: [
-      { label: 'Insumos', to: '/inventario/insumos' },
-      { label: 'Catálogos', to: '/inventario/catalogos' },
-      { label: 'Movimientos', to: '/inventario/movimientos' },
-      { label: 'Reservas', to: '/inventario/reservas' },
-    ],
-  },
-  { icon: ShoppingCart, label: 'Ventas' },
-  { icon: BookOpen, label: 'Wiki EPA' },
-  { icon: Radio, label: 'Sensores IoT' },
-  { icon: BarChart3, label: 'Reportes' },
-  { icon: Bell, label: 'Alertas' },
-  { icon: History, label: 'Historial' },
+    { icon: Home, label: 'Inicio', path: '/inicio' },
+    { icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas' },
+    { icon: Map, label: 'Lotes y Sublotes', path: '/territorio', children: [
+        { label: 'Lotes', path: '/territorio/lotes' },
+        { label: 'Sublotes', path: '/territorio/sublotes' },
+    ]},
+    { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
+    { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
+    { icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos' },
+    { icon: Wheat, label: 'Cosecha', path: '/cosecha' },
+    { icon: Package, label: 'Inventario', path: '/inventario', children: [
+        { label: 'Catálogos', path: '/inventario/catalogos' },
+        { label: 'Insumos', path: '/inventario/insumos' },
+        { label: 'Movimientos', path: '/inventario/movimientos' },
+        { label: 'Reservas', path: '/inventario/reservas' },
+    ]},
+    { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
+    { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
+    { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
+    { icon: BarChart3, label: 'Reportes', path: '/reportes' },
+    { icon: Bell, label: 'Alertas', path: '/alertas' },
+    { icon: History, label: 'Historial', path: '/historial' }
 ];
 
 const main2Items: MenuItem[] = [
-  { icon: Bell, label: 'Notificaciones' },
-  { icon: User, label: 'Perfil' },
-  { icon: Settings, label: 'Configuración' },
+    { icon: Bell, label: 'Notificaciones', path: '/notificaciones' },
+    { icon: User, label: 'Perfil', path: '/perfil' },
+    { icon: Settings, label: 'Configuración', path: '/configuracion' },
 ];
 
-const baseCls = 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors';
-const activeCls = 'bg-emerald-50 text-emerald-700';
-const idleCls = 'text-gray-600 hover:bg-gray-50 hover:text-gray-900';
+const linkBase = "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors";
+const linkActive = "bg-emerald-50 text-emerald-700";
+const linkIdle = "text-gray-600 hover:bg-gray-50 hover:text-gray-900";
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
-
-  // Para la barra compacta (tablet): un ítem está activo si su ruta o alguna de sus hijas coincide
-  const estaActivo = (item: MenuItem) =>
-    (item.to && location.pathname === item.to) ||
-    item.children?.some((c) => location.pathname.startsWith(c.to));
 
   return (
     <>
@@ -92,18 +81,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
         <nav className="flex flex-col items-center gap-2 w-full px-2">
           {mainItems.slice(0, 8).map((item) => {
-            const destino = item.to ?? item.children?.[0]?.to ?? '#';
+            const target = item.children ? item.children[0].path : item.path;
+            const isActive = location.pathname.startsWith(item.path);
             return (
-              <NavLink
+              <Link
                 key={item.label}
-                to={destino}
+                to={target}
                 title={item.label}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                  estaActivo(item) ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                }`}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
               >
                 <item.icon className="w-5 h-5" />
-              </NavLink>
+              </Link>
             );
           })}
         </nav>
@@ -140,88 +128,84 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
-
-  // Submenús abiertos: por defecto el que contiene la ruta actual
-  const [abiertos, setAbiertos] = useState<string[]>(() =>
-    mainItems
-      .filter((i) => i.children?.some((c) => location.pathname.startsWith(c.to)))
-      .map((i) => i.label),
-  );
-
-  const toggle = (label: string) =>
-    setAbiertos((prev) =>
-      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
+  const [abierto, setAbierto] = useState<string | null>(() => {
+    const actual = mainItems.find(
+      (i) => i.children && location.pathname.startsWith(i.path)
     );
+    return actual ? actual.label : null;
+  });
 
   return (
     <nav className="px-3 py-6 space-y-1">
       {mainItems.map((item) => {
-        // Ítem con submenú
         if (item.children) {
-          const abierto = abiertos.includes(item.label);
-          const hijoActivo = item.children.some((c) => location.pathname.startsWith(c.to));
+          const estaAbierto = abierto === item.label;
+          const grupoActivo = location.pathname.startsWith(item.path);
           return (
             <div key={item.label}>
               <button
-                type="button"
-                onClick={() => toggle(item.label)}
-                className={`${baseCls} w-full ${hijoActivo ? activeCls : idleCls}`}
+                onClick={() => setAbierto(estaAbierto ? null : item.label)}
+                className={`${linkBase} w-full justify-between ${grupoActivo ? linkActive : linkIdle}`}
               >
-                <item.icon className="w-5 h-5" />
-                <span className="flex-1 text-left">{item.label}</span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${abierto ? 'rotate-180' : ''}`} />
+                <span className="flex items-center gap-3">
+                  <item.icon className="w-5 h-5" />
+                  {item.label}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${estaAbierto ? 'rotate-180' : ''}`}
+                />
               </button>
-              {abierto && (
-                <div className="ml-8 mt-1 space-y-1">
-                  {item.children.map((sub) => (
-                    <NavLink
-                      key={sub.to}
-                      to={sub.to}
-                      onClick={onNavigate}
-                      className={({ isActive }) =>
-                        `block px-3 py-2 rounded-lg text-sm ${isActive ? activeCls : idleCls}`
-                      }
-                    >
-                      {sub.label}
-                    </NavLink>
-                  ))}
+
+              {estaAbierto && (
+                <div className="mt-1 ml-4 pl-4 border-l border-gray-100 space-y-1">
+                  {item.children.map((sub) => {
+                    const subActivo = location.pathname === sub.path;
+                    return (
+                      <Link
+                        key={sub.path}
+                        to={sub.path}
+                        onClick={onNavigate}
+                        className={`block px-3 py-2 rounded-lg text-sm transition-colors ${subActivo ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                      >
+                        {sub.label}
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>
           );
         }
 
-        // Ítem con ruta directa
-        if (item.to) {
-          return (
-            <NavLink
-              key={item.label}
-              to={item.to}
-              onClick={onNavigate}
-              className={({ isActive }) => `${baseCls} ${isActive ? activeCls : idleCls}`}
-            >
-              <item.icon className="w-5 h-5" />
-              {item.label}
-            </NavLink>
-          );
-        }
-
-        // Ítem sin ruta todavía (lo hará el equipo)
+        const isActive = location.pathname === item.path;
         return (
-          <a key={item.label} href="#" className={`${baseCls} ${idleCls}`}>
+          <Link
+            key={item.label}
+            to={item.path}
+            onClick={onNavigate}
+            className={`${linkBase} ${isActive ? linkActive : linkIdle}`}
+          >
             <item.icon className="w-5 h-5" />
             {item.label}
-          </a>
+          </Link>
         );
       })}
 
       <div className="pt-4 mt-4 border-t border-gray-100 space-y-1">
-        {main2Items.map((item) => (
-          <a key={item.label} href="#" className={`${baseCls} ${idleCls}`}>
-            <item.icon className="w-5 h-5" />
-            {item.label}
-          </a>
-        ))}
+        {main2Items.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.label}
+              to={item.path}
+              onClick={onNavigate}
+              className={`${linkBase} ${isActive ? linkActive : linkIdle}`}
+            >
+              <item.icon className="w-5 h-5" />
+              {item.label}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
