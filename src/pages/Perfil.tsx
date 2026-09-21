@@ -138,26 +138,26 @@ export default function Perfil() {
                   </div>
                   <dl className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <dt className="text-gray-500">Programa</dt>
+                      <dt className="text-gray-500">Programa:</dt>
                       <dd className="font-medium text-gray-900">{programaFormacion.nombre}</dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="text-gray-500">Tipo</dt>
+                      <dt className="text-gray-500">Tipo:</dt>
                       <dd className="font-medium text-gray-900">{programaFormacion.tipo}</dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="text-gray-500">Ficha</dt>
+                      <dt className="text-gray-500">Ficha:</dt>
                       <dd className="font-medium text-green-700">{programaFormacion.ficha}</dd>
                     </div>
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                      <dt className="text-gray-500">Vigencia</dt>
+                      <dt className="text-gray-500">Vigencia:</dt>
                       <dd className="font-medium text-gray-900">
                         {formatearFecha(programaFormacion.fechaInicio)} —{' '}
                         {formatearFecha(programaFormacion.fechaFin)}
                       </dd>
                     </div>
                     <div className="flex justify-between items-center">
-                      <dt className="text-gray-500">Estado</dt>
+                      <dt className="text-gray-500">Estado:</dt>
                       <dd>
                         <span className="bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
                           {programaFormacion.estado}
