@@ -14,12 +14,9 @@ import CatalogosInventario from './pages/CatalogosInventario'
 import Insumos from './pages/Insumos'
 import Movimientos from './pages/Movimientos'
 import Reservas from './pages/Reservas'
-<<<<<<< HEAD
 import Actividades from './pages/actividades/actividades'
-=======
 import EditarPerfil from './pages/EditarPerfil'
 import Configuracion from './pages/Configuracion'
->>>>>>> origin/main
 
 function App() {
 
