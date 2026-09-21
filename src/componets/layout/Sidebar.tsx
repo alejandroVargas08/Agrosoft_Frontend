@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical,
   Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3,
-  Bell, History, User, Settings, X, ChevronDown } from "lucide-react";
+  Bell, History, User, Settings, X, ChevronDown, LogOut } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
+import { cerrarSesion } from "../../hooks/useAuth";
 
 interface SubItem {
     label: string;
@@ -128,12 +129,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [abierto, setAbierto] = useState<string | null>(() => {
     const actual = mainItems.find(
       (i) => i.children && location.pathname.startsWith(i.path)
     );
     return actual ? actual.label : null;
   });
+
+  function handleCerrarSesion() {
+    cerrarSesion();
+    onNavigate?.();
+    navigate('/login');
+  }
 
   return (
     <nav className="px-3 py-6 space-y-1">
@@ -206,6 +214,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             </Link>
           );
         })}
+      </div>
+
+      <div className="pt-4 mt-4 border-t border-gray-100">
+        <button
+          onClick={handleCerrarSesion}
+          className={`${linkBase} w-full text-red-600 hover:bg-red-50`}
+        >
+          <LogOut className="w-5 h-5" />
+          Cerrar sesión
+        </button>
       </div>
     </nav>
   );
