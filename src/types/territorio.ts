@@ -12,6 +12,7 @@ export interface Lote {
     areaM2: number;
     areaHa: number;
     centroide: Punto;
+    vertices: Punto[];
     cantidadVertices: number;
     descripcion?: string;
     estado: EstadoLote;
@@ -24,6 +25,7 @@ export interface SubLote {
     areaM2: number;
     areaHa: number;
     centroide: Punto;
+    vertices: Punto[];
     descripcion?: string;
     estado: EstadoLote;
 }
@@ -35,7 +37,7 @@ export interface CrearLotePayload {
     centroide: Punto;
     areaM2: number;
     descripcion?: string;
-    }
+}
 
 export interface CrearSubLotePayload extends CrearLotePayload {
     loteId: number;
@@ -58,4 +60,4 @@ export const ESTADO_INICIAL_LOTE_FORM: LoteFormState = {
     centroideLat: '',
     centroideLng: '',
     verticesTexto: '',
-    };
+};

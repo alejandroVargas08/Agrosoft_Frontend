@@ -8,8 +8,8 @@ import RecuperarPassword from './pages/RecuperarPassword'
 import VerificarCodigo from './pages/VerificarCodigo'
 import NuevaContrasena from './pages/NuevaContrasena'
 import Perfil from './pages/Perfil'
-import Lotes from './pages/Lotes'
-import Sublotes from './pages/Sublotes'
+import LotesSublotes from './pages/LotesSublotes'
+import NuevoLote from './pages/NuevoLote'
 import CatalogosInventario from './pages/CatalogosInventario'
 import Insumos from './pages/Insumos'
 import Movimientos from './pages/Movimientos'
@@ -27,8 +27,11 @@ function App() {
       <Route path='/asistente' element={<AsistenteIA/>}/>
       <Route path="/recuperar/nueva-contrasena" element={<NuevaContrasena />} />
       <Route path='/perfil' element={<Perfil/>}/>
-      <Route path='/territorio/lotes' element={<Lotes/>}/>
-      <Route path='/territorio/sublotes' element={<Sublotes/>}/>
+      <Route path='/territorio' element={<LotesSublotes/>}/>
+      <Route path='/territorio/nuevo' element={<NuevoLote/>}/>
+      {/* Rutas antiguas: redirigen a la pantalla nueva */}
+      <Route path='/territorio/lotes' element={<Navigate to="/territorio" replace />}/>
+      <Route path='/territorio/sublotes' element={<Navigate to="/territorio" replace />}/>
       <Route path='/inventario/catalogos' element={<CatalogosInventario/>}/>
       <Route path='/inventario/insumos' element={<Insumos/>}/>
       <Route path='/inventario/movimientos' element={<Movimientos/>}/>

@@ -23,10 +23,7 @@ interface SidebarProps {
 const mainItems: MenuItem[] = [
     { icon: Home, label: 'Inicio', path: '/inicio' },
     { icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas' },
-    { icon: Map, label: 'Lotes y Sublotes', path: '/territorio', children: [
-        { label: 'Lotes', path: '/territorio/lotes' },
-        { label: 'Sublotes', path: '/territorio/sublotes' },
-    ]},
+    { icon: Map, label: 'Lotes y Sublotes', path: '/territorio' },
     { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
     { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
     { icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos' },
@@ -177,7 +174,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           );
         }
 
-        const isActive = location.pathname === item.path;
+        // Se marca activo también en sus subpáginas (ej: /territorio/nuevo)
+        const isActive = location.pathname.startsWith(item.path);
         return (
           <Link
             key={item.label}
