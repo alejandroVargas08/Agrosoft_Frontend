@@ -32,7 +32,12 @@ const mainItems: MenuItem[] = [
   { 
     icon: Map, 
     label: 'Lotes y Sublotes', 
-    path: '/territorio', 
+    path: '/territorio'},
+
+  {icon: Wheat, label: 'Actividades', path: '/Actividades'},
+  { icon: AlertTriangle,
+    label: 'Gestión de Lotes',
+    path: '/terrirotio-hijos',
     children: [
       { icon: AlertTriangle, label: 'Incidencias', path: '/territorio/incidencias' },
       { icon: FlaskConical, label: 'Tratamientos', path: '/territorio/tratamientos' },

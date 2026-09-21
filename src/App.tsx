@@ -1,7 +1,6 @@
 import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Register } from '../src/pages/register'
-import { ActividadesAgricolas } from './pages/actividades/actividades'
 import Login from './pages/Login'
 import AsistenteIA from './pages/AsistenteIA'
 import Inicio from './pages/inicio'
@@ -15,6 +14,7 @@ import CatalogosInventario from './pages/CatalogosInventario'
 import Insumos from './pages/Insumos'
 import Movimientos from './pages/Movimientos'
 import Reservas from './pages/Reservas'
+import Actividades from './pages/actividades/actividades'
 
 function App() {
 
@@ -22,7 +22,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/actividades" element={<ActividadesAgricolas/>} />
+      <Route path="/actividades" element={<Actividades/>} />
       <Route path='/inicio' element={<Inicio/>}/>
       <Route path='/recuperar' element={<RecuperarPassword/>}/>
       <Route path="/recuperar/verificar" element={<VerificarCodigo />} />

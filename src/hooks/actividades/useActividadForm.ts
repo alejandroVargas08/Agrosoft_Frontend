@@ -1,19 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
-import { ActividadFormState, ESTADO_INICIAL_FORM, type CrearActividadPayLoad } from "../../types/actividades";
+import { ESTADO_INICIAL_FORM, type ActividadFormState, type CrearActividadPayLoad } from "../../types/actividades";
 import { actividadesApi, cultivosApi, lotesApi, productosAgroApi } from "../../api/actividades/actividades";
 import { isAxiosError } from "axios";
 
 interface UseActividadFormProps {
     isModalOpen: boolean;
     onSuccess: () => void; 
+    cultivoIdDefault?: number;
 }
 
-export function useActividadForm ({ isModalOpen, onSuccess }: UseActividadFormProps) {
+export function useActividadForm ({ isModalOpen, onSuccess, cultivoIdDefault = 1 }: UseActividadFormProps) {
     const queryClient = useQueryClient();
     const [form, setForm] = useState<ActividadFormState>(ESTADO_INICIAL_FORM);
 
-    // Solo piede el catalogo de lotes si el modal esta abierto
+    // Solo pide el catalogo de lotes, si el modal esta abierto
     const {data: lotes = [] } = useQuery({
         queryKey: ['lotes'],
         queryFn: async () => (await lotesApi.listar()).data,
@@ -33,7 +34,13 @@ export function useActividadForm ({ isModalOpen, onSuccess }: UseActividadFormPr
 
     const {data: sublotes = []} = useQuery({
         queryKey: ['sublotes', loteIdNum],
-        queryFn: async () => ( await cultivosApi.listarPorLote(loteIdNum!)).data,
+        queryFn: async () => ( await lotesApi.sublotesPorLote(loteIdNum!)).data,
+        enabled: !!loteIdNum,
+    });
+
+    const { data: cultivos = [] } = useQuery({
+        queryKey: ['cultivos', loteIdNum],
+        queryFn: async() => (await cultivosApi.listarPorLote(loteIdNum!)).data,
         enabled: !!loteIdNum,
     });
 
@@ -42,8 +49,10 @@ export function useActividadForm ({ isModalOpen, onSuccess }: UseActividadFormPr
         mutationFn: (payload: CrearActividadPayLoad) => actividadesApi.crear(payload),
         onSuccess: () => {
             setForm(ESTADO_INICIAL_FORM);
-            queryClient.invalidateQueries({ queryKey: ['actividadees'] }); //Refresca la tabla
-            onSuccess();
+
+            // Inavlida el cache para refrescar la lista de actividades, del cultivo
+            queryClient.invalidateQueries({ queryKey: ['actividadees', cultivoIdDefault] }); //Refresca la tabla
+            onSuccess(); // Cierra el modal
         },
     }); 
 
@@ -53,7 +62,7 @@ export function useActividadForm ({ isModalOpen, onSuccess }: UseActividadFormPr
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value}));
     };
 
-    const handleCreatSubmit = (e: React.FormEvent) => {
+    const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const payload: CrearActividadPayLoad = {
             nombre: form.nombre,
@@ -61,20 +70,20 @@ export function useActividadForm ({ isModalOpen, onSuccess }: UseActividadFormPr
             subtipo: form.subtipo || undefined,
             loteId: Number(form.loteId),
             subLoteId: form.subLoteId ? Number(form.subLoteId) : undefined,
-            cultivoId: Number(form.cultivoId),
+            cultivoId:form.cultivoId ?  Number(form.cultivoId) : cultivoIdDefault,
             productoAgroId: form.productoAgroId ? Number(form.productoAgroId) : undefined,
             fecha: form.fecha,
             horasActividad: Number(form.horasActividad),
             precioHoraActividad: Number (form.precioHoraActividad),
             descripcion: form.descripcion || undefined,
-            creadoPorUsuarioId: 1, // TODO: Remplazar por el usuario autenticado real
+            creadoPorUsuarioId: 1, // Valor por defecto, o el usuario actual
         };
         crearMutation.mutate(payload);
     };
 
     const errorForm = 
         crearMutation.error && isAxiosError(crearMutation.error)
-        ? crearMutation.error.response?.data?.message ?? 'No se puede guardar la actividad'
+        ? (crearMutation.error.response?.data as {message?: string})?.message ?? 'No se puede guardar la actividad'
         : crearMutation.error
         ? 'Error inesperado al guardar'
         : null;

@@ -26,11 +26,7 @@ function Login() {
             console.log('Usuario logueado:', data);
             setExito('Inicio de sesión excelente');
 
-<<<<<<< Updated upstream
-            if (data.usuario) {
-=======
             if(data.usuario){
->>>>>>> Stashed changes
                 localStorage.setItem('user', JSON.stringify(data.usuario));
             } else if (data.user) {
                 localStorage.setItem('user', JSON.stringify(data.user));

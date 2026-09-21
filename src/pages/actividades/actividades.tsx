@@ -1,167 +1,133 @@
-import React, { useEffect, useState } from "react";
-import { api } from "../../api/axios";
+import { useState } from "react"
+import { useActividades } from "../../hooks/actividades/useActividades";
+import { useActividadForm } from "../../hooks/actividades/useActividadForm";
+import { LuClock, LuDollarSign } from "react-icons/lu";
+import Sidebar from "../../componets/layout/Sidebar";
 
-interface Actividad {
-    id: number;
-    nombre: string;
-    tipo: string;
-    subtipo?: string;
-    estado: 'pendiente' | 'en_progreso' | 'completada';
-    fecha: string;
-    horasActividad: number;
-    precioHoraActividad: number;
-    descripcion?: string;
-}
 
-export const ActividadesAgricolas = () => {
-    const [actividades, setActividades] = useState<Actividad[]>([]);
-    const [filtroEstado, setFiltroEstado] = useState<string>('Todas');
-    const [loading, setLoading] = useState(false);
 
-    const [isModalOpen, setModalOpen] = useState(false);
-    const [lotes, setLotes] = useState<any[]>([]);
-    const [subLotes, setSubLotes] = useState <any[]>([]);
-    const [cultivos, setCultivos] = useState<any[]>([]);
-    const [productos, setProductos] = useState<any[]>([]);
+const Actividades = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const cultivoIdActual = 1;
 
-    const [form, setForm] = useState({
-        nombre: '', 
-        tipo: 'siembra',
-        subtipo: '',
-        loteId: '',
-        subloteId: '',
-        cultivoId: '',
-        productoAgroId: '',
-        fecha: '',
-        horasActividad: '',
-        precioHoraActividad: '',
-        descripcion: ''
+    const {
+        actividades,
+        loading,
+        error,
+        filtroEstado,
+        setFiltroEstado,
+        handleChangeEstado,
+    } = useActividades(1);
+
+    const { form, lotes, handleFormChange, handleCreateSubmit, enviando, errorForm } =
+    useActividadForm({
+        isModalOpen,
+        onSuccess: () => setIsModalOpen(false),
     });
 
-    const cargarActividades = async () => {
-        setLoading(true);
-        try {
-            const response = await api.get('/actividades');
-            console.log("Datos recibidos", response.data);
-            setActividades(Array.isArray(response.data) ? response.data : response.data.data || [] ) ;
-        } catch (err) {
-            console.error("Error cargando las actividades");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {cargarActividades(); }, []);
-
-    useEffect(() => {
-        if (isModalOpen) {
-            api.get('/lotes').then(res => setLotes(res.data));
-            api.get('/productos').then(res => setProductos(res.data));
-        }
-    }, [isModalOpen]); 
-
-    useEffect(() => {
-        if(form.loteId) {
-            api.get(`/sublotes/lote/${form.loteId}`).then(res => setSubLotes(res.data));
-            api.get(`/cultivos/lote/${form.loteId}`).then(res => setCultivos(res.data));
-        } else {
-            setSubLotes([]); 
-            setCultivos([]);
-        }
-    }, [form.loteId] );
-
-    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value});
-    };
-
-    const handleCreateSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try{
-            const payload = {
-                ...form,
-                loteId: Number(form.loteId),
-                subLoteId: form.subloteId ? Number(form.subloteId) : undefined,
-                cultivoId: Number(form.cultivoId),
-                horasActividad: Number(form.horasActividad),
-                precioHoraActividad: Number(form.precioHoraActividad),
-                creadoPorUsuarioId: 1
-            };
-
-            await api.post('/actividades', payload);
-            setModalOpen(false); 
-            cargarActividades(); 
-        } catch (err) {
-            alert("Error al guardar"); 
-        }
-    };
-
-    const handleChangeEstado = async (id: number, estadoActual: string) => {
-        const estados = ['pendiente', 'en_progreso', 'completada'] as const; 
-        const idx = estados.indexOf(estadoActual as any); 
-        const nuevoEstado = estados[(idx + 1) % estados.length]; 
-
-        await api.patch(`/actividades/${id}/estado`, {estado: nuevoEstado}); 
-        cargarActividades();
-    };
-
     return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold">Gestión de Actividades Agrícolas</h1>
-                <button 
-                    onClick={() => setModalOpen(true)}
-                    className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700"
-                >
-                    Nueva Actividad
+    <div className="flex min-h-screen bg-gray-50">
+        {/* 2. Renderizas el Sidebar aquí */}
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
+        {/* 3. Contenedor principal con 'flex-1' y 'lg:ml-64' para que respete el ancho del menú */}
+        <div className="flex-1 p-6 max-w-7xl mx-auto lg:ml-64">
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                <h1 className="text-3xl font-bold text-neutral-900">Actividades Agrícolas</h1>
+                <p className="text-neutral-500">Labores y tareas del campo</p>
+                </div>
+                <button
+                onClick={() => setIsModalOpen(true)}
+                className="rounded-xl bg-green-800 px-6 py-3.5 text-white">
+                + Nueva Actividad
                 </button>
             </div>
 
-            {loading ? (
-                <p>Cargando actividades...</p>
-            ) : (
-                <div className="bg-white shadow rounded-lg overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {actividades.map((act) => (
-                                <tr key={act.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">{act.nombre}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{act.tipo}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                            {act.estado}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{act.fecha}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <button 
-                                            onClick={() => handleChangeEstado(act.id, act.estado)}
-                                            className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
-                                        >
-                                            Cambiar Estado
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+            <div className="flex gap-2 mb-6">
+            {['Todas', 'Pendiente', 'En progreso', 'Completada'].map((f) => (
+                <button
+                key={f}
+                onClick={() => setFiltroEstado(f)}
+                className={`px-4 py-2 rounded-full ${
+                    filtroEstado === f ? 'bg-green-800 text-white' : 'border border-neutral-200'}`}>{f}
+                </button>
+            ))}
+            </div>
+
+            {loading && <p className="text-neutral-500">Cargando actividades...</p>}
+            {error && <p className="text-red-600">{error}</p>}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {actividades.map((act) => (
+                <div key={act.id} className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100">
+                <h3 className="text-lg font-bold">{act.nombre}</h3>
+                <p className="text-sm text-neutral-400">{act.fecha}</p>
+                <button
+                    onClick={() => handleChangeEstado(act.id, act.estado)}
+                    className="text-xs mt-2 underline text-green-700"
+                >
+                    Estado: {act.estado.replace('_', ' ')} (clic para avanzar)
+                </button>
+                <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+                    <LuClock /> {act.horasActividad}h
+                  <LuDollarSign /> {(act.horasActividad * act.precioHoraActividad).toLocaleString()}
                 </div>
+                </div>
+            ))}
+            </div>
+
+            {isModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div className="bg-white rounded-2xl w-full max-w-2xl p-6">
+                <h2 className="text-xl font-bold mb-4">Nueva Actividad</h2>
+                {errorForm && <p className="text-red-600 mb-3">{errorForm}</p>}
+                <form onSubmit={handleCreateSubmit} className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                    <label>Nombre</label>
+                    <input
+                        required
+                        name="nombre"
+                        value={form.nombre}
+                        onChange={handleFormChange}
+                        className="w-full rounded-xl border border-neutral-200 py-3 px-4 focus:border-green-600"
+                    />
+                    </div>
+                    <div>
+                    <label>Lote (Gatilla la carga de cultivos)</label>
+                    <select
+                        required
+                        name="loteId"
+                        value={form.loteId}
+                        onChange={handleFormChange}
+                        className="w-full rounded-xl border border-neutral-200 py-3 px-4">
+                        <option value="">Seleccione...</option>
+                        {lotes.map((l: any) => (
+                        <option key={l.id} value={l.id}>
+                            {l.nombre}
+                        </option>
+                        ))}
+                    </select>
+                    </div>
+                    <div className="col-span-2 flex justify-end gap-3 mt-4">
+                    <button type="button" onClick={() => setIsModalOpen(false)}>
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={enviando}
+                        className="bg-green-800 text-white px-6 py-3 rounded-xl disabled:opacity-50">
+                        {enviando ? 'Guardando...' : 'Guardar'}
+                    </button>
+                    </div>
+                </form>
+                </div>
+            </div>
             )}
         </div>
-    );
-
-
-
-
-
-
-
+    </div>
+    ); 
 };
+
+export default Actividades;

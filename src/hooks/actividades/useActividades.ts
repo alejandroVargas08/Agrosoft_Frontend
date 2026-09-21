@@ -3,7 +3,7 @@ import { useState } from "react";
 import { actividadesApi } from "../../api/actividades/actividades";
 import type { Actividad } from "../../types/actividades";
 
-export function useActividades(cultivoId: number) {
+export function useActividades(cultivoId: number = 1) {
     const queryClient = useQueryClient();
     const [filtroEstado, setFiltroEstado] = useState<string>('Todas');
 
@@ -18,7 +18,6 @@ export function useActividades(cultivoId: number) {
             const res = await actividadesApi.listarPorCultivo(cultivoId);
             return res.data; 
         },
-        enabled: !!cultivoId,
     });
 
     const cambiarEstadoMutation = useMutation({
@@ -32,7 +31,6 @@ export function useActividades(cultivoId: number) {
         const estados: Actividad['estado'] [] = ['pendiente', 'en_progreso', 'completada'];
         const idx = estados.indexOf(estadoActual);
         const nuevoEstado = estados[(idx + 1) % estados.length];
-
         cambiarEstadoMutation.mutate({ id, estado: nuevoEstado});
         };
 
