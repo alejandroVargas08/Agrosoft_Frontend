@@ -38,7 +38,7 @@ export default function Header({ onMenuClick, unreadNotifications }: HeaderProps
           )}
         </button>
         
-        {/* Enlace al perfil envolviendo icono y texto */}
+      
         <Link
           to="/perfil"
           className="flex items-center gap-3 pl-4 border-l border-gray-200 p-1.5 rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"

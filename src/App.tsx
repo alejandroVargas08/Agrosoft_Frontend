@@ -15,6 +15,7 @@ import Insumos from './pages/Insumos'
 import Movimientos from './pages/Movimientos'
 import Reservas from './pages/Reservas'
 import EditarPerfil from './pages/EditarPerfil'
+import Configuracion from './pages/Configuracion'
 
 function App() {
 
@@ -35,6 +36,7 @@ function App() {
       <Route path='/inventario/insumos' element={<Insumos/>}/>
       <Route path='/inventario/movimientos' element={<Movimientos/>}/>
       <Route path='/inventario/reservas' element={<Reservas/>}/>
+      <Route path='/configuracion' element={<Configuracion/>}/>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
