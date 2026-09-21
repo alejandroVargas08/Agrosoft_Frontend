@@ -1,4 +1,4 @@
-import DashboardLayout from '../componets/layout/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { useReservas } from '../hooks/useReservas';
 
 const inputCls = 'w-full rounded-xl border border-neutral-200 py-2 px-3';

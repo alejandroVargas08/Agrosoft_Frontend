@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Pencil, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { usePerfil } from '../hooks/usePerfil';
-import DashboardLayout from '../componets/layout/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 
 
 function formatearFecha(fecha?: string) {

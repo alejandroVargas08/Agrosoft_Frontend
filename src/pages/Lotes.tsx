@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import DashboardLayout from '../componets/layout/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { useLotes } from '../hooks/useLotes';
 import { useLoteForm } from '../hooks/useLoteForm';
 import type { EstadoLote } from '../types/territorio';

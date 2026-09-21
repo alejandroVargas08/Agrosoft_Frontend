@@ -1,5 +1,5 @@
-import ChatBotFlotante from '../componets/Chatbot/ChatBotFlotante';
-import DashboardLayout from '../componets/layout/DashboardLayout';
+import ChatBotFlotante from '../components/Chatbot/ChatBotFlotante';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { InicioUsuario } from '../hooks/useAuth';
 import { useEffect, useState } from 'react';
 

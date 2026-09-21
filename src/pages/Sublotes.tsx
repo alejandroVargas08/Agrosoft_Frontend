@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import DashboardLayout from '../componets/layout/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { useSublotes } from '../hooks/useSublotes';
 import { useSubloteForm } from '../hooks/useSubloteForm';
 

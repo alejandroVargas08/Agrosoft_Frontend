@@ -1,4 +1,4 @@
-import DashboardLayout from '../componets/layout/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { useMovimientos } from '../hooks/useMovimientos';
 
 const labelCls = 'block text-sm font-semibold text-neutral-800 mb-1.5';

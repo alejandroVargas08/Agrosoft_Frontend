@@ -1,4 +1,4 @@
-import { ChatbotIA } from '../componets/Chatbot/ChatBotIA';
+import { ChatbotIA } from '../components/Chatbot/ChatBotIA';
 
 
 function AsistenteIA() {

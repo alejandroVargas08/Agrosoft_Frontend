@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import DashboardLayout from '../componets/layout/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { useInsumos } from '../hooks/useInsumos';
 import { useInsumoForm } from '../hooks/useInsumoForm';
 import type { EstadoInsumo } from '../types/inventario';
