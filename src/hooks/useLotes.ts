@@ -20,9 +20,9 @@ export function useLotes() {
     // ESCRITURA: cambiar estado
     const cambiarEstadoMutation = useMutation({
         mutationFn: ({ id, nuevoEstado }: { id: number; nuevoEstado: EstadoLote }) =>
-        lotesApi.cambiarEstado(id, nuevoEstado),
+            lotesApi.cambiarEstado(id, nuevoEstado),
         onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['lotes'] });
+            queryClient.invalidateQueries({ queryKey: ['lotes'] });
         },
     });
 
@@ -30,7 +30,7 @@ export function useLotes() {
     const eliminarMutation = useMutation({
         mutationFn: (id: number) => lotesApi.eliminar(id),
         onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['lotes'] });
+            queryClient.invalidateQueries({ queryKey: ['lotes'] });
         },
     });
 
@@ -51,6 +51,7 @@ export function useLotes() {
 
     return {
         lotes: lotesFiltrados,
+        todosLosLotes: lotes, // lista completa, para las tarjetas de resumen
         loading,
         error: error ? 'No se pudo cargar el listado de lotes' : null,
         filtroEstado,
@@ -58,4 +59,4 @@ export function useLotes() {
         handleChangeEstado,
         handleEliminar,
     };
-    }
+}
