@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { emailCodesApi, TipoCodigo } from '../api/usuarios/emailCodes';
-import AuthLayout from '../componets/RecuperarContrseña/AuthLayout';
+import AuthLayout from '../componets/RecuperarContraseña/AuthLayout';
 import { LuMail, LuLock, LuChevronLeft, LuMailCheck } from 'react-icons/lu';
 
 function RecuperarPassword() {

@@ -14,6 +14,7 @@ interface ProgramaFormacion {
 interface PerfilUsuario {
   id: number;
   nombre: string;
+  apellido: string;
   email: string;
   telefono?: string;
   ubicacion?: string;

@@ -14,7 +14,12 @@ import CatalogosInventario from './pages/CatalogosInventario'
 import Insumos from './pages/Insumos'
 import Movimientos from './pages/Movimientos'
 import Reservas from './pages/Reservas'
+<<<<<<< HEAD
 import Actividades from './pages/actividades/actividades'
+=======
+import EditarPerfil from './pages/EditarPerfil'
+import Configuracion from './pages/Configuracion'
+>>>>>>> origin/main
 
 function App() {
 
@@ -29,12 +34,14 @@ function App() {
       <Route path='/asistente' element={<AsistenteIA/>}/>
       <Route path="/recuperar/nueva-contrasena" element={<NuevaContrasena />} />
       <Route path='/perfil' element={<Perfil/>}/>
+      <Route path='/editar-perfil' element={<EditarPerfil/>}/>
       <Route path='/territorio/lotes' element={<Lotes/>}/>
       <Route path='/territorio/sublotes' element={<Sublotes/>}/>
       <Route path='/inventario/catalogos' element={<CatalogosInventario/>}/>
       <Route path='/inventario/insumos' element={<Insumos/>}/>
       <Route path='/inventario/movimientos' element={<Movimientos/>}/>
       <Route path='/inventario/reservas' element={<Reservas/>}/>
+      <Route path='/configuracion' element={<Configuracion/>}/>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
