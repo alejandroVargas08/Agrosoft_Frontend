@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Bell, Menu } from 'lucide-react';
 import { InicioUsuario } from '../../hooks/useAuth';
 
@@ -16,15 +17,19 @@ export default function Header({ onMenuClick, unreadNotifications }: HeaderProps
       
       <button 
         onClick={onMenuClick}
-        className="p-2 hover:bg-gray-100 rounded-lg md:hidden">
+        className="p-2 hover:bg-gray-100 rounded-lg md:hidden"
+        aria-label="Abrir menú"
+      >
         <Menu className="w-5 h-5 text-gray-600" />
       </button>
 
-     
       <div className="hidden md:block" />
 
       <div className="flex items-center gap-4">
-        <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
+        <button 
+          className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+          aria-label="Notificaciones"
+        >
           <Bell className="w-5 h-5" />
           {unreadNotifications > 0 && (
             <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -33,15 +38,21 @@ export default function Header({ onMenuClick, unreadNotifications }: HeaderProps
           )}
         </button>
         
-        <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+        {/* Enlace al perfil envolviendo icono y texto */}
+        <Link
+          to="/perfil"
+          className="flex items-center gap-3 pl-4 border-l border-gray-200 p-1.5 rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
+        >
+          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm group-hover:bg-emerald-200 transition-colors shrink-0">
             {initial}
           </div>
-          <div className="hidden sm:block">
-            <p className="text-sm font-semibold text-gray-900">{displayName}</p>
+          <div className="hidden sm:block text-left">
+            <p className="text-sm font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors truncate max-w-[150px] lg:max-w-[200px]">
+              {displayName}
+            </p>
             <p className="text-xs text-gray-500">Usuario</p>
           </div>
-        </div>
+        </Link>
       </div>
     </header>
   );
