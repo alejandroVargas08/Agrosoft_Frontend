@@ -49,7 +49,7 @@ export default function Perfil() {
     return (
       <div className="p-4 sm:p-8">
         <div className="max-w-xl bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-4">
-          No se encontró información de perfil.
+          Tu perfil no fue encontrado.
         </div>
       </div>
     );
