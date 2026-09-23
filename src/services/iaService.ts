@@ -1,21 +1,21 @@
 const API_URL = `${import.meta.env.VITE_API_URL}/ia`;
 
-export async function enviarMensaje(mensaje: string, contexto?: string): Promise<string>{
-    const res = await fetch(`${API_URL}/chat`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({mensaje, contexto})
-    });
-    const data = await res.json();
+export async function enviarMensaje(mensaje: string, contexto?: string): Promise<string> {
+  const res = await fetch(`${API_URL}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mensaje, contexto }),
+  });
+  const data = await res.json();
   return data.respuesta;
 }
 
-export async function analizarImagen(archivo: File, prompt: string): Promise<string> {
-  const base64 = await convertirABase64(archivo);
+export async function analizarImagenes(archivos: File[], prompt: string): Promise<string> {
+  const imagenes = await Promise.all(archivos.map(convertirABase64));
   const res = await fetch(`${API_URL}/analizar-imagen`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imagen: base64, prompt }),
+    body: JSON.stringify({ imagenes, prompt }),
   });
   const data = await res.json();
   return data.respuesta;
