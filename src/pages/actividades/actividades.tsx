@@ -35,10 +35,10 @@ const Actividades = () => {
     });
 
     const Filtros: { label: string; value: string }[] = [
-        { label: 'Todas', value: 'TODAS' },
-        { label: 'Pendiente', value: 'PENDIENTE' },
-        { label: 'En progreso', value: 'EN_PROGRESO' },
-        { label: 'Completada', value: 'COMPLETADA' },
+        { label: 'Todas', value: 'Todas' },
+        { label: 'Pendiente', value: 'Pendiente' },
+        { label: 'En progreso', value: 'En progreso' },
+        { label: 'Finalizada', value: 'Finalizada' },
     ];
 
     const getEstadoBadge = (estado: string) => {
@@ -47,12 +47,14 @@ const Actividades = () => {
             case 'Todas':
             return 'bg-green-200 text-white-800';
             
-            case 'Completada':
-                return 'bg-emerald-100 text-emerald-800';
+            case 'Finalizada':
+                return 'bg-[#e2f4ed] text-[#0d5433]';
+
             case 'En_progreso':
-                return 'bg-blue-100 text-blue-800';
+                return 'bg-[#e8f0fe] text-[#1a73e8]';
+                
             case 'Pendiente':
-                return 'bg-amber-100 text-amber-800';
+                return 'bg-[#fef3d6] text-[#b7791f]';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -87,6 +89,14 @@ const Actividades = () => {
                     </button>
                     ))}
                 </div>
+
+                {loading && (
+                    <p className="text-center py-8 text-neutral-500 font-medium"> Cargando Actividades</p>
+                )}
+
+                {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-center mb-6 text-sm"> {error} </div>
+                )}
 {/* Modalll */}
 
                 {isModalOpen && (
@@ -119,7 +129,7 @@ const Actividades = () => {
                                         className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
                                     >
                                         <option value="">Seleccione un lote</option>
-                                        {lotes?.map((lote) => (
+                                        {lotes?.map((lote: { id: number | string; nombre?: string; tipo?: string }) => (
                                             <option key={lote.id} value={lote.id}>{lote.nombre}</option>
                                         ))}
                                     </select>
@@ -129,14 +139,42 @@ const Actividades = () => {
                                 <div>
                                     <label className="text-sm font-medium text-neutral-700">Sublote</label>
                                     <select 
-                                        name="subloteId"
-                                        value={form.subloteId || ""}
+                                        name="subLoteId"
+                                        value={form.subLoteId || ""}
                                         onChange={handleFormChange}
                                         className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
                                     >
                                         <option value="">Seleccione un sublote</option>
-                                        {sublotes?.map((sub: any) => (
+                                        {sublotes?.map((sub: { id: number | string; nombre: string}) => (
                                             <option key={sub.id} value={sub.id}>{sub.nombre}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-neutral-700"> Cultivo </label>
+                                    <select name="CultivoId"
+                                    value={form.cultivoId || ""}
+                                    onChange={handleFormChange}
+                                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700">
+                                        <option value=""> Seleccione un cultivo</option>
+                                        {cultivos?.map((cultivo: { id: number | string; nombre?: string; tipo?: string }) => (
+                                            <option key={cultivo.id} value={cultivo.id}>{cultivo.nombre || cultivo.tipo}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="sm:col-span-2">
+                                    <label className="text-sm font-medium text-neutral-700">Producto / Insumo</label>
+                                    <select 
+                                        name="productoAgroId"
+                                        value={form.productoAgroId || ""}
+                                        onChange={handleFormChange}
+                                        className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
+                                    >
+                                        <option value="">Seleccione un producto</option>
+                                        {productos?.map((producto: {id: number | string; nombre: string}) => (
+                                            <option key={producto.id} value={producto.id}>{producto.nombre}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -204,8 +242,8 @@ const Actividades = () => {
                                     </span>
                                 </div>
 
-                                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getEstadoBadge(actividad.estado)}`}>
-                                    {actividad.estado}
+                                <span onClick={() => handleChangeEstado(actividad.id, actividad.estado)} title="Click para cambiar el estado" className={`text-xs font-semibold px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${getEstadoBadge(actividad.estado)}`}>
+                                    {actividad.estado ? actividad.estado.replace('_', ' ') : ''}
                                 </span>
                             </div>
                         </div>

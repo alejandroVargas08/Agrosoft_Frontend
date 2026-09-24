@@ -28,17 +28,31 @@ export function useActividades(cultivoId: number = 1) {
     });
 
     const handleChangeEstado = (id: number, estadoActual: Actividad['estado']) => {
-        const estados: Actividad['estado'] [] = ['pendiente', 'en_progreso', 'completada'];
-        const idx = estados.indexOf(estadoActual);
-        const nuevoEstado = estados[(idx + 1) % estados.length];
+        const estados: string[] = ['Pendiente', 'En_progreso', 'Finalizada'];
+
+        console.log("Estado que llega al hacer clic:", estadoActual);
+
+        const estadoNormalizado = estadoActual ? estadoActual : 'Pendiente';
+        const idx = estados.indexOf(estadoNormalizado);
+        console.log("Índice encontrado en el arreglo:", idx);
+
+        const siguienteIndex = idx === -1 ? 0 : (idx + 1) % estados.length;
+        const nuevoEstado = estados[siguienteIndex]
+        console.log("Nuevo estado calculado a enviar:", nuevoEstado)
+
         cambiarEstadoMutation.mutate({ id, estado: nuevoEstado});
         };
 
 
 
-    const actividadeesFiltradas = actividades.filter(
-        (a) => filtroEstado === 'Todas' || a.estado.replace('_', ' ') === filtroEstado.toLowerCase()
-    );
+    const actividadeesFiltradas = actividades.filter((a) =>  {
+        if (filtroEstado === 'Todas' || filtroEstado === 'TODAS') return true;
+        
+        const estadoActividad = a.estado ? a.estado.replace('_', ' ').toLowerCase() : '';
+        const estadoFiltro = filtroEstado.toLowerCase()
+
+        return estadoActividad === estadoFiltro;
+    });
 
     return {
         actividades: actividadeesFiltradas,
