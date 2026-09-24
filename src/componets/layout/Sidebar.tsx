@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut } from "lucide-react";
+import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 
@@ -41,7 +41,8 @@ const mainItems: MenuItem[] = [
     { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
     { icon: BarChart3, label: 'Reportes', path: '/reportes' },
     { icon: Bell, label: 'Alertas', path: '/alertas' },
-    { icon: History, label: 'Historial', path: '/historial' }
+    { icon: History, label: 'Historial', path: '/historial' },
+    { icon: Bot, label: 'Consultas', path: '/agrobot' },
 ];
 
 const main2Items: MenuItem[] = [
@@ -143,9 +144,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <span className="text-xs text-gray-500 uppercase tracking-wider">SENA</span>
                 </div>
               </div>
-              <button 
+              <button
                 type="button"
-                onClick={onClose} 
+                onClick={onClose}
                 className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
                 aria-label="Cerrar menú"
               >
@@ -274,4 +275,3 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     </nav>
   );
 }
-

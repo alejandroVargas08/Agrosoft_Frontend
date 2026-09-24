@@ -1,12 +1,14 @@
-import { useState } from "react";
-import { Bot, ChevronDown } from "lucide-react";
-import { ChatbotIA } from "./ChatBotIA";
-import { usePerfil } from "../../hooks/usePerfil";
+import { useState } from 'react';
+import { Bot, ChevronDown } from 'lucide-react';
+import { ConversacionChat } from './ConversacionChat';
+import { usePerfil } from '../../hooks/usePerfil';
 
 export default function ChatBotFlotante() {
   const [abierto, setAbierto] = useState(false);
+  const [conversacionId, setConversacionId] = useState<number | null>(null);
   const { perfil } = usePerfil();
-  const nombreUsuario = perfil?.nombre || 'Usuario';
+
+  if (!perfil) return null;
 
   return (
     <>
@@ -47,7 +49,12 @@ export default function ChatBotFlotante() {
           </div>
 
           <div className="flex-1 min-h-0">
-            <ChatbotIA nombreUsuario={nombreUsuario} />
+            <ConversacionChat
+              usuarioId={perfil.id}
+              nombreUsuario={perfil.nombre}
+              conversacionId={conversacionId}
+              onConversacionCreada={setConversacionId}
+            />
           </div>
         </div>
       )}

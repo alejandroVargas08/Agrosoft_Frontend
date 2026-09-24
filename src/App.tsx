@@ -2,7 +2,6 @@ import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Register } from './pages/Register'
 import Login from './pages/Login'
-import AsistenteIA from './pages/AsistenteIA'
 import Inicio from './pages/inicio'
 import RecuperarPassword from './pages/RecuperarPassword'
 import VerificarCodigo from './pages/VerificarCodigo'
@@ -16,6 +15,7 @@ import Movimientos from './pages/Movimientos'
 import Reservas from './pages/Reservas'
 import EditarPerfil from './pages/EditarPerfil'
 import Configuracion from './pages/Configuracion'
+import AgroBot from './pages/AgroBot'
 
 function App() {
 
@@ -26,7 +26,6 @@ function App() {
       <Route path='/inicio' element={<Inicio/>}/>
       <Route path='/recuperar' element={<RecuperarPassword/>}/>
       <Route path="/recuperar/verificar" element={<VerificarCodigo />} />
-      <Route path='/asistente' element={<AsistenteIA/>}/>
       <Route path="/recuperar/nueva-contrasena" element={<NuevaContrasena />} />
       <Route path='/perfil' element={<Perfil/>}/>
       <Route path='/editar-perfil' element={<EditarPerfil/>}/>
@@ -37,6 +36,7 @@ function App() {
       <Route path='/inventario/movimientos' element={<Movimientos/>}/>
       <Route path='/inventario/reservas' element={<Reservas/>}/>
       <Route path='/configuracion' element={<Configuracion/>}/>
+      <Route path="/agrobot" element={<AgroBot />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
