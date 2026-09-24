@@ -16,6 +16,8 @@ import Reservas from './pages/Reservas'
 import EditarPerfil from './pages/EditarPerfil'
 import Configuracion from './pages/Configuracion'
 import AgroBot from './pages/AgroBot'
+import Actividades from './pages/actividades'
+
 
 function App() {
 
@@ -37,6 +39,7 @@ function App() {
       <Route path='/inventario/reservas' element={<Reservas/>}/>
       <Route path='/configuracion' element={<Configuracion/>}/>
       <Route path="/agrobot" element={<AgroBot />} />
+      <Route path='/actividades' element={<Actividades/>}/>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
