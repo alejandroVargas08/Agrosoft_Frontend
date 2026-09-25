@@ -28,12 +28,7 @@ const mainItems: MenuItem[] = [
     { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
     { icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos' },
     { icon: Wheat, label: 'Cosecha', path: '/cosecha' },
-    { icon: Package, label: 'Inventario', path: '/inventario', children: [
-        { label: 'Catálogos', path: '/inventario/catalogos' },
-        { label: 'Insumos', path: '/inventario/insumos' },
-        { label: 'Movimientos', path: '/inventario/movimientos' },
-        { label: 'Reservas', path: '/inventario/reservas' },
-    ]},
+    { icon: Package, label: 'Inventario', path: '/inventario' },
     { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
     { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
     { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },

@@ -10,10 +10,8 @@ import NuevaContrasena from './pages/NuevaContrasena'
 import Perfil from './pages/Perfil'
 import LotesSublotes from './pages/LotesSublotes'
 import NuevoLote from './pages/NuevoLote'
-import CatalogosInventario from './pages/CatalogosInventario'
-import Insumos from './pages/Insumos'
-import Movimientos from './pages/Movimientos'
-import Reservas from './pages/Reservas'
+import Inventario from './pages/Inventario'
+import NuevoInsumo from './pages/NuevoInsumo'
 
 function App() {
 
@@ -29,13 +27,15 @@ function App() {
       <Route path='/perfil' element={<Perfil/>}/>
       <Route path='/territorio' element={<LotesSublotes/>}/>
       <Route path='/territorio/nuevo' element={<NuevoLote/>}/>
-      {/* Rutas antiguas: redirigen a la pantalla nueva */}
+      <Route path='/inventario' element={<Inventario/>}/>
+      <Route path='/inventario/nuevo' element={<NuevoInsumo/>}/>
+      {/* Rutas antiguas: redirigen a las pantallas nuevas */}
       <Route path='/territorio/lotes' element={<Navigate to="/territorio" replace />}/>
       <Route path='/territorio/sublotes' element={<Navigate to="/territorio" replace />}/>
-      <Route path='/inventario/catalogos' element={<CatalogosInventario/>}/>
-      <Route path='/inventario/insumos' element={<Insumos/>}/>
-      <Route path='/inventario/movimientos' element={<Movimientos/>}/>
-      <Route path='/inventario/reservas' element={<Reservas/>}/>
+      <Route path='/inventario/catalogos' element={<Navigate to="/inventario" replace />}/>
+      <Route path='/inventario/insumos' element={<Navigate to="/inventario" replace />}/>
+      <Route path='/inventario/movimientos' element={<Navigate to="/inventario" replace />}/>
+      <Route path='/inventario/reservas' element={<Navigate to="/inventario" replace />}/>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )

@@ -1,7 +1,6 @@
 export type EstadoInsumo = 'activo' | 'inactivo' | 'agotado' | 'de_baja';
 export type TipoInsumo = 'consumible' | 'herramienta' | 'materia_prima';
 export type TipoMovimiento = 'entrada' | 'salida' | 'traslado' | 'ajuste';
-export type EstadoReserva = 'pendiente' | 'confirmada' | 'cancelada';
 
 // ---------- Catálogos ----------
 export interface Almacen {
@@ -136,24 +135,13 @@ export interface Movimiento {
     id: number;
     insumoId: number;
     tipo: TipoMovimiento;
+    cantidadPresentacion: number;
     cantidadUso: number;
     costoTotal: number;
-    stockResultante: number;
-}
-
-// ---------- Reservas ----------
-export interface CrearReservaPayload {
-    insumoId: number;
-    cantidad: number;
-    fechaReserva: string; // ISO, ej. "2026-09-11"
-    motivo?: string;
+    descripcion?: string;
     usuarioId: number;
-    actividadId?: number; 
+    almacenOrigenId?: number;
+    almacenDestinoId?: number;
+    fecha?: string;              // ISO, la pone el backend
+    stockResultante?: number;    // solo al registrar
 }
-
-export interface Reserva {
-    id: number;
-    insumoId: number;
-    cantidad: number;
-    estado: EstadoReserva;
-    }
