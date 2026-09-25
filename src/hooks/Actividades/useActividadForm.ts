@@ -6,60 +6,60 @@ import { isAxiosError } from "axios";
 
 interface UseActividadFormProps {
     isModalOpen: boolean;
-    onSuccess: () => void; 
+    onSuccess: () => void;
     cultivoIdDefault?: number;
 }
 
-export function useActividadForm ({ isModalOpen, onSuccess, cultivoIdDefault = 1 }: UseActividadFormProps) {
+export function useActividadForm({ isModalOpen, onSuccess, cultivoIdDefault = 1 }: UseActividadFormProps) {
     const queryClient = useQueryClient();
     const [form, setForm] = useState<ActividadFormState>(ESTADO_INICIAL_FORM);
 
     // Solo pide el catalogo de lotes, si el modal esta abierto
-    const {data: lotes = [] } = useQuery({
+    const { data: lotes = [] } = useQuery({
         queryKey: ['lotes'],
         queryFn: async () => (await lotesApi.listar()).data,
         enabled: isModalOpen,
     });
 
-    // Catalogo de Porductos, solo si esta abierto
-    const { data: productos = [] } = useQuery ({
+    // Catalogo de Productos, solo si esta abierto
+    const { data: productos = [] } = useQuery({
         queryKey: ['productos-agro'],
-        queryFn: async() => (await productosAgroApi.listar()).data,
+        queryFn: async () => (await productosAgroApi.listar()).data,
         enabled: isModalOpen,
     });
 
-    //Buslotes y cultivos dependen del lote que se escoga, por lo cual 
-    // se agrega a la querykey, para que cada uno tenga su propi entrada al caché
-    const loteIdNum = form.loteId ? Number (form.loteId) : undefined;
+    // Sublotes y cultivos dependen del lote que se escoja, por lo cual
+    // se agrega a la querykey, para que cada uno tenga su propia entrada al caché
+    const loteIdNum = form.loteId ? Number(form.loteId) : undefined;
 
-    const {data: sublotes = []} = useQuery({
+    const { data: sublotes = [] } = useQuery({
         queryKey: ['sublotes', loteIdNum],
-        queryFn: async () => ( await lotesApi.sublotesPorLote(loteIdNum!)).data,
+        queryFn: async () => (await lotesApi.sublotesPorLote(loteIdNum!)).data,
         enabled: !!loteIdNum,
     });
 
     const { data: cultivos = [] } = useQuery({
         queryKey: ['cultivos', loteIdNum],
-        queryFn: async() => (await cultivosApi.listarPorLote(loteIdNum!)).data,
+        queryFn: async () => (await cultivosApi.listarPorLote(loteIdNum!)).data,
         enabled: !!loteIdNum,
     });
 
-    //Mutación: crear Actividad
+    // Mutación: crear Actividad
     const crearMutation = useMutation({
         mutationFn: (payload: CrearActividadPayLoad) => actividadesApi.crear(payload),
         onSuccess: () => {
             setForm(ESTADO_INICIAL_FORM);
 
-            // Inavlida el cache para refrescar la lista de actividades, del cultivo
-            queryClient.invalidateQueries({ queryKey: ['actividadees', cultivoIdDefault] }); //Refresca la tabla
+            // Invalida el cache para refrescar la lista de actividades, del cultivo
+            queryClient.invalidateQueries({ queryKey: ['actividades', cultivoIdDefault] }); // Refresca la tabla
             onSuccess(); // Cierra el modal
         },
-    }); 
+    });
 
     const handleFormChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
-        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value}));
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
     const handleCreateSubmit = (e: React.FormEvent) => {
@@ -70,23 +70,23 @@ export function useActividadForm ({ isModalOpen, onSuccess, cultivoIdDefault = 1
             subtipo: form.subtipo || undefined,
             loteId: Number(form.loteId),
             subLoteId: form.subLoteId ? Number(form.subLoteId) : undefined,
-            cultivoId:form.cultivoId ?  Number(form.cultivoId) : cultivoIdDefault,
+            cultivoId: form.cultivoId ? Number(form.cultivoId) : cultivoIdDefault,
             productoAgroId: form.productoAgroId ? Number(form.productoAgroId) : undefined,
             fecha: form.fecha,
             horasActividad: Number(form.horasActividad),
-            precioHoraActividad: Number (form.precioHoraActividad),
+            precioHoraActividad: Number(form.precioHoraActividad),
             descripcion: form.descripcion || undefined,
             creadoPorUsuarioId: 1, // Valor por defecto, o el usuario actual
         };
         crearMutation.mutate(payload);
     };
 
-    const errorForm = 
+    const errorForm =
         crearMutation.error && isAxiosError(crearMutation.error)
-        ? (crearMutation.error.response?.data as {message?: string})?.message ?? 'No se puede guardar la actividad'
-        : crearMutation.error
-        ? 'Error inesperado al guardar'
-        : null;
+            ? (crearMutation.error.response?.data as { message?: string })?.message ?? 'No se puede guardar la actividad'
+            : crearMutation.error
+            ? 'Error inesperado al guardar'
+            : null;
 
     return {
         form,

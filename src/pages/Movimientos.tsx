@@ -13,7 +13,7 @@ const Movimientos = () => {
 
     return (
         <DashboardLayout>
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-8">
             <div className="mb-8">
             <h1 className="text-3xl font-bold text-neutral-900">Movimientos de insumos</h1>
             <p className="text-neutral-500">Entradas, salidas, traslados y ajustes de stock</p>

@@ -7,22 +7,37 @@ export function useActividades(cultivoId: number = 1) {
     const queryClient = useQueryClient();
     const [filtroEstado, setFiltroEstado] = useState<string>('Todas');
 
-
     const {
         data: actividades = [],
         isLoading: loading,
         error,
     } = useQuery({
-        queryKey: ['actividades', cultivoId], 
+        queryKey: ['actividades', cultivoId],
         queryFn: async () => {
             const res = await actividadesApi.listarPorCultivo(cultivoId);
-            return res.data; 
+            return res.data;
         },
     });
 
     const cambiarEstadoMutation = useMutation({
-        mutationFn: ({ id, estado } : {id: number; estado: string}) => actividadesApi.cambiarEstado(id, estado),
-        onSuccess: () => {
+        mutationFn: ({ id, estado }: { id: number; estado: string }) => actividadesApi.cambiarEstado(id, estado),
+        onMutate: async ({ id, estado }) => {
+            await queryClient.cancelQueries({ queryKey: ['actividades', cultivoId] });
+
+            const actividadesPrevias = queryClient.getQueryData<Actividad[]>(['actividades', cultivoId]);
+
+            queryClient.setQueryData<Actividad[]>(['actividades', cultivoId], (old = []) =>
+                old.map((a) => (a.id === id ? { ...a, estado: estado as Actividad['estado'] } : a))
+            );
+
+            return { actividadesPrevias };
+        },
+        onError: (_err, _variables, context) => {
+            if (context?.actividadesPrevias) {
+                queryClient.setQueryData(['actividades', cultivoId], context.actividadesPrevias);
+            }
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['actividades', cultivoId] });
         },
     });
@@ -30,27 +45,21 @@ export function useActividades(cultivoId: number = 1) {
     const handleChangeEstado = (id: number, estadoActual: Actividad['estado']) => {
         const estados: string[] = ['Pendiente', 'En_progreso', 'Finalizada'];
 
-        console.log("Estado que llega al hacer clic:", estadoActual);
-
         const estadoNormalizado = estadoActual ? estadoActual : 'Pendiente';
         const idx = estados.indexOf(estadoNormalizado);
-        console.log("Índice encontrado en el arreglo:", idx);
 
         const siguienteIndex = idx === -1 ? 0 : (idx + 1) % estados.length;
-        const nuevoEstado = estados[siguienteIndex]
-        console.log("Nuevo estado calculado a enviar:", nuevoEstado)
+        const nuevoEstado = estados[siguienteIndex];
 
-        cambiarEstadoMutation.mutate({ id, estado: nuevoEstado});
-        };
+        cambiarEstadoMutation.mutate({ id, estado: nuevoEstado });
+    };
 
+    const normalizar = (valor: string) => valor.replace('_', ' ').toLowerCase();
 
-
-    const actividadeesFiltradas = actividades.filter((a) =>  {
-        if (filtroEstado === 'Todas' || filtroEstado === 'TODAS') return true;
-        
-        const estadoActividad = a.estado ? a.estado.replace('_', ' ').toLowerCase() : '';
-        const estadoFiltro = filtroEstado.toLowerCase()
-
+    const actividadeesFiltradas = actividades.filter((a) => {
+        if (filtroEstado === 'Todas') return true;
+        const estadoActividad = a.estado ? normalizar(a.estado) : '';
+        const estadoFiltro = normalizar(filtroEstado);
         return estadoActividad === estadoFiltro;
     });
 
@@ -62,5 +71,4 @@ export function useActividades(cultivoId: number = 1) {
         setFiltroEstado,
         handleChangeEstado,
     };
-
 }

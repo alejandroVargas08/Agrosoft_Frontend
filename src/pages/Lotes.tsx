@@ -25,7 +25,7 @@ const FILTROS: { label: string; value: 'Todos' | EstadoLote }[] = [
 
     return (
         <DashboardLayout>
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-8">
             <div className="flex justify-between items-center mb-8">
             <div>
                 <h1 className="text-3xl font-bold text-neutral-900">Lotes</h1>

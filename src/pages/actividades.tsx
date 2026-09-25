@@ -55,7 +55,7 @@ const Actividades = () => {
 
     return (
         <DashboardLayout>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-8">
 
                 {/* Titulo */}
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
