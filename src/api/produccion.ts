@@ -1,5 +1,5 @@
 import { api } from './axios';
-import type { UnidadProductiva, CrearUnidadProductivaPayload } from '../types/produccion';
+import type { UnidadProductiva, CrearUnidadProductivaPayload, HistorialCultivo } from '../types/produccion';
 
 // En el backend las unidades productivas son "cultivos"
 export const unidadesProductivasApi = {
@@ -10,4 +10,5 @@ export const unidadesProductivasApi = {
     finalizar: (id: number, fechaFinalizacion: string) =>
         api.patch<UnidadProductiva>(`/cultivos/${id}/finalizar`, { fechaFinalizacion }),
     eliminar: (id: number) => api.delete(`/cultivos/${id}`),
+    historial: (id: number) => api.get<HistorialCultivo[]>(`/cultivos/${id}/historial`),
 };

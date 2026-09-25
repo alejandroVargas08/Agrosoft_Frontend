@@ -67,7 +67,7 @@ const UnidadesProductivas = () => {
                         {unidades.map((u) => {
                             const ubicacion = ubicacionDe(u);
                             return (
-                                <Card key={u.id}>
+                                <Card key={u.id} onClick={() => navigate(`/unidades-productivas/${u.id}`)}>
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="p-2 bg-primary/10 rounded-lg"><Sprout size={20} className="text-primary" /></div>
                                         <StatusBadge status={u.estado} />

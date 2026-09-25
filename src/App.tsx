@@ -14,6 +14,7 @@ import Inventario from './pages/Inventario'
 import NuevoInsumo from './pages/NuevoInsumo'
 import UnidadesProductivas from './pages/UnidadesProductivas'
 import NuevaUnidadProductiva from './pages/NuevaUnidadProductiva'
+import DetalleUnidadProductiva from './pages/DetalleUnidadProductiva'
 
 function App() {
 
@@ -29,6 +30,7 @@ function App() {
       <Route path='/perfil' element={<Perfil/>}/>
       <Route path='/unidades-productivas' element={<UnidadesProductivas/>}/>
       <Route path='/unidades-productivas/nueva' element={<NuevaUnidadProductiva/>}/>
+      <Route path='/unidades-productivas/:id' element={<DetalleUnidadProductiva/>}/>
       <Route path='/territorio' element={<LotesSublotes/>}/>
       <Route path='/territorio/nuevo' element={<NuevoLote/>}/>
       <Route path='/inventario' element={<Inventario/>}/>

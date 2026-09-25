@@ -20,3 +20,12 @@ export interface CrearUnidadProductivaPayload {
     subLoteId?: number;
     fechaSiembra: string; // ISO, ej. "2026-09-24"
 }
+
+// Historial de cambios de una unidad productiva
+export interface HistorialCultivo {
+    id: number;
+    cultivoId: number;
+    usuarioId: number;
+    motivo: string;
+    cambios: Record<string, unknown>;
+}
