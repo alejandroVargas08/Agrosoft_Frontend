@@ -7,33 +7,36 @@ import ChatBotFlotante from '../Chatbot/ChatBotFlotante';
 interface DashboardLayoutProps {
   children: ReactNode;
   unreadNotifications?: number;
+  mostrarChatFlotante?: boolean;
 }
 
-export default function DashboardLayout({ 
-  children, 
-  unreadNotifications = 0 
+export default function DashboardLayout({
+  children,
+  unreadNotifications = 0,
+  mostrarChatFlotante = true
 }: DashboardLayoutProps) {
 
-    const [SidebarOpen, setSidebarOpen] = useState(false);
+  const [SidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar 
+    <div className="min-h-screen bg-[#F9FAF7] flex">
+      <Sidebar
         isOpen={SidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="flex-1 lg:ml-64">
+      <div className="flex-1 min-w-0 ml-0 md:ml-20 lg:ml-64 flex flex-col min-h-screen">
         
-        <Header 
+        <Header
           onMenuClick={() => setSidebarOpen(true)}
-          unreadNotifications={unreadNotifications} 
+          unreadNotifications={unreadNotifications}
         />
 
-        <main className="pt-20 px-4 sm:px-6 lg:px-8 pb-8">
+        <main className="flex-1 pt-16 pb-24 sm:pb-8">
           {children}
         </main>
-        <ChatBotFlotante/>
+        
+        {mostrarChatFlotante && <ChatBotFlotante />}
 
       </div>
     </div>

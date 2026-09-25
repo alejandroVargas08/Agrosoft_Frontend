@@ -24,10 +24,10 @@ export default function Inicio() {
   }, []);
 
   const [fechaHoy, setFeachaHoy] = useState('');
-  useEffect(()=> {
+  useEffect(() => {
     const actulizarFecha = () => {
       setFeachaHoy(
-        new Date().toLocaleDateString('es-ES',{
+        new Date().toLocaleDateString('es-ES', {
           weekday: 'long',
           year: 'numeric',
           month: 'long',
@@ -37,7 +37,7 @@ export default function Inicio() {
     };
     actulizarFecha();
 
-    const intervalo = setInterval(actulizarFecha, 60000 );
+    const intervalo = setInterval(actulizarFecha, 60000);
 
     return () => clearInterval(intervalo);
 
@@ -45,14 +45,16 @@ export default function Inicio() {
 
   return (
     <DashboardLayout unreadNotifications={2}>
-      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-        {saludo}, {nombreFormateado} 👋🏻
-      </h1>
-      <p className="text-sm sm:text-base text-gray-500 mt-1 capitalize">
-        Resumen de hoy - {fechaHoy}
-      </p>
+      <div className="p-4 sm:p-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+          {saludo}, {nombreFormateado} 👋🏻
+        </h1>
+        <p className="text-sm sm:text-base text-gray-500 mt-1 capitalize">
+          Resumen de hoy - {fechaHoy}
+        </p>
 
-      <ChatBotFlotante/>
+        <ChatBotFlotante/>
+      </div>
     </DashboardLayout>
   );
 }

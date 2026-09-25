@@ -2,12 +2,15 @@ import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Register } from './pages/Register'
 import Login from './pages/Login'
-import AsistenteIA from './pages/AsistenteIA'
 import Inicio from './pages/inicio'
 import RecuperarPassword from './pages/RecuperarPassword'
 import VerificarCodigo from './pages/VerificarCodigo'
 import NuevaContrasena from './pages/NuevaContrasena'
 import Perfil from './pages/Perfil'
+import EditarPerfil from './pages/EditarPerfil'
+import Configuracion from './pages/Configuracion'
+import AgroBot from './pages/AgroBot'
+import Actividades from './pages/actividades'
 import LotesSublotes from './pages/LotesSublotes'
 import NuevoLote from './pages/NuevoLote'
 import Inventario from './pages/Inventario'
@@ -25,9 +28,12 @@ function App() {
       <Route path='/inicio' element={<Inicio/>}/>
       <Route path='/recuperar' element={<RecuperarPassword/>}/>
       <Route path="/recuperar/verificar" element={<VerificarCodigo />} />
-      <Route path='/asistente' element={<AsistenteIA/>}/>
       <Route path="/recuperar/nueva-contrasena" element={<NuevaContrasena />} />
       <Route path='/perfil' element={<Perfil/>}/>
+      <Route path='/editar-perfil' element={<EditarPerfil/>}/>
+      <Route path='/configuracion' element={<Configuracion/>}/>
+      <Route path="/agrobot" element={<AgroBot />} />
+      <Route path='/actividades' element={<Actividades/>}/>
       <Route path='/unidades-productivas' element={<UnidadesProductivas/>}/>
       <Route path='/unidades-productivas/nueva' element={<NuevaUnidadProductiva/>}/>
       <Route path='/unidades-productivas/:id' element={<DetalleUnidadProductiva/>}/>
