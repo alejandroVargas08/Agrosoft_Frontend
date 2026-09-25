@@ -12,6 +12,7 @@ import LotesSublotes from './pages/LotesSublotes'
 import NuevoLote from './pages/NuevoLote'
 import Inventario from './pages/Inventario'
 import NuevoInsumo from './pages/NuevoInsumo'
+import UnidadesProductivas from './pages/UnidadesProductivas'
 
 function App() {
 
@@ -25,6 +26,7 @@ function App() {
       <Route path='/asistente' element={<AsistenteIA/>}/>
       <Route path="/recuperar/nueva-contrasena" element={<NuevaContrasena />} />
       <Route path='/perfil' element={<Perfil/>}/>
+      <Route path='/unidades-productivas' element={<UnidadesProductivas/>}/>
       <Route path='/territorio' element={<LotesSublotes/>}/>
       <Route path='/territorio/nuevo' element={<NuevoLote/>}/>
       <Route path='/inventario' element={<Inventario/>}/>

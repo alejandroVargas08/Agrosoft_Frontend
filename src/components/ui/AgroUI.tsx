@@ -28,6 +28,8 @@ const STATUS_MAP: Record<string, [BadgeColor, string]> = {
     activo: ['success', 'Activo'],
     inactivo: ['muted', 'Inactivo'],
     en_preparacion: ['warning', 'En preparación'],
+    finalizado: ['info', 'Finalizado'],
+    cancelado: ['danger', 'Cancelado'],
     // Estados del diseño
     active: ['success', 'Activo'], inactive: ['muted', 'Inactivo'],
     open: ['danger', 'Abierta'], in_treatment: ['warning', 'En tratamiento'],
