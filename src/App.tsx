@@ -17,6 +17,7 @@ import Reservas from './pages/Reservas'
 import Actividades from './pages/actividades/actividades'
 import EditarPerfil from './pages/EditarPerfil'
 import Configuracion from './pages/Configuracion'
+import Cultivos from './pages/cultivos/cultivos'
 
 function App() {
 
@@ -33,6 +34,7 @@ function App() {
       <Route path='/perfil' element={<Perfil/>}/>
       <Route path='/editar-perfil' element={<EditarPerfil/>}/>
       <Route path='/territorio/lotes' element={<Lotes/>}/>
+      <Route path='/cultivos' element={<Cultivos/>}/>
       <Route path='/territorio/sublotes' element={<Sublotes/>}/>
       <Route path='/inventario/catalogos' element={<CatalogosInventario/>}/>
       <Route path='/inventario/insumos' element={<Insumos/>}/>
