@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera } from 'lucide-react';
 import { usePerfil } from '../hooks/usePerfil';
 import { InicioUsuario } from '../hooks/useAuth';
-import DashboardLayout from '../componets/layout/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 
 function inicial(nombre?: string) {
   const caracter = nombre?.trim()?.charAt(0)?.toUpperCase();

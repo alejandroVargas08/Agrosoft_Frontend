@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import DashboardLayout from '../componets/layout/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 import { usePerfil } from '../hooks/usePerfil';
-import { ListaConversaciones } from '../componets/Chatbot/ListaConversaciones';
-import { ConversacionChat } from '../componets/Chatbot/ConversacionChat';
+import { ListaConversaciones } from '../components/Chatbot/ListaConversaciones';
+import { ConversacionChat } from '../components/Chatbot/ConversacionChat';
 
 export default function AgroBot() {
   const { perfil, cargando } = usePerfil();
