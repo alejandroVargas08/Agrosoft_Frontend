@@ -16,18 +16,20 @@ export default function Header({ onMenuClick, unreadNotifications }: HeaderProps
     <header className="h-16 bg-white border-b border-gray-200 fixed top-0 right-0 left-0 lg:left-64 md:left-20 z-20 flex items-center justify-between px-4 lg:px-8">
       
       <button 
+        type="button"
         onClick={onMenuClick}
-        className="p-2 hover:bg-gray-100 rounded-lg md:hidden"
-        aria-label="Abrir menú"
+        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer lg:hidden"
+        aria-label="Abrir menú de navegación"
       >
-        <Menu className="w-5 h-5 text-gray-600" />
+        <Menu className="w-5 h-5" />
       </button>
 
-      <div className="hidden md:block" />
+      <div className="hidden lg:block" />
 
       <div className="flex items-center gap-4">
         <button 
-          className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+          type="button"
+          className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
           aria-label="Notificaciones"
         >
           <Bell className="w-5 h-5" />
@@ -38,7 +40,6 @@ export default function Header({ onMenuClick, unreadNotifications }: HeaderProps
           )}
         </button>
         
-      
         <Link
           to="/perfil"
           className="flex items-center gap-3 pl-4 border-l border-gray-200 p-1.5 rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"

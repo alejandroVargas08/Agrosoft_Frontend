@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical,
-  Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3,
-  Bell, History, User, Settings, X, ChevronDown, LogOut } from "lucide-react";
+import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Wheat, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 
@@ -24,26 +22,19 @@ interface SidebarProps {
 const mainItems: MenuItem[] = [
     { icon: Home, label: 'Inicio', path: '/inicio' },
     { icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas' },
-    { icon: Map, label: 'Lotes y Sublotes', path: '/territorio', children: [
-        { label: 'Lotes', path: '/territorio/lotes' },
-        { label: 'Sublotes', path: '/territorio/sublotes' },
-    ]},
+    { icon: Map, label: 'Lotes y Sublotes', path: '/territorio' },
     { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
     { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
     { icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos' },
     { icon: Wheat, label: 'Cosecha', path: '/cosecha' },
-    { icon: Package, label: 'Inventario', path: '/inventario', children: [
-        { label: 'Catálogos', path: '/inventario/catalogos' },
-        { label: 'Insumos', path: '/inventario/insumos' },
-        { label: 'Movimientos', path: '/inventario/movimientos' },
-        { label: 'Reservas', path: '/inventario/reservas' },
-    ]},
+    { icon: Package, label: 'Inventario', path: '/inventario' },
     { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
     { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
     { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
     { icon: BarChart3, label: 'Reportes', path: '/reportes' },
     { icon: Bell, label: 'Alertas', path: '/alertas' },
-    { icon: History, label: 'Historial', path: '/historial' }
+    { icon: History, label: 'Historial', path: '/historial' },
+    { icon: Bot, label: 'Consultas', path: '/agrobot' },
 ];
 
 const main2Items: MenuItem[] = [
@@ -145,9 +136,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <span className="text-xs text-gray-500 uppercase tracking-wider">SENA</span>
                 </div>
               </div>
-              <button 
+              <button
                 type="button"
-                onClick={onClose} 
+                onClick={onClose}
                 className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
                 aria-label="Cerrar menú"
               >
@@ -232,7 +223,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           );
         }
 
-        const isActive = location.pathname === item.path;
+        // Se marca activo también en sus subpáginas (ej: /territorio/nuevo)
+        const isActive = location.pathname.startsWith(item.path);
         return (
           <Link
             key={item.label}
