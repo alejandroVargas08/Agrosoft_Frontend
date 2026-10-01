@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { isAxiosError } from 'axios';
 import { emailCodesApi, TipoCodigo } from '../api/usuarios/emailCodes';
-import AuthLayout from '../componets/RecuperarContraseña/AuthLayout';
+import AuthLayout from '../components/RecuperarContraseña/AuthLayout';
 import { LuMail } from 'react-icons/lu';
 
 function VerificarCodigo() {

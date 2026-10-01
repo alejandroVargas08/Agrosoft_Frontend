@@ -9,9 +9,9 @@ import { usuarioActualId } from './usuarioActual';
 interface UseInsumoFormProps {
     isModalOpen: boolean;
     onSuccess: () => void;
-    }
+}
 
-    export function useInsumoForm({ isModalOpen, onSuccess }: UseInsumoFormProps) {
+export function useInsumoForm({ isModalOpen, onSuccess }: UseInsumoFormProps) {
     const queryClient = useQueryClient();
     const [form, setForm] = useState<InsumoFormState>(ESTADO_INICIAL_INSUMO_FORM);
 
@@ -48,21 +48,26 @@ interface UseInsumoFormProps {
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        const factor = Number(form.factorConversionUso) || 1;
+        const precioPresentacion = Number(form.precioUnitarioPresentacion) || 0;
+        const proveedorId = Number(form.proveedorId);
+
         const payload: CrearInsumoPayload = {
         nombre: form.nombre,
         descripcion: form.descripcion || undefined,
         presentacionTipo: form.presentacionTipo,
-        presentacionCantidad: Number(form.presentacionCantidad),
-        presentacionUnidad: form.presentacionUnidad,
+        presentacionCantidad: 1,
+        presentacionUnidad: form.unidadUso,
         unidadUso: form.unidadUso,
-        factorConversionUso: Number(form.factorConversionUso),
-        stockPresentacion: Number(form.stockPresentacion),
-        stockUso: Number(form.stockUso),
+        factorConversionUso: factor,
+        stockPresentacion: 0,
+        stockUso: 0,
         stockMinimo: Number(form.stockMinimo),
-        precioUnitarioPresentacion: Number(form.precioUnitarioPresentacion),
-        precioUnitarioUso: Number(form.precioUnitarioUso),
+        precioUnitarioPresentacion: precioPresentacion,
+        precioUnitarioUso: precioPresentacion / factor,
         almacenId: Number(form.almacenId),
-        proveedorId: Number(form.proveedorId),
+        proveedorId: Number.isNaN(proveedorId) || proveedorId === 0 ? undefined : proveedorId,
         categoriaId: Number(form.categoriaId),
         tipoInsumo: form.tipoInsumo,
         creadoPorUsuarioId: usuarioActualId(),
@@ -87,4 +92,4 @@ interface UseInsumoFormProps {
         handleFormChange,
         handleCreateSubmit,
     };
-    }
+}

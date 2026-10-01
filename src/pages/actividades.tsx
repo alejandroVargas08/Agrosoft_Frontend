@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useActividades } from "../hooks/Actividades/useActividades";
 import { useActividadForm } from "../hooks/Actividades/useActividadForm";
-import DashboardLayout from "../componets/layout/DashboardLayout";
+import DashboardLayout from "../components/layout/DashboardLayout";
 
 const Actividades = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);

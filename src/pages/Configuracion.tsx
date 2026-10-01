@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, HelpCircle, ShieldCheck, LogOut, ChevronRight, X, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
-import DashboardLayout from '../componets/layout/DashboardLayout';
+import DashboardLayout from '../components/layout/DashboardLayout';
 
 interface SwitchProps {
   checked: boolean;
