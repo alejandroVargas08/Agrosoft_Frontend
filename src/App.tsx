@@ -1,6 +1,6 @@
 import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Register } from './pages/Register'
+import { Register } from './pages/register'
 import Login from './pages/Login'
 import Inicio from './pages/inicio'
 import RecuperarPassword from './pages/RecuperarPassword'

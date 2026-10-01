@@ -7,10 +7,8 @@ import { LuSprout, LuCpu, LuUser, LuIdCard, LuPhone, LuMail, LuGraduationCap, Lu
 import { FiBarChart2 } from 'react-icons/fi';
 
 export const Register = () => {
-    // Estado para controlar el paso actual (1 o 2)
     const [step, setStep] = useState(1);
 
-    // Estado para guardar los datos del formulario completo
     const [form, setForm] = useState({
         nombre: '',
         apellido: '',
@@ -24,7 +22,6 @@ export const Register = () => {
         confirmarPassword: '',
     });
 
-    // Manejador de cambios universal para inputs y selects
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setForm({
             ...form,
@@ -32,18 +29,15 @@ export const Register = () => {
         });
     };
 
-    // Avanzar al paso 2 validando primero el paso 1
     const handleNextStep = (e: React.FormEvent) => {
         e.preventDefault();
         setStep(2);
     };
 
-    // Regresar al paso 1
     const handlePrevStep = () => {
         setStep(1);
     };
 
-    // Envío final a la API
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -84,13 +78,10 @@ export const Register = () => {
 
     return (
         <div className="flex min-h-screen w-full flex-col lg:flex-row">
-            {/* Panel Izquierdo - Branding Persistente */}
             <aside className="relative flex w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-green-800 via-green-700 to-green-900 px-6 py-8 lg:sticky lg:top-0 lg:h-screen lg:w-1/2 lg:px-12 lg:py-16">
-                {/* Blobs decorativos */}
                 <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-white/5" />
                 <div className="pointer-events-none absolute -bottom-28 -right-16 h-96 w-96 rounded-full bg-white/5" />
 
-                {/* Versión compacta (móvil pequeño) */}
                 <div className="relative z-10 flex flex-col items-center gap-2 sm:hidden">
                     <img src={logoAgrosoft} alt="logoAgrosoft" className="h-14 w-14" />
                     <h1 className="text-xl font-extrabold text-white">AgroSoft</h1>
@@ -100,7 +91,6 @@ export const Register = () => {
                     </div>
                 </div>
 
-                {/* Versión completa (tablet / escritorio) */}
                 <div className="relative z-10 hidden max-w-sm flex-col items-center pt-20 text-center sm:flex">
                     <img src={logoAgrosoft} alt="logoAgrosoft" className="mb-8 h-[120px] w-[120px]" />
                     <h1 className="mb-4 text-5xl font-extrabold text-white">AgroSoft</h1>
@@ -139,7 +129,6 @@ export const Register = () => {
                 </div>
             </aside>
 
-            {/* Panel Derecho - Dinámico según el paso */}
             <main className="flex w-full flex-1 flex-col bg-neutral-50 px-6 py-10 lg:w-1/2 lg:px-16 lg:py-16">
                 <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
                     <header className="mb-8">
@@ -167,7 +156,6 @@ export const Register = () => {
                                 : 'Paso 2 de 2 — Formación y seguridad'}
                         </p>
 
-                        {/* Barra de Progreso */}
                         <div className="flex h-1.5 w-full gap-2">
                             <div className="h-full flex-1 rounded-full bg-green-700" />
                             <div
@@ -177,7 +165,6 @@ export const Register = () => {
                         </div>
                     </header>
 
-                    {/* PASO 1: DATOS PERSONALES */}
                     {step === 1 && (
                         <form className="flex flex-col gap-5" onSubmit={handleNextStep}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -296,7 +283,6 @@ export const Register = () => {
                         </form>
                     )}
 
-                    {/* PASO 2: FORMACIÓN Y SEGURIDAD */}
                     {step === 2 && (
                         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
                             <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
@@ -315,7 +301,11 @@ export const Register = () => {
                                     className={selectClasses}
                                 >
                                     <option value="">Sin programa asignado</option>
-                                    <option value="1">ADSO - Análisis y Desarrollo de Software</option>
+                                    <option value="ADSO - Análisis y Desarrollo de Software">ADSO - Análisis y Desarrollo de Software</option>
+                                    <option value="Tecnólogo en Gestión Agropecuaria">Tecnólogo en Gestión Agropecuaria</option>
+                                    <option value="Tecnólogo en Producción Agrícola">Tecnólogo en Producción Agrícola</option>
+                                    <option value="Tecnólogo en Sistemas Agroindustriales">Tecnólogo en Sistemas Agroindustriales</option>
+                                    <option value="Tecnólogo en Gestión Empresarial">Tecnólogo en Gestión Empresarial</option>
                                 </select>
                             </div>
 
