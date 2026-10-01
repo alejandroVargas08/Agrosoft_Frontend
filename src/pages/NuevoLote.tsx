@@ -20,7 +20,7 @@ const NuevoLote = () => {
 
     return (
         <DashboardLayout>
-            <div className="max-w-7xl mx-auto">
+            <div className="p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8">
                 <PageHeader title={form.tipo === 'subplot' ? 'Nuevo Sublote' : 'Nuevo Lote'} onBack={volver} />
                 <Card className="max-w-lg">
                     <form className="space-y-4" onSubmit={handleSubmit}>
