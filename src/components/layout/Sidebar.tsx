@@ -26,7 +26,7 @@ const mainItems: MenuItem[] = [
     { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
     { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
     { icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos' },
-    { icon: Wheat, label: 'Cosecha', path: '/cosecha' },
+    { icon: Wheat, label: 'cultivos', path: '/cultivos' },
     { icon: Package, label: 'Inventario', path: '/inventario' },
     { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
     { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },

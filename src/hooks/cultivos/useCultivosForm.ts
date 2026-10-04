@@ -6,43 +6,59 @@ import { cultivosApi } from "../../api/cultivo/cultivos";
 import { isAxiosError } from "axios";
 
 interface UseCultivoFormProps {
-    loteId: number | undefined;
     isModalOpen: boolean;
-    onSucces: () => void;
+    onSucces: (loteidCreado: number) => void;
 }
 
-export function useCultivoForm({ loteId, isModalOpen, onSucces} : UseCultivoFormProps) {
+export function useCultivoForm({ isModalOpen, onSucces} : UseCultivoFormProps) {
     const queryCliente = useQueryClient();
     const [ form, setForm] = useState<CultivoFormState>(ESTADO_INICIAL_CULTIVO_FORM);
 
-    const { data: sublotes = [] } = useQuery({
-        queryKey: ['sublotes', loteId],
-        queryFn: async () => (await lotesApi.sublotesPorLote(loteId!)).data,
-        enabled: isModalOpen && !!loteId,
+    const loteIdNum = form.loteId ? Number(form.loteId) : undefined;
+
+    const { data: lotes = [] } = useQuery({
+        queryKey: ['lotes'],
+        queryFn: async () => (await lotesApi.listar()).data,
+        enabled: isModalOpen,
+    });
+
+    const {data: sublotes = []} = useQuery({
+        queryKey: ['sublotes', loteIdNum],
+        queryFn : async () => (await lotesApi.sublotesPorLote(loteIdNum!)).data,
+        enabled: isModalOpen && !!loteIdNum,
     });
 
     const crearMutation = useMutation({
         mutationFn: (payload: CrearCultivoPayload) => cultivosApi.crear(payload),
-        onSuccess: () => {
+        onSuccess: (_res, payload) => {
             setForm(ESTADO_INICIAL_CULTIVO_FORM); 
-            queryCliente.invalidateQueries({ queryKey: ['cultivos', loteId] });
-            onSucces ();
+            queryCliente.invalidateQueries({ queryKey: ['cultivos'] });
+            onSucces (payload.loteId);
         },
     });
 
     const handleFormChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> ) => {
-            setForm((prev) => ({ ...prev, [e.target.name]: e.target.value}) );
+
+            const { name, value} = e.target;
+            setForm((prev) => ({ ...prev, [name]: value,
+                ...(name === 'loteId' ? {subLoteId: ''} : {}),
+            }));
         };
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!loteId) return;
+        console.log('Datos para el formulario', form);
+        console.log('Lote Id', loteIdNum);
+
+        if (!loteIdNum) return;
+
+        
 
         const payload: CrearCultivoPayload = {
         nombreCultivo: form.nombreCultivo,
         tipoCultivo: form.tipoCultivo,
-        loteId,
+        loteId: loteIdNum,
         subLoteId: form.subLoteId ? Number(form.subLoteId) : undefined,
         fechaSiembra: form.fechaSiembra, 
         };
@@ -55,6 +71,7 @@ export function useCultivoForm({ loteId, isModalOpen, onSucces} : UseCultivoForm
 
     return {
         form,
+        lotes,
         sublotes,
         handleFormChange,
         handleCreateSubmit,

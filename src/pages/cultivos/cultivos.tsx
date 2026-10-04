@@ -1,16 +1,23 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom"
 import { useCultivos } from "../../hooks/cultivos/useCultivos";
 import { useCultivoForm } from "../../hooks/cultivos/useCultivosForm";
-import DashboardLayout from "../../componets/layout/DashboardLayout";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import { useQuery } from "@tanstack/react-query";
+import { lotesApi } from "../../api/territorio";
+import { LuSprout, LuCalendar } from "react-icons/lu";
 
 const Cultivos = () => {
-    const {loteId} = useParams<{loteId: string}>();
-    const loteIdNum = loteId ? Number(loteId) : undefined;
+    const [loteFiltro, setLoteFiltro] = useState<string>('');
+    const loteIdNum = loteFiltro ? Number(loteFiltro) : undefined;
     const [isModalOpen, setIsModalOpen] = useState(false); 
 
+    const { data: lotesFiltro = [] } = useQuery({
+        queryKey: ['lotes'],
+        queryFn: async () => (await lotesApi.listar()).data,
+    });
+
     const {
-        cultivos,
+    cultivos,
     loading,
     error,
     handleFinalizar,
@@ -21,15 +28,18 @@ const Cultivos = () => {
 
     const { 
         form, 
+        lotes,
         sublotes, 
         handleFormChange,
         handleCreateSubmit, 
         creando,
         errorForm
     } = useCultivoForm({
-        loteId: loteIdNum,
         isModalOpen,
-        onSucces: () => setIsModalOpen(false),
+        onSucces: (loteCreado) => {
+            setIsModalOpen(false);
+            setLoteFiltro(String(loteCreado));
+        },
     });
 
     return (
@@ -37,8 +47,8 @@ const Cultivos = () => {
             <div className="p-6 max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-neutral-900">Cultivos del Lote</h1>
-                        <p className="text-neutral-500">Lote #{loteId}</p>
+                        <h1 className="text-3xl font-bold text-neutral-900">Cultivos</h1>
+                        <p className="text-neutral-500">Gestión de cultivos y registros de cosecha</p>
                     </div>
                     <button
                         onClick={() => setIsModalOpen(true)}
@@ -47,6 +57,27 @@ const Cultivos = () => {
                         + Nuevo Cultivo
                     </button>
                 </div>
+
+
+                <div className="mb-6 max-w-sm">    
+                    <label className="block text-sm text-neutral-500 mb-1">Lote</label>    
+                    <select        
+                        value={loteFiltro}        
+                        onChange={(e) => setLoteFiltro(e.target.value)}        
+                        className="w-full rounded-xl border border-neutral-200 py-3 px-4 bg-white"    
+                    >        
+                        <option value="">Selecciona un lote...</option>        
+                        {lotesFiltro.map((l: any) => (            
+                            <option key={l.id} value={l.id}>{l.nombre}</option>        
+                        ))}    
+                    </select>
+                </div>
+
+                {!loteIdNum && (    
+                    <p className="text-neutral-400 italic mb-6">Elige un lote para ver sus cultivos.</p>
+                )}
+
+
 
                 {loading && <p className="text-neutral-500">Cargando cultivos...</p>}
                 {error && <p className="text-red-600">{error}</p>}
@@ -101,6 +132,24 @@ const Cultivos = () => {
                             <h2 className="text-xl font-bold mb-4 text-neutral-900">Nuevo Cultivo</h2>
                             {errorForm && <p className="text-red-600 mb-3 text-sm">{errorForm}</p>}
                             <form onSubmit={handleCreateSubmit} className="grid grid-cols-2 gap-4">
+
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-neutral-700 mb-1"> Lote</label>
+                                    <select 
+                                    required
+                                    name="loteId"
+                                    value={form.loteId}
+                                    onChange={handleFormChange}
+                                    className="w-full rounded-xl border border-neutral-200 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white"
+                                    >
+                                        <option value=""> Seleccione un lote</option>
+                                        {lotes.map((l: any) => (
+                                            <option key={l.id} value={l.id}> {l.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
                                 <div className="col-span-2">
                                     <label className="block text-sm font-medium text-neutral-700 mb-1">
                                         Nombre del cultivo

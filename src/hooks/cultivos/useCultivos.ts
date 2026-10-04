@@ -15,7 +15,10 @@ export function useCultivos (loteId: number | undefined) {
         enabled: !!loteId, // Si no hay loteId, no pasa la petición
     });
 
-    const invalidar = () => queryClient.invalidateQueries({ queryKey: ['cultivos', loteId]});
+    const invalidar = () => {
+        queryClient.invalidateQueries({ queryKey: ['cultivos', loteId]});
+        queryClient.invalidateQueries({ queryKey: ['cultivos', loteId] });
+    };
 
     const finalizarMutation = useMutation({
         mutationFn: ({ id, fechaFinalizacion}: { id: number; fechaFinalizacion: string}) =>
@@ -49,5 +52,6 @@ export function useCultivos (loteId: number | undefined) {
         handleEliminar,
         eliminando: eliminarMutation.isPending,
         errorEliminar: eliminarMutation.error ? mensajeError (eliminarMutation.error) : null,
+        invalidar,
     };
 }

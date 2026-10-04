@@ -10,7 +10,6 @@ import Perfil from './pages/Perfil'
 import EditarPerfil from './pages/EditarPerfil'
 import Configuracion from './pages/Configuracion'
 import AgroBot from './pages/AgroBot'
-import Actividades from './pages/actividades'
 import LotesSublotes from './pages/LotesSublotes'
 import NuevoLote from './pages/NuevoLote'
 import Inventario from './pages/Inventario'
@@ -18,11 +17,13 @@ import NuevoInsumo from './pages/NuevoInsumo'
 import UnidadesProductivas from './pages/UnidadesProductivas'
 import NuevaUnidadProductiva from './pages/NuevaUnidadProductiva'
 import DetalleUnidadProductiva from './pages/DetalleUnidadProductiva'
+import Actividades from './pages/actividades/actividades'
+import Cultivos from './pages/cultivos/cultivos'
 
 function App() {
 
-  return (
-    <Routes>
+      return (
+      <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path='/inicio' element={<Inicio/>}/>
@@ -34,6 +35,7 @@ function App() {
       <Route path='/configuracion' element={<Configuracion/>}/>
       <Route path="/agrobot" element={<AgroBot />} />
       <Route path='/actividades' element={<Actividades/>}/>
+      <Route path='/cultivos' element={<Cultivos/>} />
       <Route path='/unidades-productivas' element={<UnidadesProductivas/>}/>
       <Route path='/unidades-productivas/nueva' element={<NuevaUnidadProductiva/>}/>
       <Route path='/unidades-productivas/:id' element={<DetalleUnidadProductiva/>}/>
@@ -49,8 +51,8 @@ function App() {
       <Route path='/inventario/movimientos' element={<Navigate to="/inventario" replace />}/>
       <Route path='/inventario/reservas' element={<Navigate to="/inventario" replace />}/>
       <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
-  )
+      </Routes>
+      )
 }
 
 export default App

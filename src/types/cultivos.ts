@@ -8,7 +8,7 @@ export interface Cultivo {
     subLoteId: number | null;
     fechaSiembra: string; // Iso date
     fechaFinalizacion?: string | null;
-    constoTotal: number; 
+    costoTotal: number; 
     estado: EstadoCultivo;
 }
 
@@ -23,6 +23,7 @@ export interface CrearCultivoPayload {
 export interface CultivoFormState {
     nombreCultivo: string;
     tipoCultivo: string;
+    loteId: string;
     subLoteId: string;
     fechaSiembra: string;
 }
@@ -30,6 +31,7 @@ export interface CultivoFormState {
 export const ESTADO_INICIAL_CULTIVO_FORM: CultivoFormState = {
     nombreCultivo: '',
     tipoCultivo: '',
+    loteId: '',
     subLoteId: '',
     fechaSiembra: '',
 };
