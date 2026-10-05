@@ -2,10 +2,12 @@ import { useState } from "react"
 import { useActividades } from "../../hooks/actividades/useActividades";
 import { useActividadForm } from "../../hooks/actividades/useActividadForm";
 import DashboardLayout from "../../components/layout/DashboardLayout";
+import { useNavigate } from "react-router-dom";
 
 
 
 const Actividades = () => {
+    const navigate = useNavigate(); 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const cultivoIdActual = 1;
 
@@ -229,8 +231,10 @@ const Actividades = () => {
 {/* Tarjetasss */}
                 <div className="flex flex-col gap-4">
                     {actividades.map((actividad) => (
-                        <div key={actividad.id}
-                            className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-200 relative flex flex-col justify-between"> 
+                        <div 
+                            key={actividad.id}
+                            onClick={() => navigate(`/actividades/${actividad.id}`)}
+                            className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100 relative flex flex-col justify-between"> 
 
                             <div className="flex justify-between items-start">
                                 <div>
@@ -242,7 +246,11 @@ const Actividades = () => {
                                     </span>
                                 </div>
 
-                                <span onClick={() => handleChangeEstado(actividad.id, actividad.estado)} title="Click para cambiar el estado" className={`text-xs font-semibold px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${getEstadoBadge(actividad.estado)}`}>
+                                <span onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleChangeEstado(actividad.id, actividad.estado);
+                                }} 
+                                title="Click para cambiar el estado" className={`text-xs font-semibold px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${getEstadoBadge(actividad.estado)}`}>
                                     {actividad.estado ? actividad.estado.replace('_', ' ') : ''}
                                 </span>
                             </div>
