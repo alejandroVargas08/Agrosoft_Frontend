@@ -18,6 +18,7 @@ import NuevoInsumo from './pages/NuevoInsumo'
 import UnidadesProductivas from './pages/UnidadesProductivas'
 import NuevaUnidadProductiva from './pages/NuevaUnidadProductiva'
 import DetalleUnidadProductiva from './pages/DetalleUnidadProductiva'
+import SensoresPage from './pages/SensorPage'
 
 function App() {
 
@@ -34,6 +35,7 @@ function App() {
       <Route path='/configuracion' element={<Configuracion/>}/>
       <Route path="/agrobot" element={<AgroBot />} />
       <Route path='/actividades' element={<Actividades/>}/>
+      <Route path='/sensores-iot' element={<SensoresPage/>}/>
       <Route path='/unidades-productivas' element={<UnidadesProductivas/>}/>
       <Route path='/unidades-productivas/nueva' element={<NuevaUnidadProductiva/>}/>
       <Route path='/unidades-productivas/:id' element={<DetalleUnidadProductiva/>}/>
@@ -48,6 +50,7 @@ function App() {
       <Route path='/inventario/insumos' element={<Navigate to="/inventario" replace />}/>
       <Route path='/inventario/movimientos' element={<Navigate to="/inventario" replace />}/>
       <Route path='/inventario/reservas' element={<Navigate to="/inventario" replace />}/>
+      <Route path='/' element={<Navigate to="/inventario" replace />}/>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
