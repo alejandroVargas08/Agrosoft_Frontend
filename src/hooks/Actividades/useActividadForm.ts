@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { ESTADO_INICIAL_FORM, type ActividadFormState, type CrearActividadPayLoad } from "../../types/actividades";
-import { actividadesApi, cultivosApi, lotesApi, productosAgroApi } from "../../api/actividades";
+import { actividadesApi, cultivosApi, lotesApi, productosAgroApi } from "../../api/actividades/actividades";
 import { isAxiosError } from "axios";
 
 interface UseActividadFormProps {

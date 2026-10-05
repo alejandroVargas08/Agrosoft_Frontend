@@ -19,6 +19,7 @@ import NuevaUnidadProductiva from './pages/NuevaUnidadProductiva'
 import DetalleUnidadProductiva from './pages/DetalleUnidadProductiva'
 import SensoresPage from './pages/SensorPage'
 import Actividades from './pages/actividades/actividades'
+import ActividadDetalle from './pages/actividades/ActividadDetalle'
 import Cultivos from './pages/cultivos/cultivos'
 
 function App() {
@@ -34,22 +35,22 @@ function App() {
       <Route path="/editar-perfil" element={<EditarPerfil />} />
       <Route path="/configuracion" element={<Configuracion />} />
       <Route path="/agrobot" element={<AgroBot />} />
-      <Route path="/actividades" element={<Actividades />} />
-      <Route path="/sensores-iot" element={<SensoresPage />} />
-      <Route path="/cultivos" element={<Cultivos />} />
-      <Route path="/unidades-productivas" element={<UnidadesProductivas />} />
-      <Route path="/unidades-productivas/nueva" element={<NuevaUnidadProductiva />} />
-      <Route path="/unidades-productivas/:id" element={<DetalleUnidadProductiva />} />
-      <Route path="/territorio" element={<LotesSublotes />} />
-      <Route path="/territorio/nuevo" element={<NuevoLote />} />
-      <Route path="/inventario" element={<Inventario />} />
-      <Route path="/inventario/nuevo" element={<NuevoInsumo />} />
-      {/* Rutas antiguas: redirigen a las pantallas nuevas */}
-      <Route path="/territorio/lotes" element={<Navigate to="/territorio" replace />} />
-      <Route path="/territorio/sublotes" element={<Navigate to="/territorio" replace />} />
-      <Route path="/inventario/catalogos" element={<Navigate to="/inventario" replace />} />
-      <Route path="/inventario/insumos" element={<Navigate to="/inventario" replace />} />
-      <Route path="/inventario/movimientos" element={<Navigate to="/inventario" replace />} />
+      <Route path='/actividades' element={<Actividades/>}/>
+      <Route path='/cultivos' element={<Cultivos/>} />
+      <Route path='/unidades-productivas' element={<UnidadesProductivas/>}/>
+      <Route path='/unidades-productivas/nueva' element={<NuevaUnidadProductiva/>}/>
+      <Route path='/unidades-productivas/:id' element={<DetalleUnidadProductiva/>}/>
+      <Route path='/territorio' element={<LotesSublotes/>}/>
+      <Route path='/territorio/nuevo' element={<NuevoLote/>}/>
+      <Route path='/inventario' element={<Inventario/>}/>
+      <Route path='/inventario/nuevo' element={<NuevoInsumo/>}/>
+      <Route path='/sensores-iot' element = {<SensoresPage/>}/>
+      <Route path="/territorio/lotes" element={<Navigate to="/territorio" replace />}/>
+      <Route path="/territorio/sublotes" element={<Navigate to="/territorio" replace/>}/>
+      <Route path="/actividades/:id" element={<ActividadDetalle />} />
+      <Route path="/inventario/catalogos" element={<Navigate to="/inventario" replace/>}/>
+      <Route path="/inventario/insumos" element={<Navigate to="/inventario" replace />}/>
+      <Route path="/inventario/movimientos" element={<Navigate to="/inventario" replace />}/>
       <Route path="/inventario/reservas" element={<Navigate to="/inventario" replace />} />
       <Route path="/" element={<Navigate to="/inventario" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
