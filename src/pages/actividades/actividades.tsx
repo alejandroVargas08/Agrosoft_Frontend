@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { useActividades } from "../../hooks/actividades/useActividades";
-import { useActividadForm } from "../../hooks/actividades/useActividadForm";
+import { useActividades } from "../../hooks/Actividades/useActividades";
+import { useActividadForm } from "../../hooks/Actividades/useActividadForm";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 
@@ -64,7 +64,7 @@ const Actividades = () => {
 
     return (
             <DashboardLayout>
-            <div className="max-w-7xl mx-auto">
+            <div className="p-4 sm:p-8">
 
 {/* Titulo */}
                 <div className="flex justify-between items-center mb-6">
