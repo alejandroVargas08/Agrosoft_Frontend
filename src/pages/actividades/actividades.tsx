@@ -3,8 +3,8 @@ import DashboardLayout from "../../components/layout/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import { useCultivos } from "../../hooks/cultivos/useCultivos";
 import { useTerritorio } from "../../hooks/useTerritorio";
-import { useActividades } from "../../hooks/Actividades/useActividad";
 import { useActividadForm } from "../../hooks/Actividades/useActividadForm";
+import { useActividades } from "../../hooks/Actividades/useActividades";
 
 
 const Actividades = () => {
@@ -267,31 +267,36 @@ const Actividades = () => {
                     </div>
                 )}
 
-                <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {actividades.map((actividad) => (
-
                         <div
                             key={actividad.id}
                             onClick={() => navigate(`/actividades/${actividad.id}`)}
-                            className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100 relative flex flex-col justify-between">
-
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h3 className="text-lg font-bold text-neutral-900">
-                                        {actividad.tipo} — {actividad.subtipo}
+                            className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100 relative flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer"
+                            >
+                            <div className="flex justify-between items-start gap-2 mb-3">
+                                    <h3 className="text-lg font-bold text-neutral-900 leading-snug">
+                                        {actividad.tipo} {actividad.subtipo ? `-${actividad.subtipo}` : ''}
                                     </h3>
-                                    <span className="text-xs text-neutral-400">
+                                    <span
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleChangeEstado(actividad.id, actividad.estado);
+                                    }} 
+                                    className={`text-xs font-semibold px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity shrink-0 ${getEstadoBadge(actividad.estado)}`}>
+                                        {actividad.estado ? actividad.estado.replace('_', ' ') : ''}
+                                    </span>
+                                </div>
+                                
+                                <p className="text-sm text-neutral-600 mb-4 line-clamp-2">
+                                {actividad.descripcion || "Sin descripción registrada."}
+                                </p>
+
+                                <div className="border-t border-neutral-100 pt-3 mt-auto">
+                                    <span className="text-xs text-neutral-400 font-medium">
                                         {actividad.fecha}
                                     </span>
                                 </div>
-                                <span onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleChangeEstado(actividad.id, actividad.estado);
-                                }}
-                                title="Click para cambiar el estado" className={`text-xs font-semibold px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${getEstadoBadge(actividad.estado)}`}>
-                                    {actividad.estado ? actividad.estado.replace('_', ' ') : ''}
-                                </span>
-                            </div>
                         </div>
                     ))}
                 </div>

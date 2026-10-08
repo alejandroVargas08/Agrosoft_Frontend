@@ -11,7 +11,7 @@ interface UseActividadFormProps {
     cultivoIdDefault?: number;
 }
 
-export function useActividadForm({ isModalOpen, cultivoIdDefault = 1 }: UseActividadFormProps) {
+export function useActividadForm({ isModalOpen, onSuccess, cultivoIdDefault = 1 }: UseActividadFormProps) {
 
     const queryClient = useQueryClient();
     const [form, setForm] = useState<ActividadFormState>(ESTADO_INICIAL_FORM);
@@ -29,7 +29,6 @@ export function useActividadForm({ isModalOpen, cultivoIdDefault = 1 }: UseActiv
     });
 
     const loteIdNum = form.loteId ? Number(form.loteId) : undefined;
-
     const { data: sublotes = [] } = useQuery({
         queryKey: ['sublotes', loteIdNum],
         queryFn: async () => (await sublotesApi.porLote(loteIdNum!)).data,
@@ -48,6 +47,9 @@ export function useActividadForm({ isModalOpen, cultivoIdDefault = 1 }: UseActiv
             setForm(ESTADO_INICIAL_FORM);
             queryClient.invalidateQueries({ queryKey: ['cultivos'] });
             queryClient.invalidateQueries({ queryKey: ['cultivos', payload.loteId] });
+            queryClient.invalidateQueries({ queryKey: ['actividades']});
+
+            onSuccess();
         },
     }); 
 
