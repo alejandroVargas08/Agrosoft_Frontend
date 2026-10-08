@@ -4,6 +4,7 @@ import { api } from "../axios";
 
 export const actividadesApi = {
     listarPorCultivo: (cultivoId: number) => api.get<Actividad[]>(`/actividades/cultivo/${cultivoId}`),
+    obtenerPorId: (id:number) => api.get<Actividad>(`/Actividades/${id}`),
     crear: (data: CrearActividadPayLoad) => api.post<Actividad>('/actividades', data),
     cambiarEstado: (
         id: number,

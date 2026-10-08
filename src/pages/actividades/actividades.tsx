@@ -279,7 +279,7 @@ const Actividades = () => {
                     {actividades.map((actividad) => (
                         <div
                             key={actividad.id}
-                            onClick={() => navigate(`/actividades/${actividad.id}`)}
+                            onClick={() => navigate(`/actividades/${actividad.id}`, {state: {actividad} })}
                             className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100 relative flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer"
                             >
                             <div className="flex justify-between items-start gap-2 mb-3">
