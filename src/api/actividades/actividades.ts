@@ -1,5 +1,5 @@
-import type { Actividad, CrearActividadPayLoad } from "../types/actividades";
-import { api } from "./axios";
+import type { Actividad, CrearActividadPayLoad } from "../../types/actividades";
+import { api } from "../axios";
 
 
 export const actividadesApi = {

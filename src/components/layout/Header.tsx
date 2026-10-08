@@ -13,42 +13,43 @@ export default function Header({ onMenuClick, unreadNotifications }: HeaderProps
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 fixed top-0 right-0 left-0 lg:left-64 md:left-20 z-20 flex items-center justify-between px-4 lg:px-8">
-      
-      <button 
+    <header className="fixed top-0 right-0 left-0 z-20 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 md:left-20 lg:left-64 lg:px-8">
+      <button
         type="button"
         onClick={onMenuClick}
-        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer lg:hidden"
+        className="cursor-pointer rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 lg:hidden"
         aria-label="Abrir menú de navegación"
       >
-        <Menu className="w-5 h-5" />
+        <Menu className="h-5 w-5" />
       </button>
 
       <div className="hidden lg:block" />
 
-      <div className="flex items-center gap-4">
-        <button 
-          type="button"
-          className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-          aria-label="Notificaciones"
+      <div className="flex items-center gap-2 sm:gap-4">
+        <Link
+          to="/notificaciones"
+          className="relative cursor-pointer rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100"
+          aria-label={`Notificaciones${
+            unreadNotifications > 0 ? `, ${unreadNotifications} sin leer` : ''
+          }`}
         >
-          <Bell className="w-5 h-5" />
+          <Bell className="h-5 w-5" />
           {unreadNotifications > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-              {unreadNotifications}
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+              {unreadNotifications > 99 ? '99+' : unreadNotifications}
             </span>
           )}
-        </button>
-        
+        </Link>
+
         <Link
           to="/perfil"
-          className="flex items-center gap-3 pl-4 border-l border-gray-200 p-1.5 rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
+          className="group flex cursor-pointer items-center gap-3 rounded-lg border-l border-gray-200 p-1.5 pl-3 transition-colors hover:bg-gray-50 sm:pl-4"
         >
-          <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm group-hover:bg-emerald-200 transition-colors shrink-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700 transition-colors group-hover:bg-emerald-200">
             {initial}
           </div>
-          <div className="hidden sm:block text-left">
-            <p className="text-sm font-semibold text-gray-900 group-hover:text-emerald-700 transition-colors truncate max-w-[150px] lg:max-w-[200px]">
+          <div className="hidden text-left sm:block">
+            <p className="max-w-[150px] truncate text-sm font-semibold text-gray-900 transition-colors group-hover:text-emerald-700 lg:max-w-[200px]">
               {displayName}
             </p>
             <p className="text-xs text-gray-500">Usuario</p>

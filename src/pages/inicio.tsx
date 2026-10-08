@@ -44,7 +44,7 @@ export default function Inicio() {
   }, []);
 
   return (
-    <DashboardLayout unreadNotifications={2}>
+    <DashboardLayout >
       <div className="p-4 sm:p-8">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
           {saludo}, {nombreFormateado} 👋🏻

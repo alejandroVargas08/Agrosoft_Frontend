@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { actividadesApi } from "../../api/actividades";
+import { actividadesApi } from "../../api/actividades/actividades";
 import type { Actividad } from "../../types/actividades";
 
 export function useActividades(cultivoId: number = 1) {
