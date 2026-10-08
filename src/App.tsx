@@ -18,6 +18,7 @@ import NuevoInsumo from './pages/NuevoInsumo'
 import UnidadesProductivas from './pages/UnidadesProductivas'
 import NuevaUnidadProductiva from './pages/NuevaUnidadProductiva'
 import DetalleUnidadProductiva from './pages/DetalleUnidadProductiva'
+import Incidencias from './pages/Incidencias'
 
 function App() {
 
@@ -34,6 +35,7 @@ function App() {
       <Route path='/configuracion' element={<Configuracion/>}/>
       <Route path="/agrobot" element={<AgroBot />} />
       <Route path='/actividades' element={<Actividades/>}/>
+      <Route path='/incidencias' element={<Incidencias/>}/>
       <Route path='/unidades-productivas' element={<UnidadesProductivas/>}/>
       <Route path='/unidades-productivas/nueva' element={<NuevaUnidadProductiva/>}/>
       <Route path='/unidades-productivas/:id' element={<DetalleUnidadProductiva/>}/>
