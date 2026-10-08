@@ -138,130 +138,138 @@ const Actividades = () => {
                 )}
 
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                        <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-                            <h2 className="text-xl font-bold mb-4 text-neutral-900">Nueva Actividad</h2>
-                            {errorForm && <p className="text-red-600 mb-3 text-sm">{errorForm}</p>}
-                            <form onSubmit={handleCreateSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+                        <div className="bg-white rounded-3xl w-full max-w-xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                            <div className="flex justify-between items-center pb-4 border-b border-neutral-100 mb-5">
+                                <h2 className="text-xl font-bold mb-4 text-neutral-900">Nueva Actividad</h2>
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="text-neutral-400 hover:text-neutral-600 p-1 rounded-full hover:bg-neutral-100 transition-colors"
+                                > X
+                                </button>
+                            </div>
+                        { errorForm && <p className="text-red-600 mb-3 text-sm">{errorForm}</p>}
+                            <form onSubmit={handleCreateSubmit} className="space-y-4">
 
                             <div>
-                                <label className="text-sm font-medium text-neutral-700">Fecha de la actividad</label>
+                                <label className="block text-sm font-medium text-neutral-800 mb-1">Tipo de Actividad <span className="text-red-500">*</span>
+                                </label>
                                 <input
-                                    type="date"
                                     required
-                                    name="fecha"
-                                    value={form.fecha || ""}
+                                    name="tipo"
+                                    value={form.tipo || ""}
                                     onChange={handleFormChange}
-                                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                                />
+                                    placeholder="Ej: Fertilización"
+                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
+                                    />          
                             </div>
 
-                                <div>
-                                    <label className="text-sm font-medium text-neutral-700">Lote</label>
-                                    <select
-                                        name="loteId"
-                                        value={form.loteId || ""}
-                                        onChange={handleFormChange}
-                                        className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                                    >
-                                        <option value="">Seleccione un lote</option>
-                                        {lotesForm?.map((lote: { id: number | string; nombre?: string; tipo?: string }) => (
-                                            <option key={lote.id} value={lote.id}>{lote.nombre}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-800 mb-1">Lote</label>
+                                <select
+                                    name="loteId"
+                                    value={form.loteId || ""}
+                                    onChange={handleFormChange}
+                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
+                                >
+                                <option value="">Seleccione un lote</option>
+                                {lotesForm?.map((lote: { id: number | string; nombre?: string; tipo?: string }) => (
+                                <option key={lote.id} value={lote.id}>{lote.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
 
-                                <div>
-                                    <label className="text-sm font-medium text-neutral-700">Sublote</label>
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-800 mb-1">Sublote</label>
+                                <select
+                                    name="subLoteId"
+                                    value={form.subLoteId || ""}
+                                    onChange={handleFormChange}
+                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
+                                >
+                                    <option value="">Seleccione un sublote</option>
+                                    {sublotes?.map((sub: { id: number | string; nombre: string }) => (
+                                        <option key={sub.id} value={sub.id}>{sub.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
 
-                                    <select
-                                        name="subLoteId"
-                                        value={form.subLoteId || ""}
-                                        onChange={handleFormChange}
-                                        className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                                    >
-                                        <option value="">Seleccione un sublote</option>
-                                        {sublotes?.map((sub: { id: number | string; nombre: string}) => (
-                                            <option key={sub.id} value={sub.id}>{sub.nombre}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="text-sm font-medium text-neutral-700"> Cultivo </label>
-                                    <select
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-800 mb-1">Cultivo</label>
+                                <select
                                     name="cultivoId"
                                     value={form.cultivoId || ""}
                                     onChange={handleFormChange}
-                                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700">
-
-                                        <option value=""> Seleccione un cultivo</option>
-                                            {cultivosForm?.map((cultivosItem: {id: number | string; nombreCultivo?: string; tipoCultivo?: string}) => (
+                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
+                                >
+                                    <option value="">Seleccione un cultivo</option>
+                                    {cultivosForm?.map((cultivosItem: { id: number | string; nombreCultivo?: string; tipoCultivo?: string }) => (
                                         <option key={cultivosItem.id} value={cultivosItem.id}>
                                             {cultivosItem.nombreCultivo || cultivosItem.tipoCultivo || `Cultivo #${cultivosItem.id}`}
                                         </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                    ))}
+                                </select>
+                            </div>
 
 
-                                <div className="sm:col-span-2">
-                                    <label className="text-sm font-medium text-neutral-700">Producto / Insumo</label>
-                                    <select
-                                        name="productoAgroId"
-                                        value={form.productoAgroId || ""}
-                                        onChange={handleFormChange}
-                                        className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                                    >
-                                        <option value="">Seleccione un producto</option>
-                                        {productos?.map((producto: {id: number | string; nombre: string}) => (
-                                            <option key={producto.id} value={producto.id}>{producto.nombre}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-800 mb-1">Producto / Insumo</label>
+                                <select
+                                    name="productoAgroId"
+                                    value={form.productoAgroId || ""}
+                                    onChange={handleFormChange}
+                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
+                                >
+                                    <option value="">Seleccione un producto</option>
+                                    {productos?.map((producto: { id: number | string; nombre: string }) => (
+                                        <option key={producto.id} value={producto.id}>{producto.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
 
-                                <div className="sm:col-span-2">
-                                    <label className="text-sm font-medium text-neutral-700">Tipo de Actividad</label>
-
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-800 mb-1">
+                                        Fecha <span className="text-red-500">*</span>
+                                    </label>
                                     <input
+                                        type="date"
                                         required
-                                        name="tipo"
-                                        value={form.tipo || ""}
+                                        name="fecha"
+                                        value={form.fecha || ""}
                                         onChange={handleFormChange}
-                                        placeholder="Ej. Siembra, Fertilización..."
-                                        className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
+                                        className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
                                     />
                                 </div>
 
-                                <div className="sm:col-span-2">
-                                    <label className="text-sm font-medium text-neutral-700">Descripción</label>
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-800 mb-1">Descripción</label>
                                     <textarea
                                         name="descripcion"
                                         value={form.descripcion || ""}
                                         onChange={handleFormChange}
                                         rows={3}
-                                        className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
+                                        placeholder="Detalles adicionales de la labor..."
+                                        className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
                                     />
                                 </div>
-                                <div className="sm:col-span-2 flex justify-end gap-3 mt-4 pt-4 border-t border-neutral-100">
 
+                                <div className="flex items-center justify-end gap-3 pt-5 mt-6 border-t border-neutral-100">
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
-                                        className="px-4 py-2 rounded-xl text-sm font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
+                                        className="px-5 py-2.5 rounded-2xl text-sm font-medium text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 transition-colors"
                                     >
                                         Cancelar
                                     </button>
                                     <button
                                         type="submit"
-
                                         disabled={enviando}
-
-                                        className="bg-[#2d7a3e] hover:bg-[#418750] text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-50 transition-colors"
+                                        className="bg-[#2d7a3e] hover:bg-[#418750] text-white px-6 py-2.5 rounded-2xl text-sm font-medium shadow-sm disabled:opacity-50 transition-colors"
                                     >
                                         {enviando ? 'Guardando...' : 'Guardar'}
                                     </button>
                                 </div>
+
                             </form>
                         </div>
                     </div>
@@ -275,7 +283,7 @@ const Actividades = () => {
                             className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100 relative flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer"
                             >
                             <div className="flex justify-between items-start gap-2 mb-3">
-                                    <h3 className="text-lg font-bold text-neutral-900 leading-snug">
+                                    <h3 className="text-sm font-semibold text-neutral-900 leading-snug">
                                         {actividad.tipo} {actividad.subtipo ? `-${actividad.subtipo}` : ''}
                                     </h3>
                                     <span
@@ -287,7 +295,7 @@ const Actividades = () => {
                                         {actividad.estado ? actividad.estado.replace('_', ' ') : ''}
                                     </span>
                                 </div>
-                                
+
                                 <p className="text-sm text-neutral-600 mb-4 line-clamp-2">
                                 {actividad.descripcion || "Sin descripción registrada."}
                                 </p>
