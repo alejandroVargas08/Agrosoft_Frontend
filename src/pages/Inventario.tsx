@@ -46,7 +46,7 @@ const Inventario = () => {
 
     return (
         <DashboardLayout>
-            <div className="max-w-7xl mx-auto">
+            <div className="p-6 max-w-7xl mx-auto">
                 <PageHeader
                     title="Inventario"
                     subtitle="Insumos, herramientas y almacenes"
