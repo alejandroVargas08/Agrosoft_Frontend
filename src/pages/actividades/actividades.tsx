@@ -1,16 +1,19 @@
 import { useState } from "react"
-import { useActividades } from "../../hooks/Actividades/useActividades";
-import { useActividadForm } from "../../hooks/Actividades/useActividadForm";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { useNavigate } from "react-router-dom";
-
+import { useCultivos } from "../../hooks/cultivos/useCultivos";
+import { useTerritorio } from "../../hooks/useTerritorio";
+import { useActividades } from "../../hooks/Actividades/useActividad";
+import { useActividadForm } from "../../hooks/Actividades/useActividadForm";
 
 
 const Actividades = () => {
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const cultivoIdActual = 1;
-
+    const [loteFiltroId, setLoteFiltroId] = useState<number | undefined>(undefined);
+    const [cultivoIdActual, setCultivoIdActual] = useState<number>(1);
+    const {lotes: lotesFiltro } = useTerritorio();
+    const {cultivos: cultivosDisponibles} = useCultivos(loteFiltroId);
     const {
         actividades,
         loading,
@@ -20,11 +23,11 @@ const Actividades = () => {
         handleChangeEstado,
     } = useActividades(cultivoIdActual);
 
-    const { 
+    const {
         form,
-        lotes,
+        lotes: lotesForm,
         sublotes,
-        cultivos,
+        cultivos: cultivosForm,
         productos,
         handleFormChange,
         handleCreateSubmit,
@@ -45,16 +48,12 @@ const Actividades = () => {
 
     const getEstadoBadge = (estado: string) => {
         switch (estado) {
-
             case 'Todas':
             return 'bg-green-200 text-white-800';
-            
             case 'Finalizada':
                 return 'bg-[#e2f4ed] text-[#0d5433]';
-
             case 'En_progreso':
                 return 'bg-[#e8f0fe] text-[#1a73e8]';
-                
             case 'Pendiente':
                 return 'bg-[#fef3d6] text-[#b7791f]';
             default:
@@ -66,7 +65,6 @@ const Actividades = () => {
             <DashboardLayout>
             <div className="p-4 sm:p-8">
 
-{/* Titulo */}
                 <div className="flex justify-between items-center mb-6">
                     <div>
                     <h1 className="text-3xl sm:text-3xl font-bold text-neutral-900 mx-auto">Actividades Agrícolas</h1>
@@ -77,29 +75,67 @@ const Actividades = () => {
                     className="rounded-xl bg-green-800 hover:bg-[#418750] transition-colors px-6 py-3.5 text-white font-medium flex items-center gap-2">
                     + Nueva Actividad </button>
                 </div>
-{/* Filtro */}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
+                    <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">Filtrar por Lote:</label>
+                        <select
+                            value={loteFiltroId || ""}
+                            onChange={(e) => {
+                                setLoteFiltroId(e.target.value ? Number(e.target.value) : undefined);
+                                setCultivoIdActual(0);
+                            }}
+                            className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
+                        >
+                            <option value="">Seleccione un lote...</option>
+                            {lotesFiltro?.map((lote) => (
+                                <option key={lote.id} value={lote.id}>
+                                    {lote.nombre}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">Cultivo a visualizar:</label>
+
+                        <select
+                            value={cultivoIdActual}
+                            onChange={(e) => setCultivoIdActual(Number(e.target.value))}
+                            disabled={!loteFiltroId}
+                            className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700 disabled:bg-neutral-100 disabled:text-neutral-400"
+                        >
+                            <option value={0}>
+                                {!loteFiltroId ? "Primero seleccione un lote" : "Seleccione un cultivo"}
+                            </option>
+                            {cultivosDisponibles?.map((cultivoItem) => (
+                                <option key={cultivoItem.id} value={cultivoItem.id}>
+                                    {cultivoItem.nombreCultivo || cultivoItem.tipoCultivo || `Cultivo #${cultivoItem.id}`}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
                 <div className="flex gap-2 mb-8">
                     {Filtros.map((f) => (
                     <button
                         key={f.value}
                         onClick={() => setFiltroEstado(f.value)}
                         className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-                            filtroEstado === f.value 
-                            ? 'bg-[#2d7a3e] text-white shadow-sm' 
+                            filtroEstado === f.value
+                            ? 'bg-[#2d7a3e] text-white shadow-sm'
                             : 'bg-[#edf2ee] text-neutral-600 hover:bg-[#e2ebd7]'}`}>
                         {f.label}
                     </button>
                     ))}
                 </div>
-
                 {loading && (
                     <p className="text-center py-8 text-neutral-500 font-medium"> Cargando Actividades</p>
                 )}
-
                 {error && (
                     <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-center mb-6 text-sm"> {error} </div>
                 )}
-{/* Modalll */}
 
                 {isModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -110,37 +146,35 @@ const Actividades = () => {
 
                             <div>
                                 <label className="text-sm font-medium text-neutral-700">Fecha de la actividad</label>
-                                <input 
+                                <input
                                     type="date"
-                                    required 
-                                    name="fecha" 
-                                    value={form.fecha || ""} 
+                                    required
+                                    name="fecha"
+                                    value={form.fecha || ""}
                                     onChange={handleFormChange}
-                                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700" 
+                                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
                                 />
                             </div>
 
                                 <div>
-
-                                    {/* Ejemplo: Seleccionar Lote */}
                                     <label className="text-sm font-medium text-neutral-700">Lote</label>
-                                    <select 
+                                    <select
                                         name="loteId"
                                         value={form.loteId || ""}
                                         onChange={handleFormChange}
                                         className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
                                     >
                                         <option value="">Seleccione un lote</option>
-                                        {lotes?.map((lote: { id: number | string; nombre?: string; tipo?: string }) => (
+                                        {lotesForm?.map((lote: { id: number | string; nombre?: string; tipo?: string }) => (
                                             <option key={lote.id} value={lote.id}>{lote.nombre}</option>
                                         ))}
                                     </select>
                                 </div>
 
-                                        {/* Seleccionar Sublote */}
                                 <div>
                                     <label className="text-sm font-medium text-neutral-700">Sublote</label>
-                                    <select 
+
+                                    <select
                                         name="subLoteId"
                                         value={form.subLoteId || ""}
                                         onChange={handleFormChange}
@@ -155,20 +189,25 @@ const Actividades = () => {
 
                                 <div>
                                     <label className="text-sm font-medium text-neutral-700"> Cultivo </label>
-                                    <select name="CultivoId"
+                                    <select
+                                    name="cultivoId"
                                     value={form.cultivoId || ""}
                                     onChange={handleFormChange}
                                     className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700">
+
                                         <option value=""> Seleccione un cultivo</option>
-                                        {cultivos?.map((cultivo: { id: number | string; nombre?: string; tipo?: string }) => (
-                                            <option key={cultivo.id} value={cultivo.id}>{cultivo.nombre || cultivo.tipo}</option>
+                                            {cultivosForm?.map((cultivosItem: {id: number | string; nombreCultivo?: string; tipoCultivo?: string}) => (
+                                        <option key={cultivosItem.id} value={cultivosItem.id}>
+                                            {cultivosItem.nombreCultivo || cultivosItem.tipoCultivo || `Cultivo #${cultivosItem.id}`}
+                                        </option>
                                         ))}
                                     </select>
                                 </div>
 
+
                                 <div className="sm:col-span-2">
                                     <label className="text-sm font-medium text-neutral-700">Producto / Insumo</label>
-                                    <select 
+                                    <select
                                         name="productoAgroId"
                                         value={form.productoAgroId || ""}
                                         onChange={handleFormChange}
@@ -181,43 +220,43 @@ const Actividades = () => {
                                     </select>
                                 </div>
 
-                                        {/* Tipo / Nombre */}
                                 <div className="sm:col-span-2">
                                     <label className="text-sm font-medium text-neutral-700">Tipo de Actividad</label>
-                                    <input 
-                                        required 
-                                        name="tipo" 
-                                        value={form.tipo || ""} 
+
+                                    <input
+                                        required
+                                        name="tipo"
+                                        value={form.tipo || ""}
                                         onChange={handleFormChange}
                                         placeholder="Ej. Siembra, Fertilización..."
-                                        className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-700" 
+                                        className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
                                     />
                                 </div>
 
-                                        {/* Descripción */}
                                 <div className="sm:col-span-2">
                                     <label className="text-sm font-medium text-neutral-700">Descripción</label>
-                                    <textarea 
-                                        name="descripcion" 
-                                        value={form.descripcion || ""} 
+                                    <textarea
+                                        name="descripcion"
+                                        value={form.descripcion || ""}
                                         onChange={handleFormChange}
                                         rows={3}
-                                        className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-700" 
+                                        className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 mt-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-700"
                                     />
                                 </div>
-
-                                {/* Botones de acción */}
                                 <div className="sm:col-span-2 flex justify-end gap-3 mt-4 pt-4 border-t border-neutral-100">
-                                    <button 
-                                        type="button" 
+
+                                    <button
+                                        type="button"
                                         onClick={() => setIsModalOpen(false)}
                                         className="px-4 py-2 rounded-xl text-sm font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
                                     >
                                         Cancelar
                                     </button>
-                                    <button 
-                                        type="submit" 
+                                    <button
+                                        type="submit"
+
                                         disabled={enviando}
+
                                         className="bg-[#2d7a3e] hover:bg-[#418750] text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-50 transition-colors"
                                     >
                                         {enviando ? 'Guardando...' : 'Guardar'}
@@ -227,14 +266,14 @@ const Actividades = () => {
                         </div>
                     </div>
                 )}
-            
-{/* Tarjetasss */}
+
                 <div className="flex flex-col gap-4">
                     {actividades.map((actividad) => (
-                        <div 
+
+                        <div
                             key={actividad.id}
                             onClick={() => navigate(`/actividades/${actividad.id}`)}
-                            className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100 relative flex flex-col justify-between"> 
+                            className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100 relative flex flex-col justify-between">
 
                             <div className="flex justify-between items-start">
                                 <div>
@@ -245,11 +284,10 @@ const Actividades = () => {
                                         {actividad.fecha}
                                     </span>
                                 </div>
-
                                 <span onClick={(e) => {
                                     e.stopPropagation();
                                     handleChangeEstado(actividad.id, actividad.estado);
-                                }} 
+                                }}
                                 title="Click para cambiar el estado" className={`text-xs font-semibold px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${getEstadoBadge(actividad.estado)}`}>
                                     {actividad.estado ? actividad.estado.replace('_', ' ') : ''}
                                 </span>
@@ -257,11 +295,8 @@ const Actividades = () => {
                         </div>
                     ))}
                 </div>
-
-
             </div>
             </DashboardLayout>
         );
 };
-
-export default Actividades;
+export default Actividades; 

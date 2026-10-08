@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { ESTADO_INICIAL_FORM, type ActividadFormState, type CrearActividadPayLoad } from "../../types/actividades";
-import { actividadesApi, cultivosApi, lotesApi, productosAgroApi } from "../../api/actividades";
 import { isAxiosError } from "axios";
+import { lotesApi, sublotesApi } from "../../api/territorio";
+import { actividadesApi, cultivosApi, productosAgroApi } from "../../api/actividades/actividades";
 
 interface UseActividadFormProps {
     isModalOpen: boolean;
@@ -10,31 +11,28 @@ interface UseActividadFormProps {
     cultivoIdDefault?: number;
 }
 
-export function useActividadForm({ isModalOpen, onSuccess, cultivoIdDefault = 1 }: UseActividadFormProps) {
+export function useActividadForm({ isModalOpen, cultivoIdDefault = 1 }: UseActividadFormProps) {
+
     const queryClient = useQueryClient();
     const [form, setForm] = useState<ActividadFormState>(ESTADO_INICIAL_FORM);
 
-    // Solo pide el catalogo de lotes, si el modal esta abierto
     const { data: lotes = [] } = useQuery({
         queryKey: ['lotes'],
         queryFn: async () => (await lotesApi.listar()).data,
         enabled: isModalOpen,
     });
 
-    // Catalogo de Productos, solo si esta abierto
     const { data: productos = [] } = useQuery({
         queryKey: ['productos-agro'],
         queryFn: async () => (await productosAgroApi.listar()).data,
         enabled: isModalOpen,
     });
 
-    // Sublotes y cultivos dependen del lote que se escoja, por lo cual
-    // se agrega a la querykey, para que cada uno tenga su propia entrada al caché
     const loteIdNum = form.loteId ? Number(form.loteId) : undefined;
 
     const { data: sublotes = [] } = useQuery({
         queryKey: ['sublotes', loteIdNum],
-        queryFn: async () => (await lotesApi.sublotesPorLote(loteIdNum!)).data,
+        queryFn: async () => (await sublotesApi.porLote(loteIdNum!)).data,
         enabled: !!loteIdNum,
     });
 
@@ -44,22 +42,24 @@ export function useActividadForm({ isModalOpen, onSuccess, cultivoIdDefault = 1 
         enabled: !!loteIdNum,
     });
 
-    // Mutación: crear Actividad
     const crearMutation = useMutation({
         mutationFn: (payload: CrearActividadPayLoad) => actividadesApi.crear(payload),
-        onSuccess: () => {
+        onSuccess: (_res, payload) => {
             setForm(ESTADO_INICIAL_FORM);
-
-            // Invalida el cache para refrescar la lista de actividades, del cultivo
-            queryClient.invalidateQueries({ queryKey: ['actividades', cultivoIdDefault] }); // Refresca la tabla
-            onSuccess(); // Cierra el modal
+            queryClient.invalidateQueries({ queryKey: ['cultivos'] });
+            queryClient.invalidateQueries({ queryKey: ['cultivos', payload.loteId] });
         },
-    });
+    }); 
 
     const handleFormChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
-        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+        setForm((prev) => ({
+            ...prev,
+            [name]: value,
+            ...(name === 'loteId' ? {subLoteId: '', cultivoId: ''}: {}),
+        }));
     };
 
     const handleCreateSubmit = (e: React.FormEvent) => {
