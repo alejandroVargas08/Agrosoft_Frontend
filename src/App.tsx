@@ -21,6 +21,7 @@ import Incidencias from './pages/Incidencias'
 import Tratamientos from './pages/Tratamientos'
 import Reportes from './pages/Reportes'
 import Ventas from './pages/Ventas'
+import Alertas from './pages/Alertas'
 import SensoresPage from './pages/SensorPage'
 import Actividades from './pages/actividades/actividades'
 import ActividadDetalle from './pages/actividades/ActividadDetalle'
@@ -50,6 +51,7 @@ function App() {
         <Route path="/tratamientos" element={<Tratamientos />} />
         <Route path="/reportes" element={<Reportes />} />
         <Route path="/ventas" element={<Ventas />} />
+        <Route path="/alertas" element={<Alertas />} />
         <Route path="/cultivos" element={<Cultivos />} />
         <Route path="/unidades-productivas" element={<UnidadesProductivas />} />
         <Route path="/unidades-productivas/nueva" element={<NuevaUnidadProductiva />} />
