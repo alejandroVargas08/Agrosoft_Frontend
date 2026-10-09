@@ -20,6 +20,7 @@ import DetalleUnidadProductiva from './pages/DetalleUnidadProductiva'
 import Actividades from './pages/actividades/actividades'
 import ActividadDetalle from './pages/actividades/ActividadDetalle'
 import Cultivos from './pages/cultivos/cultivos'
+import Historial from './pages/historial/historial'
 
 function App() {
 
@@ -38,6 +39,7 @@ function App() {
       <Route path='/actividades' element={<Actividades/>}/>
       <Route path='/actividades/:actividadId' element={<ActividadDetalle/>}/>
       <Route path='/cultivos' element={<Cultivos/>} />
+      <Route path="/historial" element={<Historial />}/>
       <Route path='/unidades-productivas' element={<UnidadesProductivas/>}/>
       <Route path='/unidades-productivas/nueva' element={<NuevaUnidadProductiva/>}/>
       <Route path='/unidades-productivas/:id' element={<DetalleUnidadProductiva/>}/>
