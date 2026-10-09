@@ -94,7 +94,7 @@ const Tratamientos = () => {
                     />
                     <Input label="Producto / Tratamiento" value={form.producto} onChange={set('producto')} required
                         placeholder="Ej: Azufre micronizado 80%" />
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Input label="Dosis" value={form.dosis} onChange={set('dosis')} placeholder="Ej: 3g/L" />
                         <Input label="Fecha de aplicación" value={form.fecha} onChange={set('fecha')} type="date" />
                     </div>
