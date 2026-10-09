@@ -6,6 +6,7 @@ import { useActividadHistorial } from "../../hooks/Historial/useActividadHistori
 import { useHistorialPreciosLote } from "../../hooks/Historial/useHistorialPreciosLote";
 import { useHistorialCultivo } from "../../hooks/Historial/useHistorialCultivo";
 import { api } from "../../api/axios"; 
+import { actividadesApi } from "../../api/actividades";
 
 const Historial = () => {
     const [fuente, setFuente] = useState<tipoFuenteHistorial>('actividades');
@@ -48,13 +49,23 @@ const Historial = () => {
 };
 
 function HistorialActividades() {
+    const [cultivoSeleccionadoId, setCultivoSeleccionadoId] = useState<number | undefined>(undefined);
     const [actividadId, setActividadId] = useState<string>('');
     const actividadIdNum = actividadId ? Number(actividadId) : undefined;
 
-    const { data: actividades = []} = useQuery({
-        queryKey: ['actividades-select'],
-        queryFn: async() => (await api.get('/actividades')).data,
+    const { data: cultivos = []} = useQuery({
+        queryKey: ['cultivos-select'],
+        queryFn: async() => ( await api.get('/cultivos')).data,
     });
+
+    const { data: actividades = []} = useQuery({
+        queryKey: ['actividades-por-cultivo', cultivoSeleccionadoId],
+        queryFn: async() => {
+            const response = await actividadesApi.listarPorCultivo(cultivoSeleccionadoId!);
+            return response.data || response;
+        },
+        enabled: !!cultivoSeleccionadoId,
+    })
 
     const { historial, loading, error} = useActividadHistorial(actividadIdNum);
 
