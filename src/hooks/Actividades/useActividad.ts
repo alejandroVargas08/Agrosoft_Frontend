@@ -1,9 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-<<<<<<< HEAD:src/hooks/Actividades/useActividad.ts
-import { actividadesApi } from "../../api/actividades/actividades";
-=======
->>>>>>> origin/gisel_dev:src/hooks/Actividades/useActividades.ts
 import type { Actividad } from "../../types/actividades";
 import { actividadesApi } from "../../api/actividades/actividades";
 
