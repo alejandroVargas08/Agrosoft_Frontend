@@ -20,9 +20,9 @@ const NuevoLote = () => {
 
     return (
         <DashboardLayout>
-            <div className="p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8">
+            <div className="max-w-lg mx-auto p-4 sm:p-6">
                 <PageHeader title={form.tipo === 'subplot' ? 'Nuevo Sublote' : 'Nuevo Lote'} onBack={volver} />
-                <Card className="max-w-lg">
+                <Card>
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         {errorForm && (
                             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{errorForm}</div>
@@ -40,7 +40,7 @@ const NuevoLote = () => {
                         )}
                         <Input label="Nombre" value={form.nombre} onChange={set('nombre')} required placeholder="Ej: Lote C - Oriente" />
                         <Input label="Descripción" value={form.descripcion} onChange={set('descripcion')} placeholder="Descripción breve" />
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Input label="Área (hectáreas)" value={form.areaHa} onChange={set('areaHa')} type="number" step="any" placeholder="1.5" required />
                             <div className="flex flex-col gap-1">
                                 <label className="text-sm font-semibold">Área (m²)</label>

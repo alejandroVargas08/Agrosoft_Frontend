@@ -4,6 +4,7 @@ import { Edit2, AlertTriangle, Wheat, User, Clock } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, PageHeader, StatusBadge, Tab } from '../components/ui/AgroUI';
 import { useUnidadProductiva } from '../hooks/useUnidadProductiva';
+import { useIncidencias } from '../hooks/useIncidencias';
 import type { HistorialCultivo } from '../types/produccion';
 
 const fmt = (n: number) => n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
@@ -17,10 +18,17 @@ const DetalleUnidadProductiva = () => {
 
     const { unidad, historial, ubicacion, cargando, error } = useUnidadProductiva(Number(id));
 
+    // Todas las incidencias, filtradas aquí por la unidad que se está viendo
+    const { incidencias } = useIncidencias();
+    const incidenciasUnidad = incidencias.filter((i) => i.cultivoId === Number(id));
+    const incidenciasActivas = incidenciasUnidad.filter((i) => i.estado !== 'resolved').length;
+
     if (cargando) {
         return (
             <DashboardLayout>
-                <div className="max-w-7xl mx-auto"><p className="text-sm text-muted-foreground">Cargando unidad...</p></div>
+                <div className="max-w-7xl mx-auto p-4 sm:p-6">
+                    <p className="text-sm text-muted-foreground">Cargando unidad...</p>
+                </div>
             </DashboardLayout>
         );
     }
@@ -28,7 +36,7 @@ const DetalleUnidadProductiva = () => {
     if (error || !unidad) {
         return (
             <DashboardLayout>
-                <div className="max-w-7xl mx-auto">
+                <div className="max-w-7xl mx-auto p-4 sm:p-6">
                     <PageHeader title="Unidad productiva" onBack={() => navigate('/unidades-productivas')} />
                     <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
                         {error ?? 'No se encontró la unidad'}
@@ -40,7 +48,7 @@ const DetalleUnidadProductiva = () => {
 
     return (
         <DashboardLayout>
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <PageHeader
                     title={unidad.nombreCultivo}
                     subtitle={unidad.tipoCultivo}
@@ -81,11 +89,11 @@ const DetalleUnidadProductiva = () => {
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between p-2 bg-muted rounded-lg">
                                     <span className="text-sm text-muted-foreground">Incidencias activas</span>
-                                    <span className="font-bold text-red-500">0</span>
+                                    <span className="font-bold text-red-500">{incidenciasActivas}</span>
                                 </div>
                                 <div className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                                    <span className="text-sm text-muted-foreground">Total cosechas</span>
-                                    <span className="font-bold text-primary">0</span>
+                                    <span className="text-sm text-muted-foreground">Total incidencias</span>
+                                    <span className="font-bold text-primary">{incidenciasUnidad.length}</span>
                                 </div>
                                 <div className="flex items-center justify-between p-2 bg-muted rounded-lg">
                                     <span className="text-sm text-muted-foreground">Costo total</span>
@@ -97,7 +105,25 @@ const DetalleUnidadProductiva = () => {
                 )}
 
                 {tab === 'Incidencias' && (
-                    <EmptyState icon={AlertTriangle} title="Sin incidencias" description="No hay incidencias registradas" />
+                    <div className="space-y-3">
+                        {incidenciasUnidad.length === 0 ? (
+                            <EmptyState icon={AlertTriangle} title="Sin incidencias" description="No hay incidencias registradas" />
+                        ) : (
+                            incidenciasUnidad.map((i) => (
+                                <Card key={i.id}>
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <p className="font-medium text-foreground">{i.titulo}</p>
+                                            <p className="text-sm text-muted-foreground mt-0.5">
+                                                {i.tipo} · {fmtFecha(i.fecha)}
+                                            </p>
+                                        </div>
+                                        <StatusBadge status={i.estado} />
+                                    </div>
+                                </Card>
+                            ))
+                        )}
+                    </div>
                 )}
 
                 {tab === 'Cosechas' && (

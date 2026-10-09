@@ -29,7 +29,7 @@ const UnidadesProductivas = () => {
 
     return (
         <DashboardLayout>
-            <div className="p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8">
+            <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <PageHeader
                     title="Unidades Productivas"
                     subtitle={`${totalUnidades} unidades registradas`}
@@ -63,25 +63,38 @@ const UnidadesProductivas = () => {
                         action={botonNueva}
                     />
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                         {unidades.map((u) => {
                             const ubicacion = ubicacionDe(u);
                             return (
-                                <Card key={u.id} onClick={() => navigate(`/unidades-productivas/${u.id}`)}>
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="p-2 bg-primary/10 rounded-lg"><Sprout size={20} className="text-primary" /></div>
+                                <Card
+                                    key={u.id}
+                                    className="p-3"
+                                    onClick={() => navigate(`/unidades-productivas/${u.id}`)}
+                                >
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="p-1.5 bg-primary/10 rounded-lg">
+                                            <Sprout size={16} className="text-primary" />
+                                        </div>
                                         <StatusBadge status={u.estado} />
                                     </div>
-                                    <h3 className="font-semibold text-foreground mb-1">{u.nombreCultivo}</h3>
-                                    <p className="text-sm text-primary mb-2">{u.tipoCultivo}</p>
-                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1 truncate"><MapPin size={12} />{ubicacion.nombre}</span>
-                                        {ubicacion.areaM2 !== undefined && (
-                                            <span className="flex items-center gap-1"><Scale size={12} />{fmt(ubicacion.areaM2)} m²</span>
-                                        )}
-                                    </div>
-                                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                                        <Calendar size={12} />Inicio: {fmtFecha(u.fechaSiembra)}
+
+                                    <p className="font-semibold text-[14px] text-foreground mb-0.5 leading-tight">
+                                        {u.nombreCultivo}
+                                    </p>
+                                    <p className="text-[12px] text-muted-foreground mb-1.5">{u.tipoCultivo}</p>
+
+                                    <div className="flex flex-col gap-0.5 text-[12px] text-muted-foreground">
+                                        <span className="flex items-center gap-1 truncate">
+                                            <MapPin size={10} />{ubicacion.nombre}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <Scale size={10} />
+                                            {ubicacion.areaM2 !== undefined ? `${fmt(ubicacion.areaM2)} m²` : 'Área no registrada'}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <Calendar size={10} />Inicio: {fmtFecha(u.fechaSiembra)}
+                                        </span>
                                     </div>
                                 </Card>
                             );
