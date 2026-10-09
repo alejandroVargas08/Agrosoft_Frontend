@@ -12,7 +12,7 @@ export function useCultivos (loteId: number | undefined) {
     } = useQuery({
         queryKey: ['cultivos', loteId],
         queryFn: async () => (await cultivosApi.listarPorLote(loteId!)).data,
-        enabled: !!loteId, // Si no hay loteId, no pasa la petición
+        enabled: !!loteId,
     });
 
     const invalidar = () => {

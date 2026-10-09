@@ -26,17 +26,19 @@ import ActividadDetalle from './pages/actividades/ActividadDetalle'
 import Cultivos from './pages/cultivos/cultivos'
 import Notificaciones from './pages/notificaciones/Notificaciones'
 import LayoutConNotificaciones from './components/layout/LayoutConNotificaciones'
+import Historial from './pages/historial/historial'
 
 function App() {
   return (
     <Routes>
+      {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/recuperar" element={<RecuperarPassword />} />
       <Route path="/recuperar/verificar" element={<VerificarCodigo />} />
       <Route path="/recuperar/nueva-contrasena" element={<NuevaContrasena />} />
 
-      {/*Aqui tienen que poner las pantallas*/}
+      {/* Aquí tienen que poner las pantallas: del sidebar  */}
       <Route element={<LayoutConNotificaciones />}>
         <Route path="/inicio" element={<Inicio />} />
         <Route path="/perfil" element={<Perfil />} />
@@ -49,6 +51,7 @@ function App() {
         <Route path="/tratamientos" element={<Tratamientos />} />
         <Route path="/reportes" element={<Reportes />} />
         <Route path="/cultivos" element={<Cultivos />} />
+        <Route path="/historial" element={<Historial />} />
         <Route path="/unidades-productivas" element={<UnidadesProductivas />} />
         <Route path="/unidades-productivas/nueva" element={<NuevaUnidadProductiva />} />
         <Route path="/unidades-productivas/:id" element={<DetalleUnidadProductiva />} />
@@ -60,7 +63,7 @@ function App() {
         <Route path="/notificaciones" element={<Notificaciones />} />
       </Route>
 
-      {/*Muchachos, aqui tiene que ir las redirecciones */}
+      {/*Las rutas de las que redirigen*/}
       <Route path="/territorio/lotes" element={<Navigate to="/territorio" replace />} />
       <Route path="/territorio/sublotes" element={<Navigate to="/territorio" replace />} />
       <Route path="/inventario/catalogos" element={<Navigate to="/inventario" replace />} />
@@ -75,3 +78,4 @@ function App() {
 }
 
 export default App
+
