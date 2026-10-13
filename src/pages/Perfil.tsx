@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Pencil, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { usePerfil } from '../hooks/usePerfil';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import Notificaciones from './notificaciones/Notificaciones';
 
 function formatearFecha(fecha?: string) {
   if (!fecha) return 'No registrada';
@@ -58,7 +59,7 @@ export default function Perfil() {
   const { nombre, email, telefono, ubicacion, rol, emailVerificado, programaFormacion } = perfil;
 
   return (
-    <DashboardLayout unreadNotifications={2}>
+    <DashboardLayout>
       <div className="p-4 sm:p-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-6">

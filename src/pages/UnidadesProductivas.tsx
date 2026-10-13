@@ -29,7 +29,7 @@ const UnidadesProductivas = () => {
 
     return (
         <DashboardLayout>
-            <div className="max-w-7xl mx-auto">
+            <div className="p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8">
                 <PageHeader
                     title="Unidades Productivas"
                     subtitle={`${totalUnidades} unidades registradas`}

@@ -20,19 +20,43 @@ export function ListaConversaciones({
 }: ListaConversacionesProps) {
   const [conversaciones, setConversaciones] = useState<ConversacionIA[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let activo = true;
     setCargando(true);
+    setError(null);
+
     listarConversaciones(usuarioId)
-      .then(setConversaciones)
-      .finally(() => setCargando(false));
+      .then((data) => {
+        if (activo) setConversaciones(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error('Error cargando conversaciones:', err);
+        if (activo) {
+          setConversaciones([]);
+          setError('No se pudieron cargar las conversaciones.');
+        }
+      })
+      .finally(() => {
+        if (activo) setCargando(false);
+      });
+
+    return () => {
+      activo = false;
+    };
   }, [usuarioId, refrescarSenal]);
 
   async function handleEliminar(e: React.MouseEvent, id: number) {
     e.stopPropagation();
-    await eliminarConversacion(id);
-    setConversaciones((prev) => prev.filter((c) => c.id !== id));
-    if (conversacionActivaId === id) onSeleccionar(null);
+    try {
+      await eliminarConversacion(id);
+      setConversaciones((prev) => prev.filter((c) => c.id !== id));
+      if (conversacionActivaId === id) onSeleccionar(null);
+    } catch (err) {
+      console.error('Error eliminando conversación:', err);
+      setError('No se pudo eliminar la conversación.');
+    }
   }
 
   return (
@@ -48,32 +72,36 @@ export function ListaConversaciones({
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {cargando && <p className="text-xs text-neutral-400 text-center py-4">Cargando conversaciones...</p>}
-        {!cargando && conversaciones.length === 0 && (
+        {cargando && (
+          <p className="text-xs text-neutral-400 text-center py-4">Cargando conversaciones...</p>
+        )}
+        {error && <p className="text-xs text-red-600 text-center py-4">{error}</p>}
+        {!cargando && !error && conversaciones.length === 0 && (
           <p className="text-xs text-neutral-400 text-center py-4">Aún no tienes conversaciones.</p>
         )}
-        {conversaciones.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => onSeleccionar(c.id)}
-            className={`w-full flex items-center gap-2 text-left px-3 py-2.5 rounded-lg text-sm transition-colors group ${
-              conversacionActivaId === c.id
-                ? 'bg-emerald-50 text-emerald-700 font-medium'
-                : 'text-neutral-600 hover:bg-neutral-100'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4 shrink-0" />
-            <span className="flex-1 truncate">{c.titulo}</span>
-            <span
-              role="button"
-              onClick={(e) => handleEliminar(e, c.id)}
-              className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 transition-opacity"
-              aria-label="Eliminar conversación"
+        {Array.isArray(conversaciones) &&
+          conversaciones.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => onSeleccionar(c.id)}
+              className={`w-full flex items-center gap-2 text-left px-3 py-2.5 rounded-lg text-sm transition-colors group ${
+                conversacionActivaId === c.id
+                  ? 'bg-emerald-50 text-emerald-700 font-medium'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
             >
-              <Trash2 className="w-3.5 h-3.5" />
-            </span>
-          </button>
-        ))}
+              <MessageSquare className="w-4 h-4 shrink-0" />
+              <span className="flex-1 truncate">{c.titulo}</span>
+              <span
+                role="button"
+                onClick={(e) => handleEliminar(e, c.id)}
+                className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 transition-opacity"
+                aria-label="Eliminar conversación"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </span>
+            </button>
+          ))}
       </div>
     </div>
   );

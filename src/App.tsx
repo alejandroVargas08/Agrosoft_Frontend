@@ -17,46 +17,65 @@ import NuevoInsumo from './pages/NuevoInsumo'
 import UnidadesProductivas from './pages/UnidadesProductivas'
 import NuevaUnidadProductiva from './pages/NuevaUnidadProductiva'
 import DetalleUnidadProductiva from './pages/DetalleUnidadProductiva'
+import Incidencias from './pages/Incidencias'
+import Tratamientos from './pages/Tratamientos'
+import Reportes from './pages/Reportes'
+import SensoresPage from './pages/SensorPage'
 import Actividades from './pages/actividades/actividades'
 import ActividadDetalle from './pages/actividades/ActividadDetalle'
 import Cultivos from './pages/cultivos/cultivos'
+import Notificaciones from './pages/notificaciones/Notificaciones'
+import LayoutConNotificaciones from './components/layout/LayoutConNotificaciones'
 import Historial from './pages/historial/historial'
 
 function App() {
-
-      return (
-      <Routes>
+  return (
+    <Routes>
+      {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path='/inicio' element={<Inicio/>}/>
-      <Route path='/recuperar' element={<RecuperarPassword/>}/>
+      <Route path="/recuperar" element={<RecuperarPassword />} />
       <Route path="/recuperar/verificar" element={<VerificarCodigo />} />
       <Route path="/recuperar/nueva-contrasena" element={<NuevaContrasena />} />
-      <Route path='/perfil' element={<Perfil/>}/>
-      <Route path='/editar-perfil' element={<EditarPerfil/>}/>
-      <Route path='/configuracion' element={<Configuracion/>}/>
-      <Route path="/agrobot" element={<AgroBot />} />
-      <Route path='/actividades' element={<Actividades/>}/>
-      <Route path='/actividades/:actividadId' element={<ActividadDetalle/>}/>
-      <Route path='/cultivos' element={<Cultivos/>} />
-      <Route path="/historial" element={<Historial />}/>
-      <Route path='/unidades-productivas' element={<UnidadesProductivas/>}/>
-      <Route path='/unidades-productivas/nueva' element={<NuevaUnidadProductiva/>}/>
-      <Route path='/unidades-productivas/:id' element={<DetalleUnidadProductiva/>}/>
-      <Route path='/territorio' element={<LotesSublotes/>}/>
-      <Route path='/territorio/nuevo' element={<NuevoLote/>}/>
-      <Route path='/inventario' element={<Inventario/>}/>
-      <Route path='/inventario/nuevo' element={<NuevoInsumo/>}/>
-      {/* Rutas antiguas: redirigen a las pantallas nuevas */}
-      <Route path='/territorio/lotes' element={<Navigate to="/territorio" replace />}/>
-      <Route path='/territorio/sublotes' element={<Navigate to="/territorio" replace />}/>
-      <Route path='/inventario/catalogos' element={<Navigate to="/inventario" replace />}/>
-      <Route path='/inventario/insumos' element={<Navigate to="/inventario" replace />}/>
-      <Route path='/inventario/movimientos' element={<Navigate to="/inventario" replace />}/>
-      <Route path='/inventario/reservas' element={<Navigate to="/inventario" replace />}/>
+
+      {/* Aquí tienen que poner las pantallas: del sidebar  */}
+      <Route element={<LayoutConNotificaciones />}>
+        <Route path="/inicio" element={<Inicio />} />
+        <Route path="/perfil" element={<Perfil />} />
+        <Route path="/editar-perfil" element={<EditarPerfil />} />
+        <Route path="/configuracion" element={<Configuracion />} />
+        <Route path="/agrobot" element={<AgroBot />} />
+        <Route path="/actividades" element={<Actividades />} />
+        <Route path="/actividades/:id" element={<ActividadDetalle />} />
+        <Route path="/incidencias" element={<Incidencias />} />
+        <Route path="/tratamientos" element={<Tratamientos />} />
+        <Route path="/reportes" element={<Reportes />} />
+        <Route path="/cultivos" element={<Cultivos />} />
+        <Route path="/historial" element={<Historial />} />
+        <Route path="/unidades-productivas" element={<UnidadesProductivas />} />
+        <Route path="/unidades-productivas/nueva" element={<NuevaUnidadProductiva />} />
+        <Route path="/unidades-productivas/:id" element={<DetalleUnidadProductiva />} />
+        <Route path="/territorio" element={<LotesSublotes />} />
+        <Route path="/territorio/nuevo" element={<NuevoLote />} />
+        <Route path="/inventario" element={<Inventario />} />
+        <Route path="/inventario/nuevo" element={<NuevoInsumo />} />
+        <Route path="/sensores-iot" element={<SensoresPage />} />
+        <Route path="/notificaciones" element={<Notificaciones />} />
+      </Route>
+
+      {/*Las rutas de las que redirigen*/}
+      <Route path="/territorio/lotes" element={<Navigate to="/territorio" replace />} />
+      <Route path="/territorio/sublotes" element={<Navigate to="/territorio" replace />} />
+      <Route path="/inventario/catalogos" element={<Navigate to="/inventario" replace />} />
+      <Route path="/inventario/insumos" element={<Navigate to="/inventario" replace />} />
+      <Route path="/inventario/movimientos" element={<Navigate to="/inventario" replace />} />
+      <Route path="/inventario/reservas" element={<Navigate to="/inventario" replace />} />
+      <Route path="/" element={<Navigate to="/inventario" replace />} />
+
       <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-      )
+    </Routes>
+  )
 }
 
 export default App
+

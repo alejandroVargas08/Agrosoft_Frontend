@@ -4,12 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { useCultivos } from "../../hooks/cultivos/useCultivos";
 import { useTerritorio } from "../../hooks/useTerritorio";
 import { useActividadForm } from "../../hooks/Actividades/useActividadForm";
-import { useActividades } from "../../hooks/Actividades/useActividades";
 import {
     Btn, Card, EmptyState, Input, Modal, PageHeader, Select, StatusBadge, Tab, Textarea,
 } from "../../components/ui/AgroUI";
 import { campo } from "../../utils/adaptarCampo";
 import { estadoParaBadge } from "../../utils/estadoActividad";
+import { useActividades } from "../../hooks/Actividades/useActividad";
 
 
 const Actividades = () => {
@@ -120,7 +120,7 @@ const Actividades = () => {
                             onChange={campo(handleFormChange, "loteId")}
                             options={[
                                 { value: "", label: "Seleccione un lote" },
-                                ...(lotesForm ?? []).map((lote) => ({ value: String(lote.id), label: lote.nombre ?? "" })),
+                                ...(lotesForm ?? []).map((lote: { id: number | string; nombre: string}) => ({ value: String(lote.id), label: lote.nombre ?? "" })),
                             ]}
                         />
 
