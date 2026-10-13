@@ -10,6 +10,7 @@ import {
 } from '../components/ui/AgroUI';
 import { useInventario } from '../hooks/useInventario';
 import type { TipoMovimiento } from '../types/inventario';
+import { ProductosAgroPanel } from '../components/productosAgro/productosAgroPanel';
 
 const fmt = (n: number, moneda = false) =>
     moneda
@@ -67,7 +68,7 @@ const Inventario = () => {
                     <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">{error}</div>
                 )}
 
-                <Tab tabs={['Insumos', 'Almacenes', 'Movimientos']} active={tab} onChange={setTab} />
+                <Tab tabs={['Insumos', 'Almacenes', 'Movimientos', 'Productos']} active={tab} onChange={setTab} />
 
                 {/* ─── Insumos ─── */}
                 {tab === 'Insumos' && (
@@ -207,6 +208,7 @@ const Inventario = () => {
                         </Btn>
                     </div>
                 )}
+            { tab === 'Productos' && <ProductosAgroPanel />}
             </div>
 
             {/* Modal: nuevo almacén */}

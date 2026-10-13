@@ -23,4 +23,5 @@ export const cultivosApi = {
 
 export const productosAgroApi = {
     listar: () => api.get('/productos-agro'),
+    eliminar: (id: number) => api.delete(`/productos-agro/${id}`),
 }; 
