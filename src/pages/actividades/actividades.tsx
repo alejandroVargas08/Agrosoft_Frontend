@@ -5,6 +5,11 @@ import { useCultivos } from "../../hooks/cultivos/useCultivos";
 import { useTerritorio } from "../../hooks/useTerritorio";
 import { useActividadForm } from "../../hooks/Actividades/useActividadForm";
 import { useActividades } from "../../hooks/Actividades/useActividades";
+import {
+    Btn, Card, EmptyState, Input, Modal, PageHeader, Select, StatusBadge, Tab, Textarea,
+} from "../../components/ui/AgroUI";
+import { campo } from "../../utils/adaptarCampo";
+import { estadoParaBadge } from "../../utils/estadoActividad";
 
 
 const Actividades = () => {
@@ -46,270 +51,181 @@ const Actividades = () => {
         { label: 'Finalizada', value: 'Finalizada' },
     ];
 
-    const getEstadoBadge = (estado: string) => {
-        switch (estado) {
-            case 'Todas':
-            return 'bg-green-200 text-white-800';
-            case 'Finalizada':
-                return 'bg-[#e2f4ed] text-[#0d5433]';
-            case 'En_progreso':
-                return 'bg-[#e8f0fe] text-[#1a73e8]';
-            case 'Pendiente':
-                return 'bg-[#fef3d6] text-[#b7791f]';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    };
-
     return (
-            <DashboardLayout>
+        <DashboardLayout>
             <div className="p-4 sm:p-8">
 
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                    <h1 className="text-3xl sm:text-3xl font-bold text-neutral-900 mx-auto">Actividades Agrícolas</h1>
-                    <p className="text-neutral-500 text-base mt-1">Labores y Tareas de Campo</p>
-                    </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="rounded-xl bg-green-800 hover:bg-[#418750] transition-colors px-6 py-3.5 text-white font-medium flex items-center gap-2">
-                    + Nueva Actividad </button>
-                </div>
+                <PageHeader
+                    title="Actividades Agrícolas"
+                    subtitle="Labores y Tareas de Campo"
+                    action={<Btn onClick={() => setIsModalOpen(true)}>+ Nueva Actividad</Btn>}
+                />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-                    <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-1">Filtrar por Lote:</label>
-                        <select
-                            value={loteFiltroId || ""}
-                            onChange={(e) => {
-                                setLoteFiltroId(e.target.value ? Number(e.target.value) : undefined);
-                                setCultivoIdActual(0);
-                            }}
-                            className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                        >
-                            <option value="">Seleccione un lote...</option>
-                            {lotesFiltro?.map((lote) => (
-                                <option key={lote.id} value={lote.id}>
-                                    {lote.nombre}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                <Card className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <Select
+                        label="Filtrar por Lote:"
+                        value={loteFiltroId ? String(loteFiltroId) : ""}
+                        onChange={(v) => {
+                            setLoteFiltroId(v ? Number(v) : undefined);
+                            setCultivoIdActual(0);
+                        }}
+                        options={[
+                            { value: "", label: "Seleccione un lote..." },
+                            ...(lotesFiltro ?? []).map((lote) => ({ value: String(lote.id), label: lote.nombre })),
+                        ]}
+                    />
 
-                    <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-1">Cultivo a visualizar:</label>
+                    <Select
+                        label="Cultivo a visualizar:"
+                        value={String(cultivoIdActual)}
+                        onChange={(v) => setCultivoIdActual(Number(v))}
+                        options={[
+                            { value: "0", label: !loteFiltroId ? "Primero seleccione un lote" : "Seleccione un cultivo" },
+                            ...(cultivosDisponibles ?? []).map((cultivoItem) => ({
+                                value: String(cultivoItem.id),
+                                label: cultivoItem.nombreCultivo || cultivoItem.tipoCultivo || `Cultivo #${cultivoItem.id}`,
+                            })),
+                        ]}
+                    />
+                </Card>
 
-                        <select
-                            value={cultivoIdActual}
-                            onChange={(e) => setCultivoIdActual(Number(e.target.value))}
-                            disabled={!loteFiltroId}
-                            className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700 disabled:bg-neutral-100 disabled:text-neutral-400"
-                        >
-                            <option value={0}>
-                                {!loteFiltroId ? "Primero seleccione un lote" : "Seleccione un cultivo"}
-                            </option>
-                            {cultivosDisponibles?.map((cultivoItem) => (
-                                <option key={cultivoItem.id} value={cultivoItem.id}>
-                                    {cultivoItem.nombreCultivo || cultivoItem.tipoCultivo || `Cultivo #${cultivoItem.id}`}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
+                <Tab
+                    tabs={Filtros.map((f) => f.value)}
+                    active={filtroEstado}
+                    onChange={setFiltroEstado}
+                />
 
-                <div className="flex gap-2 mb-8">
-                    {Filtros.map((f) => (
-                    <button
-                        key={f.value}
-                        onClick={() => setFiltroEstado(f.value)}
-                        className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-                            filtroEstado === f.value
-                            ? 'bg-[#2d7a3e] text-white shadow-sm'
-                            : 'bg-[#edf2ee] text-neutral-600 hover:bg-[#e2ebd7]'}`}>
-                        {f.label}
-                    </button>
-                    ))}
-                </div>
                 {loading && (
-                    <p className="text-center py-8 text-neutral-500 font-medium"> Cargando Actividades</p>
+                    <p className="text-center py-8 text-muted-foreground font-medium"> Cargando Actividades</p>
                 )}
                 {error && (
                     <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-center mb-6 text-sm"> {error} </div>
                 )}
 
-                {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-                        <div className="bg-white rounded-3xl w-full max-w-xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-                            <div className="flex justify-between items-center pb-4 border-b border-neutral-100 mb-5">
-                                <h2 className="text-xl font-bold mb-4 text-neutral-900">Nueva Actividad</h2>
-                                <button
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="text-neutral-400 hover:text-neutral-600 p-1 rounded-full hover:bg-neutral-100 transition-colors"
-                                > X
-                                </button>
-                            </div>
-                        { errorForm && <p className="text-red-600 mb-3 text-sm">{errorForm}</p>}
-                            <form onSubmit={handleCreateSubmit} className="space-y-4">
+                <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)} title="Nueva Actividad">
+                    {errorForm && <p className="text-red-600 mb-3 text-sm">{errorForm}</p>}
+                    <form onSubmit={handleCreateSubmit} className="space-y-4">
 
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-800 mb-1">Tipo de Actividad <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    required
-                                    name="tipo"
-                                    value={form.tipo || ""}
-                                    onChange={handleFormChange}
-                                    placeholder="Ej: Fertilización"
-                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                    />          
-                            </div>
+                        <Input
+                            label="Tipo de Actividad"
+                            required
+                            value={form.tipo || ""}
+                            onChange={campo(handleFormChange, "tipo")}
+                            placeholder="Ej: Fertilización"
+                        />
 
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-800 mb-1">Lote</label>
-                                <select
-                                    name="loteId"
-                                    value={form.loteId || ""}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                >
-                                <option value="">Seleccione un lote</option>
-                                {lotesForm?.map((lote: { id: number | string; nombre?: string; tipo?: string }) => (
-                                <option key={lote.id} value={lote.id}>{lote.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
+                        <Select
+                            label="Lote"
+                            value={String(form.loteId || "")}
+                            onChange={campo(handleFormChange, "loteId")}
+                            options={[
+                                { value: "", label: "Seleccione un lote" },
+                                ...(lotesForm ?? []).map((lote) => ({ value: String(lote.id), label: lote.nombre ?? "" })),
+                            ]}
+                        />
 
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-800 mb-1">Sublote</label>
-                                <select
-                                    name="subLoteId"
-                                    value={form.subLoteId || ""}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                >
-                                    <option value="">Seleccione un sublote</option>
-                                    {sublotes?.map((sub: { id: number | string; nombre: string }) => (
-                                        <option key={sub.id} value={sub.id}>{sub.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
+                        <Select
+                            label="Sublote"
+                            value={String(form.subLoteId || "")}
+                            onChange={campo(handleFormChange, "subLoteId")}
+                            options={[
+                                { value: "", label: "Seleccione un sublote" },
+                                ...(sublotes ?? []).map((sub) => ({ value: String(sub.id), label: sub.nombre })),
+                            ]}
+                        />
 
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-800 mb-1">Cultivo</label>
-                                <select
-                                    name="cultivoId"
-                                    value={form.cultivoId || ""}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                >
-                                    <option value="">Seleccione un cultivo</option>
-                                    {cultivosForm?.map((cultivosItem: { id: number | string; nombreCultivo?: string; tipoCultivo?: string }) => (
-                                        <option key={cultivosItem.id} value={cultivosItem.id}>
-                                            {cultivosItem.nombreCultivo || cultivosItem.tipoCultivo || `Cultivo #${cultivosItem.id}`}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                        <Select
+                            label="Cultivo"
+                            value={String(form.cultivoId || "")}
+                            onChange={campo(handleFormChange, "cultivoId")}
+                            options={[
+                                { value: "", label: "Seleccione un cultivo" },
+                                ...(cultivosForm ?? []).map((cultivosItem) => ({
+                                    value: String(cultivosItem.id),
+                                    label: cultivosItem.nombreCultivo || cultivosItem.tipoCultivo || `Cultivo #${cultivosItem.id}`,
+                                })),
+                            ]}
+                        />
 
+                        <Select
+                            label="Producto / Insumo"
+                            value={String(form.productoAgroId || "")}
+                            onChange={campo(handleFormChange, "productoAgroId")}
+                            options={[
+                                { value: "", label: "Seleccione un producto" },
+                                ...(productos ?? []).map((producto: { id: number | string; nombre: string}) => ({ value: String(producto.id), label: producto.nombre })),
+                            ]}
+                        />
 
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-800 mb-1">Producto / Insumo</label>
-                                <select
-                                    name="productoAgroId"
-                                    value={form.productoAgroId || ""}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                >
-                                    <option value="">Seleccione un producto</option>
-                                    {productos?.map((producto: { id: number | string; nombre: string }) => (
-                                        <option key={producto.id} value={producto.id}>{producto.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
+                        <Input
+                            label="Fecha"
+                            type="date"
+                            required
+                            value={form.fecha || ""}
+                            onChange={campo(handleFormChange, "fecha")}
+                        />
 
-                                <div>
-                                    <label className="block text-sm font-medium text-neutral-800 mb-1">
-                                        Fecha <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        required
-                                        name="fecha"
-                                        value={form.fecha || ""}
-                                        onChange={handleFormChange}
-                                        className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                    />
-                                </div>
+                        <Textarea
+                            label="Descripción"
+                            value={form.descripcion || ""}
+                            onChange={campo(handleFormChange, "descripcion")}
+                            rows={3}
+                            placeholder="Detalles adicionales de la labor..."
+                        />
 
-                                <div>
-                                    <label className="block text-sm font-medium text-neutral-800 mb-1">Descripción</label>
-                                    <textarea
-                                        name="descripcion"
-                                        value={form.descripcion || ""}
-                                        onChange={handleFormChange}
-                                        rows={3}
-                                        placeholder="Detalles adicionales de la labor..."
-                                        className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-end gap-3 pt-5 mt-6 border-t border-neutral-100">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="px-5 py-2.5 rounded-2xl text-sm font-medium text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 transition-colors"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={enviando}
-                                        className="bg-[#2d7a3e] hover:bg-[#418750] text-white px-6 py-2.5 rounded-2xl text-sm font-medium shadow-sm disabled:opacity-50 transition-colors"
-                                    >
-                                        {enviando ? 'Guardando...' : 'Guardar'}
-                                    </button>
-                                </div>
-
-                            </form>
+                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
+                            <Btn variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Btn>
+                            <Btn type="submit" disabled={enviando}>{enviando ? 'Guardando...' : 'Guardar'}</Btn>
                         </div>
-                    </div>
+
+                    </form>
+                </Modal>
+
+                {!loading && !error && actividades.length === 0 && (
+                    <EmptyState
+                        title={cultivoIdActual ? "Sin actividades" : "Selecciona un cultivo"}
+                        description={cultivoIdActual
+                            ? "Este cultivo todavía no tiene actividades registradas."
+                            : "Elige un lote y un cultivo para ver sus actividades."}
+                    />
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {actividades.map((actividad) => (
-                        <div
+                        <Card
                             key={actividad.id}
                             onClick={() => navigate(`/actividades/${actividad.id}`, {state: {actividad} })}
-                            className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100 relative flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer"
-                            >
+                            className="flex flex-col justify-between"
+                        >
                             <div className="flex justify-between items-start gap-2 mb-3">
-                                    <h3 className="text-sm font-semibold text-neutral-900 leading-snug">
-                                        {actividad.tipo} {actividad.subtipo ? `-${actividad.subtipo}` : ''}
-                                    </h3>
-                                    <span
+                                <h3 className="text-sm font-semibold text-foreground leading-snug">
+                                    {actividad.tipo} {actividad.subtipo ? `-${actividad.subtipo}` : ''}
+                                </h3>
+                                <span
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         handleChangeEstado(actividad.id, actividad.estado);
-                                    }} 
-                                    className={`text-xs font-semibold px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity shrink-0 ${getEstadoBadge(actividad.estado)}`}>
-                                        {actividad.estado ? actividad.estado.replace('_', ' ') : ''}
-                                    </span>
-                                </div>
+                                    }}
+                                    className="cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                                >
+                                    <StatusBadge status={estadoParaBadge(actividad.estado)} />
+                                </span>
+                            </div>
 
-                                <p className="text-sm text-neutral-600 mb-4 line-clamp-2">
+                            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                                 {actividad.descripcion || "Sin descripción registrada."}
-                                </p>
+                            </p>
 
-                                <div className="border-t border-neutral-100 pt-3 mt-auto">
-                                    <span className="text-xs text-neutral-400 font-medium">
-                                        {actividad.fecha}
-                                    </span>
-                                </div>
-                        </div>
+                            <div className="border-t border-border pt-3 mt-auto">
+                                <span className="text-xs text-muted-foreground font-medium">
+                                    {actividad.fecha}
+                                </span>
+                            </div>
+                        </Card>
                     ))}
                 </div>
             </div>
-            </DashboardLayout>
-        );
+        </DashboardLayout>
+    );
 };
-export default Actividades; 
+export default Actividades;

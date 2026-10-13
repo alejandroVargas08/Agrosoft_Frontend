@@ -5,9 +5,17 @@ import { useQuery } from "@tanstack/react-query";
 import { useActividadHistorial } from "../../hooks/Historial/useActividadHistorial";
 import { useHistorialPreciosLote } from "../../hooks/Historial/useHistorialPreciosLote";
 import { useHistorialCultivo } from "../../hooks/Historial/useHistorialCultivo";
-import { api } from "../../api/axios"; 
+import { api } from "../../api/axios";
 import { actividadesApi } from "../../api/actividades";
 import { cultivosApi } from "../../api/cultivo/cultivos";
+import { User } from "lucide-react";
+import { Badge, Card, EmptyState, PageHeader, Select, Tab } from "../../components/ui/AgroUI";
+
+const FUENTES: { id: tipoFuenteHistorial; label: string }[] = [
+    { id: 'actividades', label: 'Actividad' },
+    { id: 'cultivos', label: 'Cultivos' },
+    { id: 'precio_lotes', label: 'Precios de Lotes' },
+];
 
 const Historial = () => {
     const [fuente, setFuente] = useState<tipoFuenteHistorial>('actividades');
@@ -15,30 +23,19 @@ const Historial = () => {
     return (
         <DashboardLayout>
             <div className="p-4 sm:p-8">
-                <div className="mb-6">
-                        <h1 className="text-3xl font-bold text-neutral-900">Historial y Auditoría</h1>
-                        <p className="text-neutral-500 text-base mt-1">Registro de cambios del sistema por actividad, cultivo o precio de lote</p>
-                </div>
+                <PageHeader
+                    title="Historial y Auditoría"
+                    subtitle="Registro de cambios del sistema por actividad, cultivo o precio de lote"
+                />
 
-                <div className="flex gap-2 mb-8 border-b border-neutral-200 pb-4">
-                    {[
-                    { id: 'actividades' as tipoFuenteHistorial, label: 'Actividad' },
-                    { id: 'cultivos' as tipoFuenteHistorial, label: 'Cultivos' },
-                    { id: 'precio_lotes' as tipoFuenteHistorial, label: 'Precios de Lotes' },
-                    ].map((f) => (
-                    <button
-                        key={f.id}
-                        onClick={() => setFuente(f.id)}
-                        className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-                        fuente === f.id
-                            ? 'bg-[#2d7a3e] text-white shadow-sm'
-                            : 'bg-[#edf2ee] text-neutral-600 hover:bg-[#e2ebd7]'
-                        }`}
-                    >
-                        {f.label}
-                    </button>
-                    ))}
-                </div>
+                <Tab
+                    tabs={FUENTES.map((f) => f.label)}
+                    active={FUENTES.find((f) => f.id === fuente)?.label ?? ''}
+                    onChange={(label) => {
+                        const f = FUENTES.find((x) => x.label === label);
+                        if (f) setFuente(f.id);
+                    }}
+                />
 
             {fuente === 'actividades' && <HistorialActividades/>}
             {fuente === 'cultivos' && <HistorialCultivos/>}
@@ -64,7 +61,7 @@ function HistorialActividades() {
             const response = await api.get('/territorio/lotes');
             console.log("Respuesta de lotes recibida:", response.data);
             return Array.isArray(response.data) ? response.data : (response.data?.data || []);
-        } 
+        }
     });
 
     const { data: cultivos = []} = useQuery({
@@ -91,62 +88,65 @@ function HistorialActividades() {
 
         <div>
 
-            <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-                <label className="block text-sm font-medium text-neutral-700 mb-1"> 1. Selecciona un Lote: </label>
-                <select 
-                value={loteId}
-                onChange={(e) => {
-                        setLoteId(e.target.value);
+            <Card className="mb-6 max-w-sm">
+                <Select
+                    label="1. Selecciona un Lote:"
+                    value={loteId}
+                    onChange={(v) => {
+                        setLoteId(v);
                         setCultivoSeleccionadoId('');
                         setActividadId('');
                     }}
-                className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                >
-                    <option value="">-- Elige un lote --</option>
-                    {Array.isArray(lotes) && lotes.map((l: {id: number; nombre?: string; nombreLote?: string }) => (
-                        <option key={l.id} value={l.id}>{l.nombre || l.nombreLote || `Lote #${l.id}`}</option>
-                    )) }
-                </select>
-            </div>
+                    options={[
+                        { value: '', label: '-- Elige un lote --' },
+                        ...(Array.isArray(lotes) ? lotes : []).map((l: {id: number; nombre?: string; nombreLote?: string }) => ({
+                            value: String(l.id),
+                            label: l.nombre || l.nombreLote || `Lote #${l.id}`,
+                        })),
+                    ]}
+                />
+            </Card>
 
             {loteIdNum && (
-                <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-                    <label className="block text-sm font-medium text-neutral-700 mb-1"> 2. Seleccionar Cultivo: </label>
-                    <select 
-                    value={cultivoSeleccionadoId}
-                    onChange={(e) => {
-                            setCultivoSeleccionadoId(e.target.value);
+                <Card className="mb-6 max-w-sm">
+                    <Select
+                        label="2. Seleccionar Cultivo:"
+                        value={cultivoSeleccionadoId}
+                        onChange={(v) => {
+                            setCultivoSeleccionadoId(v);
                             setActividadId('');
                         }}
-                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                    >
-                        <option value="">Elige un cultivo</option>
-                        {cultivos.map((c: { id: number; nombreCultivo?: string; tipoCultivo?: string }) => (
-                            <option key={c.id} value={c.id}>{c.nombreCultivo || c.tipoCultivo || `Cultivo #${c.id}`}</option>
-                        ))}
-                    </select>
-                </div>
+                        options={[
+                            { value: '', label: 'Elige un cultivo' },
+                            ...cultivos.map((c: { id: number; nombreCultivo?: string; tipoCultivo?: string }) => ({
+                                value: String(c.id),
+                                label: c.nombreCultivo || c.tipoCultivo || `Cultivo #${c.id}`,
+                            })),
+                        ]}
+                    />
+                </Card>
             )}
 
             { cultivoIdNum && (
-                <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">3. Seleccionar Actividad: </label>
-                    <select 
-                    value={actividadId}
-                    onChange={(e) => setActividadId(e.target.value)}
-                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                    >
-                        <option value="">-- Elige una actividad --</option>
-                        {actividades.map((a: { id: number; tipo?: string }) => (
-                            <option key={a.id} value={a.id}>{a.tipo ? `${a.tipo} (ID: ${a.id})` : `Actividad #${a.id}`}</option>
-                        ))}
-                    </select>
-                </div>
+                <Card className="mb-6 max-w-sm">
+                    <Select
+                        label="3. Seleccionar Actividad:"
+                        value={actividadId}
+                        onChange={setActividadId}
+                        options={[
+                            { value: '', label: '-- Elige una actividad --' },
+                            ...actividades.map((a: { id: number; tipo?: string }) => ({
+                                value: String(a.id),
+                                label: a.tipo ? `${a.tipo} (ID: ${a.id})` : `Actividad #${a.id}`,
+                            })),
+                        ]}
+                    />
+                </Card>
             )}
 
-            {loteIdNum && <p className="text-neutral-400 italic text-sm">Primero selecciona un lote para ver sus cultivos.</p> }
-            { loteIdNum && !cultivoIdNum && <p className="text-neutral-400 italic text-sm">Selecciona un cultivo para ver sus actividades.</p> }
-            {cultivoIdNum && !actividadIdNum && <p className="text-neutral-400 italic text-sm">Selecciona una actividad para consultar su historial.</p>}
+            {!loteIdNum && <p className="text-muted-foreground italic text-sm">Primero selecciona un lote para ver sus cultivos.</p> }
+            { loteIdNum && !cultivoIdNum && <p className="text-muted-foreground italic text-sm">Selecciona un cultivo para ver sus actividades.</p> }
+            {cultivoIdNum && !actividadIdNum && <p className="text-muted-foreground italic text-sm">Selecciona una actividad para consultar su historial.</p>}
 
         { actividadIdNum && (
             <TimelineContainer loading={loading} error={error} isEmpty={historial.length === 0}>
@@ -185,48 +185,50 @@ function HistorialCultivos() {
             return response.data || response;
         },
         enabled: !!loteIdNum,
-    }); 
+    });
 
     const { historial, loading, error } = useHistorialCultivo(cultivoIdNum);
 
     return (
     <div>
 
-        <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-            <label className="block text-sm font-medium text-neutral-700 mb-1"> Seleccionar Lote: </label>
-            <select 
-            value={loteId} 
-            onChange={(e) => {
-                        setLoteId(e.target.value);
-                        setCultivoId('');
-                    }}
-            className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-            >
-                <option value="">-- Elige un lote --</option>
-                {lotes.map((l: { id: number; nombre?: string }) => (
-                        <option key={l.id} value={l.id}>{l.nombre || `Lote #${l.id}`}</option>
-                    ))}
-            </select>
-        </div>
+        <Card className="mb-6 max-w-sm">
+            <Select
+                label="Seleccionar Lote:"
+                value={loteId}
+                onChange={(v) => {
+                    setLoteId(v);
+                    setCultivoId('');
+                }}
+                options={[
+                    { value: '', label: '-- Elige un lote --' },
+                    ...lotes.map((l: { id: number; nombre?: string }) => ({
+                        value: String(l.id),
+                        label: l.nombre || `Lote #${l.id}`,
+                    })),
+                ]}
+            />
+        </Card>
 
         { loteIdNum && (
-            <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-                <label className="block text-sm font-medium text-neutral-700 mb-1"> 2. Seleccionar Cultivo: </label>
-                <select 
-                value={cultivoId}
-                onChange={(e) => setCultivoId(e.target.value)}
-                className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                >
-                    <option value="">Elige un cultivo</option>
-                    {cultivos.map((c: { id: number; nombreCultivo?: string; tipoCultivo?: string }) => (
-                            <option key={c.id} value={c.id}>{c.nombreCultivo || c.tipoCultivo || `Cultivo #${c.id}`}</option>
-                        ))}
-                </select>
-            </div>
+            <Card className="mb-6 max-w-sm">
+                <Select
+                    label="2. Seleccionar Cultivo:"
+                    value={cultivoId}
+                    onChange={setCultivoId}
+                    options={[
+                        { value: '', label: 'Elige un cultivo' },
+                        ...cultivos.map((c: { id: number; nombreCultivo?: string; tipoCultivo?: string }) => ({
+                            value: String(c.id),
+                            label: c.nombreCultivo || c.tipoCultivo || `Cultivo #${c.id}`,
+                        })),
+                    ]}
+                />
+            </Card>
         )}
 
-        { !loteIdNum && <p className="text-neutral-400 italic text-sm">Primero selecciona un lote para ver sus cultivos.</p> }
-        {loteIdNum && !cultivoIdNum && <p className="text-neutral-400 italic text-sm">Selecciona un cultivo para ver su historial.</p>}
+        { !loteIdNum && <p className="text-muted-foreground italic text-sm">Primero selecciona un lote para ver sus cultivos.</p> }
+        {loteIdNum && !cultivoIdNum && <p className="text-muted-foreground italic text-sm">Selecciona un cultivo para ver su historial.</p>}
 
         {cultivoIdNum && (
             <TimelineContainer loading={loading} error={error} isEmpty={historial.length === 0}>
@@ -235,7 +237,7 @@ function HistorialCultivos() {
                     key={h.id}
                     usuarioId={h.usuarioId}
                     tipoLabel="Cultivo"
-                    fecha={new Date().toISOString()} 
+                    fecha={new Date().toISOString()}
                     motivo={h.motivo}
                     cambios={h.cambios}
                 />
@@ -277,12 +279,12 @@ interface TimelineContainerProps {
 }
 
 function TimelineContainer({ loading, error, isEmpty, children }: TimelineContainerProps) {
-    if (loading) return <p className="text-sm text-neutral-500 text-center py-6">Cargando registros...</p>;
+    if (loading) return <p className="text-sm text-muted-foreground text-center py-6">Cargando registros...</p>;
     if (error) return <p className="text-sm text-red-600 bg-red-50 p-4 rounded-xl text-center">{error}</p>;
-    if (isEmpty) return <p className="text-sm text-neutral-400 italic">No hay registros de cambios disponibles.</p>;
+    if (isEmpty) return <EmptyState title="Sin registros" description="No hay registros de cambios disponibles." />;
 
     return (
-        <div className="relative border-l-2 border-emerald-200 ml-4 space-y-6">
+        <div className="relative border-l-2 border-primary/20 ml-4 space-y-6">
             {children}
         </div>
     );
@@ -299,35 +301,33 @@ interface TimelineCardProps {
 function TimelineCard({ usuarioId, tipoLabel, fecha, motivo, cambios }: TimelineCardProps) {
   return (
     <div className="relative pl-6">
-      <div className="absolute top-0 w-8 h-8 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-xs shadow-sm">
-        👤
+      <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary shadow-sm">
+        <User size={14} />
       </div>
 
-      <div className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
+      <Card>
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-neutral-900 text-sm">Usuario #{usuarioId}</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#e2f4ed] text-[#0d5433] font-medium capitalize">
-              {tipoLabel}
-            </span>
+            <span className="font-semibold text-foreground text-sm">Usuario #{usuarioId}</span>
+            <Badge color="primary">{tipoLabel}</Badge>
           </div>
-          <span className="text-xs text-neutral-400">
+          <span className="text-xs text-muted-foreground">
             {fecha ? new Date(fecha).toLocaleString() : ''}
           </span>
         </div>
 
-        <p className="text-sm text-neutral-600 mb-3 font-medium">Actualización registrada</p>
+        <p className="text-sm text-muted-foreground mb-3 font-medium">Actualización registrada</p>
 
         {cambios && (
-            <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 mb-3 text-sm font-mono space-y-1">
+            <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 mb-3 text-sm font-mono space-y-1">
                 {Object.entries(cambios).map(([campo, val]) => {
                 const valorCambio = val as { anterior?: unknown; nuevo?: unknown };
                 return (
                     <div key={campo} className="flex items-center gap-2 flex-wrap">
-                        <span className="text-neutral-700 font-semibold">{campo}:</span>
+                        <span className="text-foreground font-semibold">{campo}:</span>
                         <span className="text-red-500 line-through">{String(valorCambio?.anterior ?? 'N/D')}</span>
-                        <span className="text-neutral-400">→</span>
-                        <span className="text-[#0d5433] font-bold">{String(valorCambio?.nuevo ?? 'N/D')}</span>
+                        <span className="text-muted-foreground">→</span>
+                        <span className="text-primary font-bold">{String(valorCambio?.nuevo ?? 'N/D')}</span>
                     </div>
                 );
                 })}
@@ -335,12 +335,12 @@ function TimelineCard({ usuarioId, tipoLabel, fecha, motivo, cambios }: Timeline
             )}
 
             {motivo && (
-                <p className="text-xs text-neutral-500 italic">
+                <p className="text-xs text-muted-foreground italic">
                 Motivo: "{motivo}"
                 </p>
             )}
-            </div>
-        </div>
+      </Card>
+    </div>
     );
 }
 
