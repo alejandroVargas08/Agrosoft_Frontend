@@ -6,10 +6,10 @@ import { useActividadHistorial } from "../../hooks/Historial/useActividadHistori
 import { useHistorialPreciosLote } from "../../hooks/Historial/useHistorialPreciosLote";
 import { useHistorialCultivo } from "../../hooks/Historial/useHistorialCultivo";
 import { api } from "../../api/axios";
-import { actividadesApi } from "../../api/actividades";
 import { cultivosApi } from "../../api/cultivo/cultivos";
 import { User } from "lucide-react";
 import { Badge, Card, EmptyState, PageHeader, Select, Tab } from "../../components/ui/AgroUI";
+import { actividadesApi } from "../../api/actividades/actividades";
 
 const FUENTES: { id: tipoFuenteHistorial; label: string }[] = [
     { id: 'actividades', label: 'Actividad' },

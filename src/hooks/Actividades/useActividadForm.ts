@@ -1,13 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { ESTADO_INICIAL_FORM, type ActividadFormState, type CrearActividadPayLoad } from "../../types/actividades";
-<<<<<<< HEAD
-import { actividadesApi, cultivosApi, lotesApi, productosAgroApi } from "../../api/actividades/actividades";
-=======
->>>>>>> origin/gisel_dev
+import { actividadesApi, cultivosApi, productosAgroApi } from "../../api/actividades/actividades";
 import { isAxiosError } from "axios";
 import { lotesApi, sublotesApi } from "../../api/territorio";
-import { actividadesApi, cultivosApi, productosAgroApi } from "../../api/actividades/actividades";
 
 interface UseActividadFormProps {
     isModalOpen: boolean;
