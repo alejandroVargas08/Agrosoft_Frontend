@@ -26,11 +26,10 @@ type PestañaId = (typeof PESTAÑAS)[number]['id'];
 
 const ActividadDetalle = () => {
     const { actividadId } = useParams<{ actividadId: string }>();
-    const actividadIdNum = actividadId ? Number(actividadId) : undefined;
-    const navigate = useNavigate();
-
     const location = useLocation();
     const actividad = location.state?.actividad;
+    const actividadIdNum = actividadId ? Number(actividadId) : undefined;
+    const navigate = useNavigate();
 
     const [pestañaActiva, setPestañaActiva] = useState<PestañaId>('costos');
 

@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
-import React, { useState } from "react";
+import { useState } from "react";
 import { ESTADO_INICIAL_USO_HERRAMIENTA_FORM, type RegistrarUsoHerramientaPayload, type UsoHerramientaFormState } from "../types/usosHerramientas";
-import { useActividadHerramientas } from "./actividades/useActividadHerramientas";
 import { usosHerramientaApi } from "../api/usosHerramienta";
 import { insumosApi } from "../api/inventario";
+import { useActividadHerramientas } from "../../src/hooks/Actividades/useActividadHerramientas";
+
+
 
 const mensajeDe = (
     err: unknown,

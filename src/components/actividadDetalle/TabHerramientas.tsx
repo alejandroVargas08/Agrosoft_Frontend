@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { UsosHerramientaSection } from "./usosHerramientaSection";
-import { useActividadHerramientas } from "../../hooks/actividades/useActividadHerramientas";
+import { useActividadHerramientas } from "../../hooks/Actividades/useActividadHerramientas";
 
 export function TabHerramientas ({actividadId} : {actividadId: number | undefined}) {
+
+    const [form, setForm] = useState({ insumoId: '', activoFijoId: '', horasEstimadas: ''}); 
     const {
         herramientas, 
         loading, 
@@ -14,9 +15,7 @@ export function TabHerramientas ({actividadId} : {actividadId: number | undefine
         quitar, 
         quitando, 
     } = useActividadHerramientas(actividadId); 
-
-
-    const [form, setForm] = useState({ insumoId: '', activoFijoId: '', horasEstimadas: ''}); 
+    
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         asignar ({
@@ -46,7 +45,8 @@ export function TabHerramientas ({actividadId} : {actividadId: number | undefine
             className="rounded-lg border border-neutral-200 py-2 px-3"
             />
             <button
-            type="submit" disabled={asignado}
+            type="submit" 
+            disabled={asignado}
             className="bg-green-800 text-white rounded-lg py-2 disabled:opacity-50"
             >
             {asignado ? 'Asignando...' : '+ Asignar'}
@@ -85,7 +85,6 @@ export function TabHerramientas ({actividadId} : {actividadId: number | undefine
             ))}
         </div>
         <div className="mt-8 pt-6 border-t border-border">
-            <UsosHerramientaSection actividadId={actividadId} />
         </div>
         </div>
     );

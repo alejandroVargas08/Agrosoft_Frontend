@@ -46,7 +46,7 @@ function App() {
         <Route path="/configuracion" element={<Configuracion />} />
         <Route path="/agrobot" element={<AgroBot />} />
         <Route path="/actividades" element={<Actividades />} />
-        <Route path="/actividades/:id" element={<ActividadDetalle />} />
+        <Route path="/actividades/:actividadId" element={<ActividadDetalle />} />
         <Route path="/incidencias" element={<Incidencias />} />
         <Route path="/tratamientos" element={<Tratamientos />} />
         <Route path="/reportes" element={<Reportes />} />

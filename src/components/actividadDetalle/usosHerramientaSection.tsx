@@ -89,7 +89,7 @@ export function UsosHerramientaSection({actividadId}: {actividadId: number | und
                             <p className="text-xs text-muted-foreground">{fecha(u.fechaUso)} · {u.horasUsadas} h</p>
                         </div>
                     </div>
-            <Badge color="warning">- {cop(u.depreciacionGenerada)}</Badge>
+            <Badge color="warning"> {cop(u.depreciacionGenerada)}</Badge>
                 </div>
             <p className="text-xs text-muted-foreground mt-3">
                 Valor en libros: {cop(u.valorLibroAntes)} → <span className="font-semibold text-foreground">{cop(u.valorLibrosDespues)}</span>
