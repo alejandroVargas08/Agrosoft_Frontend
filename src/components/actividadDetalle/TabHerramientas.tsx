@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { UsosHerramientaSection } from "./usosHerramientaSection";
 import { useActividadHerramientas } from "../../hooks/actividades/useActividadHerramientas";
 
 export function TabHerramientas ({actividadId} : {actividadId: number | undefined}) {
@@ -82,6 +83,9 @@ export function TabHerramientas ({actividadId} : {actividadId: number | undefine
                 </div>
             </div>
             ))}
+        </div>
+        <div className="mt-8 pt-6 border-t border-border">
+            <UsosHerramientaSection actividadId={actividadId} />
         </div>
         </div>
     );
