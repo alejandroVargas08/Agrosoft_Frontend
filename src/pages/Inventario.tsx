@@ -11,6 +11,7 @@ import {
 import { useInventario } from '../hooks/useInventario';
 import type { TipoMovimiento } from '../types/inventario';
 import { ProductosAgroPanel } from '../components/productosAgro/productosAgroPanel';
+import { LotesProduccionPanel } from '../components/lotesProduccion/LotesProduccionPanel';
 
 const fmt = (n: number, moneda = false) =>
     moneda
@@ -68,7 +69,7 @@ const Inventario = () => {
                     <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">{error}</div>
                 )}
 
-                <Tab tabs={['Insumos', 'Almacenes', 'Movimientos', 'Productos']} active={tab} onChange={setTab} />
+                <Tab tabs={['Insumos', 'Almacenes', 'Movimientos', 'Productos', 'Produccion']} active={tab} onChange={setTab} />
 
                 {/* ─── Insumos ─── */}
                 {tab === 'Insumos' && (
@@ -210,6 +211,8 @@ const Inventario = () => {
                 )}
             { tab === 'Productos' && <ProductosAgroPanel />}
             </div>
+
+            {tab === 'Produccion' && <LotesProduccionPanel/>}
 
             {/* Modal: nuevo almacén */}
             <Modal open={modalAlmacen} onClose={() => setModalAlmacen(false)} title="Nuevo Almacén">
