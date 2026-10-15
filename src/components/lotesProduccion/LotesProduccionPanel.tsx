@@ -9,6 +9,7 @@ import type { loteProduccion } from '../../types/lotesProduccion';
 import { lotesApi, productosAgroApi } from '../../api/actividades/actividades';
 import type { Lote } from '../../types/territorio';
 import type { ProductoAgro } from '../../types/productosAgro';
+import { MovimientosProduccionModal } from './MovimientosProduccionModal';
 
 const cop = (n: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -36,6 +37,7 @@ const [busqueda, setBusqueda] = useState('');
 const [modalAbierto, setModalAbierto] = useState(false);
 const [loteEnEdicion, setLoteEnEdicion] = useState<loteProduccion | null>(null);
 const [loteADescontar, setLoteADescontar] = useState<loteProduccion | null>(null);
+const [loteMovimientos, setLoteMovimientos] = useState<loteProduccion | null>(null);
 
 const abrirParaCrear = () => {
     setLoteEnEdicion(null);
@@ -116,6 +118,8 @@ return (
                 <Btn size="sm" variant="outline" disabled={agotado} onClick={() => abrirDescontar(l)}>
                     Descontar stock
                 </Btn>
+
+                <Btn size="sm" variant="outline" onClick={() => setLoteMovimientos(l)}>Movimientos</Btn>
                 </div>
             </Card>
             );
@@ -136,6 +140,15 @@ return (
             key={loteEnEdicion?.id ?? 'nuevo'}
             lote={loteEnEdicion}
             onClose={() => setModalAbierto(false)}
+        />
+        )}
+
+        {loteMovimientos && (
+        <MovimientosProduccionModal
+            key={loteMovimientos.id}
+            lote={loteMovimientos}
+            nombreProducto={nombreProducto(loteMovimientos.productoAgroId)}
+            onClose={() => setLoteMovimientos(null)}
         />
         )}
 
