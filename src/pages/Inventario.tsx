@@ -210,9 +210,8 @@ const Inventario = () => {
                     </div>
                 )}
             { tab === 'Productos' && <ProductosAgroPanel />}
-            </div>
-
             {tab === 'Produccion' && <LotesProduccionPanel/>}
+            </div>
 
             {/* Modal: nuevo almacén */}
             <Modal open={modalAlmacen} onClose={() => setModalAlmacen(false)} title="Nuevo Almacén">

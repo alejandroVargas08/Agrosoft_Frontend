@@ -58,7 +58,7 @@ const filtrados = lotes.filter((l) => {
 });
 
 return (
-    <div>
+    <div >
         <div className="flex gap-3 items-center">
         <div className="flex-1">
             <SearchBar value={busqueda} onChange={setBusqueda} placeholder="Buscar por producto, calidad o lote..." />
