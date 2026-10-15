@@ -1,19 +1,27 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type Notificacion, notificacionesApi } from '../../api/notificaciones/notificaciones';
 import { InicioUsuario } from '../useAuth';
 
 export function useNotificaciones(intervaloMs = 30000) {
   const { user } = InicioUsuario();
-  const usuarioId: number | undefined = user?.id; // ajusta al nombre real del campo
+  const usuarioId: number | undefined = user?.id;
 
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(Boolean(usuarioId));
   const [error, setError] = useState<string | null>(null);
+  const [nuevas, setNuevas] = useState<Notificacion[]>([]);
+  const idsVistos = useRef<Set<number> | null>(null);
 
   const cargar = useCallback(async () => {
     if (!usuarioId) return;
     try {
       const data = await notificacionesApi.listar(usuarioId);
+      const vistos = idsVistos.current;
+      if (vistos) {
+        const recientes = data.filter((n) => !n.leida && !vistos.has(n.id));
+        if (recientes.length > 0) setNuevas((prev) => [...recientes, ...prev].slice(0, 3));
+      }
+      idsVistos.current = new Set(data.map((n) => n.id));
       setNotificaciones(data);
       setError(null);
     } catch {
@@ -35,6 +43,7 @@ export function useNotificaciones(intervaloMs = 30000) {
       setNotificaciones((prev) =>
         prev.map((n) => (n.id === id ? { ...n, leida: true } : n)),
       );
+      setNuevas((prev) => prev.filter((n) => n.id !== id));
       try {
         await notificacionesApi.marcarLeida(id);
       } catch {
@@ -49,12 +58,17 @@ export function useNotificaciones(intervaloMs = 30000) {
     if (pendientes.length === 0) return;
 
     setNotificaciones((prev) => prev.map((n) => ({ ...n, leida: true })));
+    setNuevas([]);
     try {
       await Promise.all(pendientes.map((n) => notificacionesApi.marcarLeida(n.id)));
     } catch {
       cargar();
     }
   }, [notificaciones, cargar]);
+
+  const descartarNueva = useCallback((id: number) => {
+    setNuevas((prev) => prev.filter((n) => n.id !== id));
+  }, []);
 
   const sinLeer = useMemo(
     () => notificaciones.filter((n) => !n.leida).length,
@@ -66,6 +80,8 @@ export function useNotificaciones(intervaloMs = 30000) {
     cargando,
     error,
     sinLeer,
+    nuevas,
+    descartarNueva,
     marcarLeida,
     marcarTodasLeidas,
     recargar: cargar,
