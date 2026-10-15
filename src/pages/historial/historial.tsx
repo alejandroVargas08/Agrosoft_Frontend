@@ -6,7 +6,7 @@ import { useActividadHistorial } from "../../hooks/Historial/useActividadHistori
 import { useHistorialPreciosLote } from "../../hooks/Historial/useHistorialPreciosLote";
 import { useHistorialCultivo } from "../../hooks/Historial/useHistorialCultivo";
 import { api } from "../../api/axios"; 
-import { actividadesApi } from "../../api/actividades";
+import { actividadesApi } from "../../api/actividades/actividades";
 import { cultivosApi } from "../../api/cultivo/cultivos";
 
 const Historial = () => {
