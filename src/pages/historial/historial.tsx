@@ -6,6 +6,8 @@ import { useActividadHistorial } from "../../hooks/Historial/useActividadHistori
 import { useHistorialPreciosLote } from "../../hooks/Historial/useHistorialPreciosLote";
 import { useHistorialCultivo } from "../../hooks/Historial/useHistorialCultivo";
 import { api } from "../../api/axios"; 
+import { actividadesApi } from "../../api/actividades";
+import { cultivosApi } from "../../api/cultivo/cultivos";
 
 const Historial = () => {
     const [fuente, setFuente] = useState<tipoFuenteHistorial>('actividades');
@@ -39,7 +41,7 @@ const Historial = () => {
                 </div>
 
             {fuente === 'actividades' && <HistorialActividades/>}
-            {fuente === 'cultivos' && <HistorialCultivos/>} {/* Corregido a HistorialCultivos (con mayúscula) */}
+            {fuente === 'cultivos' && <HistorialCultivos/>}
             {fuente === 'precio_lotes' && <HistorialPreciosLote />}
 
             </div>
@@ -48,35 +50,105 @@ const Historial = () => {
 };
 
 function HistorialActividades() {
+    const [loteId, setLoteId] = useState<string>('');
+    const [cultivoSeleccionadoId, setCultivoSeleccionadoId] = useState<string>('');
     const [actividadId, setActividadId] = useState<string>('');
+
+    const loteIdNum = loteId ? Number(loteId) : undefined;
+    const cultivoIdNum = cultivoSeleccionadoId ? Number(cultivoSeleccionadoId) : undefined;
     const actividadIdNum = actividadId ? Number(actividadId) : undefined;
 
+    const { data: lotes = []} = useQuery({
+        queryKey: ['lotes-select'],
+        queryFn: async() => {
+            const response = await api.get('/territorio/lotes');
+            console.log("Respuesta de lotes recibida:", response.data);
+            return Array.isArray(response.data) ? response.data : (response.data?.data || []);
+        } 
+    });
+
+    const { data: cultivos = []} = useQuery({
+        queryKey: ['cultivos-por-lote', loteIdNum],
+        queryFn: async() => {
+            const response = await cultivosApi.listarPorLote(loteIdNum!);
+            return response.data || response;
+        },
+        enabled: !!loteIdNum,
+    });
+
     const { data: actividades = []} = useQuery({
-        queryKey: ['actividades-select'],
-        queryFn: async() => (await api.get('/actividades')).data,
+        queryKey: ['actividades-por-cultivo', cultivoIdNum],
+        queryFn: async() => {
+            const response = await actividadesApi.listarPorCultivo(cultivoIdNum!);
+            return response.data || response;
+        },
+        enabled: !!cultivoIdNum,
     });
 
     const { historial, loading, error} = useActividadHistorial(actividadIdNum);
 
     return (
+
         <div>
-        <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Seleccionar Actividad:</label>
-            <select
-                value={actividadId}
-                onChange={(e) => setActividadId(e.target.value)}
+
+            <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
+                <label className="block text-sm font-medium text-neutral-700 mb-1"> 1. Selecciona un Lote: </label>
+                <select 
+                value={loteId}
+                onChange={(e) => {
+                        setLoteId(e.target.value);
+                        setCultivoSeleccionadoId('');
+                        setActividadId('');
+                    }}
                 className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
                 >
-                <option value="">-- Elige una actividad --</option>
-                {actividades.map((a: { id: number; tipo?: string }) => (
-                <option key={a.id} value={a.id}>{a.tipo ? `${a.tipo} (ID: ${a.id})` : `Actividad #${a.id}`}</option>
-                ))}
-            </select>
-        </div>
+                    <option value="">-- Elige un lote --</option>
+                    {Array.isArray(lotes) && lotes.map((l: {id: number; nombre?: string; nombreLote?: string }) => (
+                        <option key={l.id} value={l.id}>{l.nombre || l.nombreLote || `Lote #${l.id}`}</option>
+                    )) }
+                </select>
+            </div>
 
-        {!actividadIdNum && <p className="text-neutral-400 italic text-sm">Selecciona una actividad para consultar su registro de cambios.</p>}
+            {loteIdNum && (
+                <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
+                    <label className="block text-sm font-medium text-neutral-700 mb-1"> 2. Seleccionar Cultivo: </label>
+                    <select 
+                    value={cultivoSeleccionadoId}
+                    onChange={(e) => {
+                            setCultivoSeleccionadoId(e.target.value);
+                            setActividadId('');
+                        }}
+                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
+                    >
+                        <option value="">Elige un cultivo</option>
+                        {cultivos.map((c: { id: number; nombreCultivo?: string; tipoCultivo?: string }) => (
+                            <option key={c.id} value={c.id}>{c.nombreCultivo || c.tipoCultivo || `Cultivo #${c.id}`}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
-        {actividadIdNum && (
+            { cultivoIdNum && (
+                <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">3. Seleccionar Actividad: </label>
+                    <select 
+                    value={actividadId}
+                    onChange={(e) => setActividadId(e.target.value)}
+                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
+                    >
+                        <option value="">-- Elige una actividad --</option>
+                        {actividades.map((a: { id: number; tipo?: string }) => (
+                            <option key={a.id} value={a.id}>{a.tipo ? `${a.tipo} (ID: ${a.id})` : `Actividad #${a.id}`}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {loteIdNum && <p className="text-neutral-400 italic text-sm">Primero selecciona un lote para ver sus cultivos.</p> }
+            { loteIdNum && !cultivoIdNum && <p className="text-neutral-400 italic text-sm">Selecciona un cultivo para ver sus actividades.</p> }
+            {cultivoIdNum && !actividadIdNum && <p className="text-neutral-400 italic text-sm">Selecciona una actividad para consultar su historial.</p>}
+
+        { actividadIdNum && (
             <TimelineContainer loading={loading} error={error} isEmpty={historial.length === 0}>
             {historial.map((h) => (
                 <TimelineCard
@@ -94,34 +166,67 @@ function HistorialActividades() {
     );
 }
 
-function HistorialCultivos() { // Renombrado a HistorialCultivos
+function HistorialCultivos() {
+    const [loteId, setLoteId] = useState<string>('');
     const [cultivoId, setCultivoId] = useState<string>('');
+
+    const loteIdNum = loteId ? Number(loteId): undefined;
     const cultivoIdNum = cultivoId ? Number(cultivoId) : undefined;
 
+    const { data: lotes = []} = useQuery({
+        queryKey: ['lotes-select-cultivos-tab'],
+        queryFn: async () => (await api.get('/territorio/lotes')).data,
+    });
+
     const { data: cultivos = []} = useQuery({
-        queryKey: ['cultivos-select'],
-        queryFn: async() => (await api.get('/cultivos')).data,
+        queryKey: ['cultivos-por-lote-tab', loteIdNum],
+        queryFn: async() => {
+            const response = await cultivosApi.listarPorLote(loteIdNum!);
+            return response.data || response;
+        },
+        enabled: !!loteIdNum,
     }); 
 
-    const { historial, loading, error } = useHistorialCultivo(cultivoIdNum); // Conectado con el hook real
+    const { historial, loading, error } = useHistorialCultivo(cultivoIdNum);
 
     return (
     <div>
+
         <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Seleccionar Cultivo:</label>
-            <select
+            <label className="block text-sm font-medium text-neutral-700 mb-1"> Seleccionar Lote: </label>
+            <select 
+            value={loteId} 
+            onChange={(e) => {
+                        setLoteId(e.target.value);
+                        setCultivoId('');
+                    }}
+            className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
+            >
+                <option value="">-- Elige un lote --</option>
+                {lotes.map((l: { id: number; nombre?: string }) => (
+                        <option key={l.id} value={l.id}>{l.nombre || `Lote #${l.id}`}</option>
+                    ))}
+            </select>
+        </div>
+
+        { loteIdNum && (
+            <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
+                <label className="block text-sm font-medium text-neutral-700 mb-1"> 2. Seleccionar Cultivo: </label>
+                <select 
                 value={cultivoId}
                 onChange={(e) => setCultivoId(e.target.value)}
                 className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
                 >
-                <option value="">-- Elige un cultivo --</option>
-                {cultivos.map((c: { id: number; nombreCultivo?: string }) => (
-                <option key={c.id} value={c.id}>{c.nombreCultivo || `Cultivo #${c.id}`}</option>
-            ))}
-            </select>
-        </div>
+                    <option value="">Elige un cultivo</option>
+                    {cultivos.map((c: { id: number; nombreCultivo?: string; tipoCultivo?: string }) => (
+                            <option key={c.id} value={c.id}>{c.nombreCultivo || c.tipoCultivo || `Cultivo #${c.id}`}</option>
+                        ))}
+                </select>
+            </div>
+        )}
 
-        {!cultivoIdNum && <p className="text-neutral-400 italic text-sm">Selecciona un cultivo para ver su historial.</p>}
+        { !loteIdNum && <p className="text-neutral-400 italic text-sm">Primero selecciona un lote para ver sus cultivos.</p> }
+        {loteIdNum && !cultivoIdNum && <p className="text-neutral-400 italic text-sm">Selecciona un cultivo para ver su historial.</p>}
 
         {cultivoIdNum && (
             <TimelineContainer loading={loading} error={error} isEmpty={historial.length === 0}>
@@ -165,36 +270,36 @@ function HistorialPreciosLote() {
 }
 
 interface TimelineContainerProps {
-  loading: boolean;
-  error: string | null;
-  isEmpty: boolean;
-  children: React.ReactNode;
+    loading: boolean;
+    error: string | null;
+    isEmpty: boolean;
+    children: React.ReactNode;
 }
 
 function TimelineContainer({ loading, error, isEmpty, children }: TimelineContainerProps) {
-  if (loading) return <p className="text-sm text-neutral-500 text-center py-6">Cargando registros...</p>;
-  if (error) return <p className="text-sm text-red-600 bg-red-50 p-4 rounded-xl text-center">{error}</p>;
-  if (isEmpty) return <p className="text-sm text-neutral-400 italic">No hay registros de cambios disponibles.</p>;
+    if (loading) return <p className="text-sm text-neutral-500 text-center py-6">Cargando registros...</p>;
+    if (error) return <p className="text-sm text-red-600 bg-red-50 p-4 rounded-xl text-center">{error}</p>;
+    if (isEmpty) return <p className="text-sm text-neutral-400 italic">No hay registros de cambios disponibles.</p>;
 
-  return (
-    <div className="relative border-l-2 border-emerald-200 ml-4 space-y-6">
-      {children}
-    </div>
-  );
+    return (
+        <div className="relative border-l-2 border-emerald-200 ml-4 space-y-6">
+            {children}
+        </div>
+    );
 }
 
 interface TimelineCardProps {
-  usuarioId: number;
-  tipoLabel: string;
-  fecha: string | Date;
-  motivo?: string | null;
-  cambios?: Record<string, unknown>;
+    usuarioId: number;
+    tipoLabel: string;
+    fecha: string | Date;
+    motivo?: string | null;
+    cambios?: Record<string, unknown>;
 }
 
 function TimelineCard({ usuarioId, tipoLabel, fecha, motivo, cambios }: TimelineCardProps) {
   return (
     <div className="relative pl-6">
-      <div className="absolute -left-[17px] top-0 w-8 h-8 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-xs shadow-sm">
+      <div className="absolute top-0 w-8 h-8 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-xs shadow-sm">
         👤
       </div>
 
