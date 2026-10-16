@@ -21,9 +21,9 @@ const NuevoInsumo = () => {
 
     return (
         <DashboardLayout>
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-lg mx-auto p-4 sm:p-6">
                 <PageHeader title="Nuevo Insumo" onBack={volver} />
-                <Card className="max-w-lg">
+                <Card>
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         {errorForm && (
                             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{errorForm}</div>
@@ -32,7 +32,7 @@ const NuevoInsumo = () => {
                         <Input label="Nombre del insumo" value={form.nombre} onChange={set('nombre')} required
                             placeholder="Ej: Fertilizante NPK 15-15-15" />
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <Select
                                     label="Categoría" value={form.categoriaId} onChange={set('categoriaId')}
@@ -54,13 +54,13 @@ const NuevoInsumo = () => {
                             />
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <Input label="Unidad compra" value={form.presentacionTipo} onChange={set('presentacionTipo')} required placeholder="Bulto 50kg" />
                             <Input label="Unidad uso" value={form.unidadUso} onChange={set('unidadUso')} required placeholder="kg" />
                             <Input label="Factor conversión" value={form.factorConversionUso} onChange={set('factorConversionUso')} type="number" step="any" required />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Input label="Stock mínimo" value={form.stockMinimo} onChange={set('stockMinimo')} type="number" step="any" required />
                             <Input label="Precio unitario (COP)" value={form.precioUnitarioPresentacion} onChange={set('precioUnitarioPresentacion')} type="number" step="any" required />
                         </div>

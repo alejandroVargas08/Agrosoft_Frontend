@@ -1,5 +1,5 @@
 import { Bell, Bug, CalendarDays, Check, Cpu, Package, type LucideIcon } from 'lucide-react';
-import { useNotificaciones } from '../../hooks/notificaciones/useNotificaciones';
+import { useNotificacionesContext } from '../../context/NotificacionesContext';
 import { tiempoRelativo } from '../../utils/tiempoRelativo';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
@@ -14,7 +14,7 @@ const ICONO_DEFECTO = { icono: Bell, color: 'text-gray-500', fondo: 'bg-gray-100
 
 export default function Notificaciones() {
   const { notificaciones, cargando, error, sinLeer, marcarLeida, marcarTodasLeidas } =
-    useNotificaciones();
+    useNotificacionesContext();
 
   return (
     <DashboardLayout>
@@ -75,9 +75,9 @@ export default function Notificaciones() {
                       }`}
                     >
                       {n.mensaje}
-                </span>
+                    </span>
                     <span className="mt-1 block text-xs text-gray-400">
-                        {tiempoRelativo(n.creadoEn)}
+                      {tiempoRelativo(n.creadoEn)}
                     </span>
                   </span>
 
@@ -93,4 +93,3 @@ export default function Notificaciones() {
     </DashboardLayout>
   );
 }
-

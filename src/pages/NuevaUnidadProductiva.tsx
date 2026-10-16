@@ -16,9 +16,9 @@ const NuevaUnidadProductiva = () => {
 
     return (
         <DashboardLayout>
-            <div className="p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8">
+            <div className="max-w-lg mx-auto p-4 sm:p-6">
                 <PageHeader title="Nueva Unidad Productiva" onBack={volver} />
-                <Card className="max-w-lg">
+                <Card>
                     <form className="space-y-4" onSubmit={handleSubmit}>
                         {errorForm && (
                             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{errorForm}</div>
