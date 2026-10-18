@@ -7,7 +7,6 @@ import logoSena from '../assets/img/logo-sena-blanco.png';
 import { LuSprout, LuCpu, LuMail, LuLock, LuEye, LuEyeOff, LuAsterisk } from 'react-icons/lu';
 import { FiBarChart2 } from 'react-icons/fi';
 
-
 function Login() {
     const navigate = useNavigate();
     const [correo, setCorreo] = useState('');
@@ -23,16 +22,16 @@ function Login() {
 
         try {
             const { data } = await api.post('/usuarios/login', { correo, password });
-            console.log('Usuario logueado:', data);
+            localStorage.setItem('token', data.access_token);
             setExito('Inicio de sesión excelente');
 
-            if(data.usuario){
+            if (data.usuario) {
                 localStorage.setItem('user', JSON.stringify(data.usuario));
             } else if (data.user) {
                 localStorage.setItem('user', JSON.stringify(data.user));
             }
 
-            navigate('/inicio'); // se redirecciona
+            navigate('/inicio');
         } catch (err) {
             const mensaje = isAxiosError(err) ? err.response?.data?.message : undefined;
             setError(mensaje ?? 'Error al iniciar sesión');
@@ -40,22 +39,15 @@ function Login() {
         }
     };
 
-    
-
-   
-
     const inputClasses =
         'w-full rounded-xl border border-neutral-200 bg-white py-3 pl-10 pr-10 text-sm text-neutral-800 placeholder:text-neutral-400 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-600/20';
 
     return (
         <div className="flex min-h-screen w-full flex-col lg:flex-row">
-            {/* Panel Izquierdo - Branding Persistente */}
             <aside className="relative flex w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-green-800 via-green-700 to-green-900 px-6 py-8 lg:sticky lg:top-0 lg:h-screen lg:w-1/2 lg:px-12 lg:py-16">
-                {/* Blobs decorativos */}
                 <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-white/5" />
                 <div className="pointer-events-none absolute -bottom-28 -right-16 h-96 w-96 rounded-full bg-white/5" />
 
-                {/* Versión compacta (móvil pequeño) */}
                 <div className="relative z-10 flex flex-col items-center gap-2 sm:hidden">
                     <img src={logoAgrosoft} alt="logoAgrosoft" className="h-14 w-14" />
                     <h1 className="text-xl font-extrabold text-white">AgroSoft</h1>
@@ -65,7 +57,6 @@ function Login() {
                     </div>
                 </div>
 
-                {/* Versión completa (tablet / escritorio) */}
                 <div className="relative z-10 hidden max-w-sm flex-col items-center pt-20 text-center sm:flex">
                     <img src={logoAgrosoft} alt="logoAgrosoft" className="mb-8 h-[120px] w-[120px]" />
                     <h1 className="mb-4 text-5xl font-extrabold text-white">AgroSoft</h1>
@@ -104,7 +95,6 @@ function Login() {
                 </div>
             </aside>
 
-            {/* Panel Derecho - Formulario de acceso */}
             <main className="flex w-full flex-1 flex-col bg-neutral-50 px-6 py-10 lg:w-1/2 lg:justify-center lg:px-16 lg:py-16">
                 <div className="mx-auto flex w-full max-w-lg flex-1 flex-col lg:justify-center">
                     <header className="mb-8">

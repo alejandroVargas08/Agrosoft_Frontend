@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState } from "react";
 import { useActividades } from "../../hooks/Actividades/useActividad";
 import { useActividadForm } from "../../hooks/Actividades/useActividadForm";
 import DashboardLayout from "../../components/layout/DashboardLayout";
@@ -6,13 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { useCultivos } from "../../hooks/cultivos/useCultivos";
 import { useTerritorio } from "../../hooks/useTerritorio";
 
-
-
 const Actividades = () => {
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loteFiltroId, setLoteFiltroId] = useState<number | undefined>(undefined);
-    const [cultivoIdActual, setCultivoIdActual] = useState<number>(1);
+    const [cultivoIdActual, setCultivoIdActual] = useState<number | null>(null);
     const {lotes: lotesFiltro } = useTerritorio();
     const {cultivos: cultivosDisponibles} = useCultivos(loteFiltroId);
     const {
@@ -37,7 +35,7 @@ const Actividades = () => {
     useActividadForm({
         isModalOpen,
         onSuccess: () => setIsModalOpen(false),
-        cultivoIdDefault: cultivoIdActual,
+        cultivoIdDefault: cultivoIdActual ?? undefined,
     });
 
     const Filtros: { label: string; value: string }[] = [
@@ -84,7 +82,7 @@ const Actividades = () => {
                             value={loteFiltroId || ""}
                             onChange={(e) => {
                                 setLoteFiltroId(e.target.value ? Number(e.target.value) : undefined);
-                                setCultivoIdActual(0);
+                                setCultivoIdActual(null);
                             }}
                             className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
                         >
@@ -101,8 +99,8 @@ const Actividades = () => {
                         <label className="block text-sm font-medium text-neutral-700 mb-1">Cultivo a visualizar:</label>
 
                         <select
-                            value={cultivoIdActual}
-                            onChange={(e) => setCultivoIdActual(Number(e.target.value))}
+                            value={cultivoIdActual ?? 0}
+                            onChange={(e) => setCultivoIdActual(Number(e.target.value) || null)}
                             disabled={!loteFiltroId}
                             className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700 disabled:bg-neutral-100 disabled:text-neutral-400"
                         >
@@ -131,6 +129,9 @@ const Actividades = () => {
                     </button>
                     ))}
                 </div>
+                {cultivoIdActual === null && (
+                    <p className="text-center py-8 text-neutral-500 font-medium">Selecciona un lote y un cultivo para ver sus actividades</p>
+                )}
                 {loading && (
                     <p className="text-center py-8 text-neutral-500 font-medium"> Cargando Actividades</p>
                 )}
@@ -313,4 +314,4 @@ const Actividades = () => {
             </DashboardLayout>
         );
 };
-export default Actividades; 
+export default Actividades;

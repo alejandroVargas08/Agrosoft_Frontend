@@ -17,7 +17,7 @@ export interface MensajeIA {
 }
 
 function getHeaders(json = true): HeadersInit {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('token');
   return {
     ...(json ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -33,7 +33,7 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
       const err = await res.json();
       detalle = err?.message ?? detalle;
     } catch {
-     
+      detalle = res.statusText;
     }
     throw new Error(`Error ${res.status}: ${detalle}`);
   }

@@ -36,7 +36,7 @@ export interface CrearActividadPayLoad {
     horasActividad: number;
     precioHoraActividad: number;
     descripcion?: string;
-    creadoPorUsuarioId: number;
+    creadoPorUsuarioId?: number;
 }
 
 export const ESTADO_INICIAL_FORM: ActividadFormState = {

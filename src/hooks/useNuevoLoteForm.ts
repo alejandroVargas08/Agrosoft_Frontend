@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { lotesApi, sublotesApi } from '../api/territorio';
+import { mensajeError } from '../api/errores/errores';
 import type { Punto } from '../types/territorio';
 
 export interface NuevoLoteForm {
@@ -10,14 +10,13 @@ export interface NuevoLoteForm {
     nombre: string;
     descripcion: string;
     areaHa: string;
-    verticesTexto: string; // una línea por vértice: "lat,lng"
+    verticesTexto: string;
 }
 
 const FORM_INICIAL: NuevoLoteForm = {
     tipo: 'plot', parentId: '', nombre: '', descripcion: '', areaHa: '', verticesTexto: '',
 };
 
-// "1.85,-76.05\n1.86,-76.04" → [{lat:1.85,lng:-76.05}, {lat:1.86,lng:-76.04}]
 function parsearVertices(texto: string): Punto[] {
     return texto
         .split('\n')
@@ -29,7 +28,6 @@ function parsearVertices(texto: string): Punto[] {
         });
 }
 
-// El centroide es el promedio de los vértices
 function calcularCentroide(vertices: Punto[]): Punto {
     return {
         lat: vertices.reduce((a, v) => a + v.lat, 0) / vertices.length,
@@ -92,11 +90,7 @@ export function useNuevoLoteForm({ onSuccess }: { onSuccess: () => void }) {
 
     const errorForm =
         errorLocal ??
-        (crearMutation.error && isAxiosError(crearMutation.error)
-            ? crearMutation.error.response?.data?.message ?? 'No se pudo guardar el lote'
-            : crearMutation.error
-                ? 'Error inesperado al guardar'
-                : null);
+        (crearMutation.error ? mensajeError(crearMutation.error, 'No se pudo guardar el lote') : null);
 
     return {
         form,

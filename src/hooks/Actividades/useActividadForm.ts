@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { ESTADO_INICIAL_FORM, type ActividadFormState, type CrearActividadPayLoad } from "../../types/actividades";
-import { isAxiosError } from "axios";
 import { lotesApi, sublotesApi } from "../../api/territorio";
 import { actividadesApi, cultivosApi, productosAgroApi } from "../../api/actividades/actividades";
+import { mensajeError } from "../../api/errores/errores";
 
 interface UseActividadFormProps {
     isModalOpen: boolean;
@@ -11,10 +11,10 @@ interface UseActividadFormProps {
     cultivoIdDefault?: number;
 }
 
-export function useActividadForm({ isModalOpen, onSuccess, cultivoIdDefault = 1 }: UseActividadFormProps) {
-
+export function useActividadForm({ isModalOpen, onSuccess, cultivoIdDefault }: UseActividadFormProps) {
     const queryClient = useQueryClient();
     const [form, setForm] = useState<ActividadFormState>(ESTADO_INICIAL_FORM);
+    const [errorLocal, setErrorLocal] = useState<string | null>(null);
 
     const { data: lotes = [] } = useQuery({
         queryKey: ['lotes'],
@@ -47,11 +47,10 @@ export function useActividadForm({ isModalOpen, onSuccess, cultivoIdDefault = 1 
             setForm(ESTADO_INICIAL_FORM);
             queryClient.invalidateQueries({ queryKey: ['cultivos'] });
             queryClient.invalidateQueries({ queryKey: ['cultivos', payload.loteId] });
-            queryClient.invalidateQueries({ queryKey: ['actividades']});
-
+            queryClient.invalidateQueries({ queryKey: ['actividades'] });
             onSuccess();
         },
-    }); 
+    });
 
     const handleFormChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -60,35 +59,43 @@ export function useActividadForm({ isModalOpen, onSuccess, cultivoIdDefault = 1 
         setForm((prev) => ({
             ...prev,
             [name]: value,
-            ...(name === 'loteId' ? {subLoteId: '', cultivoId: ''}: {}),
+            ...(name === 'loteId' ? { subLoteId: '', cultivoId: '' } : {}),
         }));
     };
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorLocal(null);
+
+        const cultivoId = form.cultivoId ? Number(form.cultivoId) : cultivoIdDefault;
+        if (!form.loteId) {
+            setErrorLocal('Selecciona el lote de la actividad');
+            return;
+        }
+        if (!cultivoId) {
+            setErrorLocal('Selecciona el cultivo de la actividad');
+            return;
+        }
+
         const payload: CrearActividadPayLoad = {
-            nombre: form.nombre,
+            nombre: form.nombre || form.tipo,
             tipo: form.tipo,
             subtipo: form.subtipo || undefined,
             loteId: Number(form.loteId),
             subLoteId: form.subLoteId ? Number(form.subLoteId) : undefined,
-            cultivoId: form.cultivoId ? Number(form.cultivoId) : cultivoIdDefault,
+            cultivoId,
             productoAgroId: form.productoAgroId ? Number(form.productoAgroId) : undefined,
             fecha: form.fecha,
             horasActividad: Number(form.horasActividad),
             precioHoraActividad: Number(form.precioHoraActividad),
             descripcion: form.descripcion || undefined,
-            creadoPorUsuarioId: 1, // Valor por defecto, o el usuario actual
         };
         crearMutation.mutate(payload);
     };
 
     const errorForm =
-        crearMutation.error && isAxiosError(crearMutation.error)
-            ? (crearMutation.error.response?.data as { message?: string })?.message ?? 'No se puede guardar la actividad'
-            : crearMutation.error
-            ? 'Error inesperado al guardar'
-            : null;
+        errorLocal ??
+        (crearMutation.error ? mensajeError(crearMutation.error, 'No se puede guardar la actividad') : null);
 
     return {
         form,

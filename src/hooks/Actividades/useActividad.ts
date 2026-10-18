@@ -2,10 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { Actividad } from "../../types/actividades";
 import { actividadesApi } from "../../api/actividades/actividades";
+import { esSinPermiso, mensajeError } from "../../api/errores/errores";
 
-
-
-export function useActividades(cultivoId: number = 1) {
+export function useActividades(cultivoId: number | null) {
     const queryClient = useQueryClient();
     const [filtroEstado, setFiltroEstado] = useState<string>('Todas');
 
@@ -15,10 +14,9 @@ export function useActividades(cultivoId: number = 1) {
         error,
     } = useQuery({
         queryKey: ['actividades', cultivoId],
-        queryFn: async () => {
-            const res = await actividadesApi.listarPorCultivo(cultivoId);
-            return res.data;
-        },
+        queryFn: async () => (await actividadesApi.listarPorCultivo(cultivoId!)).data,
+        enabled: cultivoId !== null,
+        retry: (intentos, err) => !esSinPermiso(err) && intentos < 2,
     });
 
     const cambiarEstadoMutation = useMutation({
@@ -29,7 +27,6 @@ export function useActividades(cultivoId: number = 1) {
             queryClient.setQueryData<Actividad[]>(['actividades', cultivoId], (old = []) =>
                 old.map((a) => (a.id === id ? { ...a, estado: estado as Actividad['estado'] } : a))
             );
-
             return { actividadesPrevias };
         },
         onError: (_err, _variables, context) => {
@@ -47,24 +44,25 @@ export function useActividades(cultivoId: number = 1) {
         const estadoNormalizado = estadoActual ? estadoActual : 'Pendiente';
         const idx = estados.indexOf(estadoNormalizado);
         const siguienteIndex = idx === -1 ? 0 : (idx + 1) % estados.length;
-        const nuevoEstado = estados[siguienteIndex];
-        cambiarEstadoMutation.mutate({ id, estado: nuevoEstado });
+        cambiarEstadoMutation.mutate({ id, estado: estados[siguienteIndex] });
     };
 
-
-
     const normalizar = (valor: string) => valor.replace('_', ' ').toLowerCase();
-    const actividadeesFiltradas = actividades.filter((a) => {
+    const actividadesFiltradas = actividades.filter((a) => {
         if (filtroEstado === 'Todas') return true;
         const estadoActividad = a.estado ? normalizar(a.estado) : '';
-        const estadoFiltro = normalizar(filtroEstado);
-        return estadoActividad === estadoFiltro;
+        return estadoActividad === normalizar(filtroEstado);
     });
 
+    const errorLista = error ? mensajeError(error, 'No se ha logrado cargar el listado de actividades') : null;
+    const errorEstado = cambiarEstadoMutation.error
+        ? mensajeError(cambiarEstadoMutation.error, 'No se pudo cambiar el estado')
+        : null;
+
     return {
-        actividades: actividadeesFiltradas,
+        actividades: actividadesFiltradas,
         loading,
-        error: error ? 'No se ha logrado cargar el listado de actividades' : null,
+        error: errorLista ?? errorEstado,
         filtroEstado,
         setFiltroEstado,
         handleChangeEstado,
