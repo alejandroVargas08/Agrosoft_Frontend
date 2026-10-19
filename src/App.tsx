@@ -33,14 +33,13 @@ import Historial from './pages/historial/historial'
 function App() {
   return (
     <Routes>
-      {/* Rutas públicas */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/recuperar" element={<RecuperarPassword />} />
       <Route path="/recuperar/verificar" element={<VerificarCodigo />} />
       <Route path="/recuperar/nueva-contrasena" element={<NuevaContrasena />} />
 
-      {/* Aquí tienen que poner las pantallas: del sidebar  */}
+      {/* Pongan las rutas del sidebar aquí */}
       <Route element={<LayoutConNotificaciones />}>
         <Route path="/inicio" element={<Inicio />} />
         <Route path="/perfil" element={<Perfil />} />

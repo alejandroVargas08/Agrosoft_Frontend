@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  AlertTriangle, BookOpen, ChevronRight, ClipboardList, Cpu, DollarSign,
-  Map, Package, ShoppingCart, Sprout, type LucideIcon,
-} from 'lucide-react';
+import { AlertTriangle, BookOpen, ChevronRight, ClipboardList, Cpu, DollarSign, Map, Package, ShoppingCart, Sprout, type LucideIcon } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { InicioUsuario } from '../hooks/useAuth';
