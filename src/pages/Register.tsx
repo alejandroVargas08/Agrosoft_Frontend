@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/axios';
+import { mensajeError } from '../api/errores/errores';
+import { etiquetaPrograma, programasFormacionApi } from '../api/programa_formacion/programasFormacion';
 import logoAgrosoft from '../assets/img/logo-agrosoft.png';
 import logoSena from '../assets/img/logo-sena-blanco.png';
-import { LuSprout, LuCpu, LuUser, LuIdCard, LuPhone, LuMail, LuGraduationCap, LuLock, LuHash, LuAsterisk, LuChevronLeft } from 'react-icons/lu';
+import { LuSprout, LuCpu, LuUser, LuIdCard, LuPhone, LuMail, LuGraduationCap, LuLock, LuAsterisk, LuChevronLeft } from 'react-icons/lu';
 import { FiBarChart2 } from 'react-icons/fi';
 
 export const Register = () => {
+    const navigate = useNavigate();
     const [step, setStep] = useState(1);
+    const [enviando, setEnviando] = useState(false);
+    const [error, setError] = useState('');
+
+    const { data: programas = [], isLoading: cargandoProgramas, error: errorProgramas } = useQuery({
+        queryKey: ['programas-formacion-activos'],
+        queryFn: async () => (await programasFormacionApi.listarActivos()).data,
+    });
 
     const [form, setForm] = useState({
         nombre: '',
@@ -15,9 +26,7 @@ export const Register = () => {
         identificacion: '',
         telefono: '',
         email: '',
-        rolId: '1',
         programaFormacionId: '',
-        idFicha: '',
         password: '',
         confirmarPassword: '',
     });
@@ -40,33 +49,33 @@ export const Register = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
 
         if (form.password !== form.confirmarPassword) {
-            alert('Las contraseñas no coinciden');
+            setError('Las contraseñas no coinciden');
             return;
         }
 
+        const programa = programas.find((p) => String(p.id) === form.programaFormacionId);
+
         try {
-            const datos = {
+            setEnviando(true);
+            await api.post('/usuarios', {
                 nombre: form.nombre,
                 apellido: form.apellido,
                 identificacion: form.identificacion,
                 telefono: form.telefono,
                 email: form.email,
-                rolId: Number(form.rolId),
-                programaFormacionId: form.programaFormacionId
-                    ? Number(form.programaFormacionId)
-                    : undefined,
-                idFicha: form.idFicha || undefined,
+                programaFormacionId: programa ? programa.id : undefined,
+                idFicha: programa ? programa.ficha : undefined,
                 password: form.password,
-            };
-            const response = await api.post('/usuarios', datos);
-            alert('¡Usuario registrado con éxito!');
-            console.log(response.data);
-
-        } catch (error) {
-            alert('Error al registrar usuario');
-            console.log(error);
+            });
+            alert('¡Usuario registrado con éxito! Ya puedes iniciar sesión.');
+            navigate('/login');
+        } catch (err) {
+            setError(mensajeError(err, 'Error al registrar usuario'));
+        } finally {
+            setEnviando(false);
         }
     };
 
@@ -259,21 +268,6 @@ export const Register = () => {
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-sm font-semibold text-neutral-800">
-                                    Tipo de usuario <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    name="rolId"
-                                    value={form.rolId}
-                                    onChange={handleChange}
-                                    className={selectClasses}
-                                >
-                                    <option value="1">Aprendiz / Usuario</option>
-                                    <option value="2">Administrador</option>
-                                </select>
-                            </div>
-
                             <button
                                 type="submit"
                                 className="mt-2 w-full rounded-xl bg-green-800 py-3.5 font-semibold text-white transition hover:bg-green-900"
@@ -287,7 +281,7 @@ export const Register = () => {
                         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
                             <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
                                 <LuGraduationCap size={18} className="shrink-0" />
-                                <span>Los campos de formación SENA son opcionales</span>
+                                <span>Tu cuenta se crea como Aprendiz. La ficha es opcional.</span>
                             </div>
 
                             <div className="flex flex-col gap-1.5">
@@ -298,32 +292,21 @@ export const Register = () => {
                                     name="programaFormacionId"
                                     value={form.programaFormacionId}
                                     onChange={handleChange}
+                                    disabled={cargandoProgramas}
                                     className={selectClasses}
                                 >
-                                    <option value="">Sin programa asignado</option>
-                                    <option value="ADSO - Análisis y Desarrollo de Software">ADSO - Análisis y Desarrollo de Software</option>
-                                    <option value="Tecnólogo en Gestión Agropecuaria">Tecnólogo en Gestión Agropecuaria</option>
-                                    <option value="Tecnólogo en Producción Agrícola">Tecnólogo en Producción Agrícola</option>
-                                    <option value="Tecnólogo en Sistemas Agroindustriales">Tecnólogo en Sistemas Agroindustriales</option>
-                                    <option value="Tecnólogo en Gestión Empresarial">Tecnólogo en Gestión Empresarial</option>
+                                    <option value="">{cargandoProgramas ? 'Cargando fichas...' : 'Sin programa asignado'}</option>
+                                    {programas.map((programa) => (
+                                        <option key={programa.id} value={programa.id}>
+                                            {etiquetaPrograma(programa)}
+                                        </option>
+                                    ))}
                                 </select>
-                            </div>
-
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-sm font-semibold text-neutral-800">
-                                    Número de Ficha <span className="text-neutral-400 font-normal">(opcional)</span>
-                                </label>
-                                <div className="relative">
-                                    <LuHash className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-                                    <input
-                                        type="text"
-                                        name="idFicha"
-                                        placeholder="Ej: 2756431"
-                                        value={form.idFicha}
-                                        onChange={handleChange}
-                                        className={inputClasses}
-                                    />
-                                </div>
+                                {errorProgramas ? (
+                                    <p className="text-xs text-red-600">{mensajeError(errorProgramas, 'No se pudieron cargar las fichas')}</p>
+                                ) : (
+                                    <p className="text-xs text-neutral-500">¿No aparece tu ficha? Pide al administrador que la registre.</p>
+                                )}
                             </div>
 
                             <div className="flex flex-col gap-1.5">
@@ -362,11 +345,14 @@ export const Register = () => {
                                 </div>
                             </div>
 
+                            {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+
                             <button
                                 type="submit"
-                                className="mt-2 w-full rounded-xl bg-green-800 py-3.5 font-semibold text-white transition hover:bg-green-900"
+                                disabled={enviando}
+                                className="mt-2 w-full rounded-xl bg-green-800 py-3.5 font-semibold text-white transition hover:bg-green-900 disabled:opacity-60"
                             >
-                                Crear cuenta
+                                {enviando ? 'Creando cuenta...' : 'Crear cuenta'}
                             </button>
                         </form>
                     )}

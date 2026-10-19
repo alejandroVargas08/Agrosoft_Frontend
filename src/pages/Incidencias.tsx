@@ -3,10 +3,10 @@ import { AlertTriangle, Plus } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Badge, Btn, Card, Input, Modal, PageHeader, Select, StatusBadge } from '../components/ui/AgroUI';
 import { useIncidencias } from '../hooks/useIncidencias';
+import { usePermisos } from '../hooks/permisos/usePermisos';
 import { useUnidadesProductivas } from '../hooks/useUnidadesProductivas';
 import type { EstadoIncidencia, SeveridadIncidencia } from '../types/incidencias';
 
-// Filtros del diseño, con el estado al que corresponde cada uno
 const FILTROS: { label: string; estado: EstadoIncidencia | 'Todas' }[] = [
     { label: 'Todas', estado: 'Todas' },
     { label: 'Abiertas', estado: 'open' },
@@ -14,7 +14,6 @@ const FILTROS: { label: string; estado: EstadoIncidencia | 'Todas' }[] = [
     { label: 'Resueltas', estado: 'resolved' },
 ];
 
-// Al hacer clic en el badge, la incidencia pasa al siguiente estado
 const SIGUIENTE_ESTADO: Record<EstadoIncidencia, EstadoIncidencia> = {
     open: 'in_treatment',
     in_treatment: 'resolved',
@@ -33,7 +32,6 @@ const SEVERIDAD_TEXTO: Record<SeveridadIncidencia, string> = {
     low: 'Baja', medium: 'Media', high: 'Alta',
 };
 
-// Se arma la fecha a mano para que no cambie de día por la zona horaria
 const fmtFecha = (fecha: string) => {
     const [anio, mes, dia] = fecha.slice(0, 10).split('-').map(Number);
     return new Date(anio, mes - 1, dia)
@@ -51,6 +49,7 @@ const Incidencias = () => {
     } = useIncidencias();
 
     const { unidades } = useUnidadesProductivas();
+    const { puede } = usePermisos();
 
     return (
         <DashboardLayout>
@@ -58,7 +57,7 @@ const Incidencias = () => {
                 <PageHeader
                     title="Incidencias"
                     subtitle="Plagas, enfermedades y eventos"
-                    action={<Btn onClick={() => setShowNew(true)}><Plus size={16} />Nueva</Btn>}
+                    action={puede('incidencias.gestionar') ? <Btn onClick={() => setShowNew(true)}><Plus size={16} />Nueva</Btn> : undefined}
                 />
 
                 <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
@@ -87,8 +86,9 @@ const Incidencias = () => {
                                 </div>
                                 <button
                                     onClick={() => cambiarEstado(i.id, SIGUIENTE_ESTADO[i.estado])}
-                                    title="Clic para cambiar el estado"
-                                    className="transition hover:opacity-70"
+                                    disabled={!puede('incidencias.gestionar')}
+                                    title={puede('incidencias.gestionar') ? 'Clic para cambiar el estado' : undefined}
+                                    className="transition hover:opacity-70 disabled:cursor-default disabled:hover:opacity-100"
                                 >
                                     <StatusBadge status={i.estado} />
                                 </button>

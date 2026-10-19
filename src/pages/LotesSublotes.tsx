@@ -5,6 +5,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { Badge, Btn, Card, EmptyState, PageHeader, StatusBadge, Tab } from '../components/ui/AgroUI';
 import { useTerritorio } from '../hooks/useTerritorio';
 import type { Lote, Punto, SubLote } from '../types/territorio';
+import { usePermisos } from '../hooks/permisos/usePermisos';
 
 // Colores de los polígonos (se asignan en orden)
 const PALETA = ['#2d7a3e', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#ec4899'];
@@ -53,6 +54,7 @@ const LotesSublotes = () => {
     const [tab, setTab] = useState('Mapa');
     const [selectedPlot, setSelectedPlot] = useState<string | null>(null);
     const { lotes, sublotes, loading, error } = useTerritorio();
+    const { puede } = usePermisos();
 
     // Lotes primero y luego sublotes, para que los sublotes queden dibujados encima
     const parcelas: Parcela[] = [
@@ -69,9 +71,9 @@ const LotesSublotes = () => {
     const proyectar = crearProyeccion(parcelas.flatMap((p) => p.vertices));
     const seleccionada = parcelas.find((p) => p.key === selectedPlot);
 
-    const accionNuevo = (
+    const accionNuevo = puede('lotes.gestionar') ? (
         <Btn onClick={() => navigate('/territorio/nuevo')}><Plus size={16} />Nuevo Lote</Btn>
-    );
+    ) : undefined;
 
     return (
         <DashboardLayout>

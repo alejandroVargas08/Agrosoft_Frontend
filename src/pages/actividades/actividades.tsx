@@ -5,6 +5,7 @@ import DashboardLayout from "../../components/layout/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import { useCultivos } from "../../hooks/cultivos/useCultivos";
 import { useTerritorio } from "../../hooks/useTerritorio";
+import { usePermisos } from "../../hooks/permisos/usePermisos";
 
 const Actividades = () => {
     const navigate = useNavigate();
@@ -12,6 +13,7 @@ const Actividades = () => {
     const [loteFiltroId, setLoteFiltroId] = useState<number | undefined>(undefined);
     const [cultivoIdActual, setCultivoIdActual] = useState<number | null>(null);
     const {lotes: lotesFiltro } = useTerritorio();
+    const { puede } = usePermisos();
     const {cultivos: cultivosDisponibles} = useCultivos(loteFiltroId);
     const {
         actividades,
@@ -69,10 +71,12 @@ const Actividades = () => {
                     <h1 className="text-3xl sm:text-3xl font-bold text-neutral-900 mx-auto">Actividades Agrícolas</h1>
                     <p className="text-neutral-500 text-base mt-1">Labores y Tareas de Campo</p>
                     </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="rounded-xl bg-green-800 hover:bg-[#418750] transition-colors px-6 py-3.5 text-white font-medium flex items-center gap-2">
-                    + Nueva Actividad </button>
+                {puede('actividades.gestionar') && (
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="rounded-xl bg-green-800 hover:bg-[#418750] transition-colors px-6 py-3.5 text-white font-medium flex items-center gap-2">
+                        + Nueva Actividad </button>
+                )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
@@ -291,7 +295,7 @@ const Actividades = () => {
                                     <span
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleChangeEstado(actividad.id, actividad.estado);
+                                        if (puede('actividades.gestionar')) handleChangeEstado(actividad.id, actividad.estado);
                                     }} 
                                     className={`text-xs font-semibold px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity shrink-0 ${getEstadoBadge(actividad.estado)}`}>
                                         {actividad.estado ? actividad.estado.replace('_', ' ') : ''}

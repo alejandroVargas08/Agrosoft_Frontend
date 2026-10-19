@@ -3,15 +3,14 @@ import { Plus, Syringe } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Btn, Card, Input, Modal, PageHeader, Select, StatusBadge } from '../components/ui/AgroUI';
 import { useTratamientos } from '../hooks/useTratamientos';
+import { usePermisos } from '../hooks/permisos/usePermisos';
 import type { EstadoTratamiento } from '../types/tratamientos';
 
-// Al hacer clic en el badge, el tratamiento pasa al siguiente estado
 const SIGUIENTE_ESTADO: Record<EstadoTratamiento, EstadoTratamiento> = {
     scheduled: 'applied',
     applied: 'scheduled',
 };
 
-// Se arma la fecha a mano para que no cambie de día por la zona horaria
 const fmtFecha = (fecha: string) => {
     if (!fecha) return '—';
     const [anio, mes, dia] = fecha.slice(0, 10).split('-').map(Number);
@@ -30,6 +29,7 @@ const Tratamientos = () => {
         form, set, crear, creando, errorForm,
         cambiarEstado,
     } = useTratamientos();
+    const { puede } = usePermisos();
 
     return (
         <DashboardLayout>
@@ -37,7 +37,7 @@ const Tratamientos = () => {
                 <PageHeader
                     title="Tratamientos"
                     subtitle="Control de plagas y enfermedades"
-                    action={<Btn onClick={() => setShowNew(true)}><Plus size={16} />Nuevo</Btn>}
+                    action={puede('incidencias.gestionar') ? <Btn onClick={() => setShowNew(true)}><Plus size={16} />Nuevo</Btn> : undefined}
                 />
 
                 {cargando && <p className="text-sm text-muted-foreground">Cargando tratamientos...</p>}
@@ -54,8 +54,9 @@ const Tratamientos = () => {
                                 </div>
                                 <button
                                     onClick={() => cambiarEstado(t.id, SIGUIENTE_ESTADO[t.estado])}
-                                    title="Clic para cambiar el estado"
-                                    className="transition hover:opacity-70"
+                                    disabled={!puede('incidencias.gestionar')}
+                                    title={puede('incidencias.gestionar') ? 'Clic para cambiar el estado' : undefined}
+                                    className="transition hover:opacity-70 disabled:cursor-default disabled:hover:opacity-100"
                                 >
                                     <StatusBadge status={t.estado} />
                                 </button>

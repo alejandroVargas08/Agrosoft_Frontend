@@ -11,10 +11,11 @@ export interface NuevoLoteForm {
     descripcion: string;
     areaHa: string;
     verticesTexto: string;
+    programaFormacionId: string;
 }
 
 const FORM_INICIAL: NuevoLoteForm = {
-    tipo: 'plot', parentId: '', nombre: '', descripcion: '', areaHa: '', verticesTexto: '',
+    tipo: 'plot', parentId: '', nombre: '', descripcion: '', areaHa: '', verticesTexto: '', programaFormacionId: '',
 };
 
 function parsearVertices(texto: string): Punto[] {
@@ -58,7 +59,10 @@ export function useNuevoLoteForm({ onSuccess }: { onSuccess: () => void }) {
             if (form.tipo === 'subplot') {
                 return sublotesApi.crear({ ...base, loteId: Number(form.parentId) });
             }
-            return lotesApi.crear(base);
+            return lotesApi.crear({
+                ...base,
+                programaFormacionId: form.programaFormacionId ? Number(form.programaFormacionId) : null,
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['lotes'] });

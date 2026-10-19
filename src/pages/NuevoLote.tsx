@@ -4,16 +4,21 @@ import { Info } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Btn, Card, Input, PageHeader, Select, Textarea } from '../components/ui/AgroUI';
 import { lotesApi } from '../api/territorio';
+import { etiquetaPrograma, programasFormacionApi } from '../api/programa_formacion/programasFormacion';
 import { useNuevoLoteForm } from '../hooks/useNuevoLoteForm';
 
 const NuevoLote = () => {
     const navigate = useNavigate();
     const volver = () => navigate('/territorio');
 
-    // Lotes existentes, para elegir el lote padre de un sublote
     const { data: lotes = [] } = useQuery({
         queryKey: ['lotes'],
         queryFn: async () => (await lotesApi.listar()).data,
+    });
+
+    const { data: programas = [] } = useQuery({
+        queryKey: ['mi-acceso', 'programas'],
+        queryFn: async () => (await programasFormacionApi.listarAsignables()).data,
     });
 
     const { form, set, areaM2, enviando, errorForm, handleSubmit } = useNuevoLoteForm({ onSuccess: volver });
@@ -37,6 +42,23 @@ const NuevoLote = () => {
                                 label="Lote padre" value={form.parentId} onChange={set('parentId')}
                                 options={[{ value: '', label: 'Seleccionar...' }, ...lotes.map((l) => ({ value: String(l.id), label: l.nombre }))]}
                             />
+                        )}
+                        {form.tipo === 'plot' && (
+                            <div className="flex flex-col gap-1">
+                                <Select
+                                    label="Ficha a cargo" value={form.programaFormacionId} onChange={set('programaFormacionId')}
+                                    options={[
+                                        { value: '', label: 'Común (lo ven todos)' },
+                                        ...programas.map((p) => ({ value: String(p.id), label: etiquetaPrograma(p) })),
+                                    ]}
+                                />
+                                <span className="text-xs text-muted-foreground">
+                                    Si eliges una ficha, solo la verán sus aprendices, sus instructores y el administrador.
+                                </span>
+                            </div>
+                        )}
+                        {form.tipo === 'subplot' && (
+                            <span className="text-xs text-muted-foreground">El sublote tiene la misma visibilidad que su lote padre.</span>
                         )}
                         <Input label="Nombre" value={form.nombre} onChange={set('nombre')} required placeholder="Ej: Lote C - Oriente" />
                         <Input label="Descripción" value={form.descripcion} onChange={set('descripcion')} placeholder="Descripción breve" />

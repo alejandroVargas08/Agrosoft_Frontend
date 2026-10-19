@@ -5,7 +5,6 @@ export interface Punto {
     lng: number;
 }
 
-// Lo que devuelve el backend al listar/obtener
 export interface Lote {
     id: number;
     nombre: string;
@@ -16,6 +15,7 @@ export interface Lote {
     cantidadVertices: number;
     descripcion?: string;
     estado: EstadoLote;
+    programaFormacionId?: number | null;
 }
 
 export interface SubLote {
@@ -30,27 +30,29 @@ export interface SubLote {
     estado: EstadoLote;
 }
 
-// Lo que se envía al crear
 export interface CrearLotePayload {
     nombre: string;
-    vertices: Punto[]; // mínimo 3
+    vertices: Punto[];
     centroide: Punto;
     areaM2: number;
     descripcion?: string;
+}
+
+export interface CrearLotePrincipalPayload extends CrearLotePayload {
+    programaFormacionId: number | null;
 }
 
 export interface CrearSubLotePayload extends CrearLotePayload {
     loteId: number;
 }
 
-// Estado del formulario (todo string, como en la guía)
 export interface LoteFormState {
     nombre: string;
     descripcion: string;
     areaM2: string;
     centroideLat: string;
     centroideLng: string;
-    verticesTexto: string; // una línea por vértice: "lat,lng"
+    verticesTexto: string;
 }
 
 export const ESTADO_INICIAL_LOTE_FORM: LoteFormState = {

@@ -5,11 +5,13 @@ import DashboardLayout from "../../components/layout/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
 import { lotesApi } from "../../api/territorio";
 import { LuSprout, LuCalendar } from "react-icons/lu";
+import { usePermisos } from "../../hooks/permisos/usePermisos";
 
 const Cultivos = () => {
     const [loteFiltro, setLoteFiltro] = useState<string>('');
     const loteIdNum = loteFiltro ? Number(loteFiltro) : undefined;
-    const [isModalOpen, setIsModalOpen] = useState(false); 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const { puede } = usePermisos();
 
     const { data: lotesFiltro = [] } = useQuery({
         queryKey: ['lotes'],
@@ -50,14 +52,15 @@ const Cultivos = () => {
                         <h1 className="text-3xl font-bold text-neutral-900">Cultivos</h1>
                         <p className="text-neutral-500">Gestión de cultivos y registros de cosecha</p>
                     </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="rounded-xl bg-green-800 px-6 py-3.5 text-white hover:bg-green-700 transition"
-                    >
-                        + Nuevo Cultivo
-                    </button>
+                    {puede('cultivos.gestionar') && (
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="rounded-xl bg-green-800 px-6 py-3.5 text-white hover:bg-green-700 transition"
+                        >
+                            + Nuevo Cultivo
+                        </button>
+                    )}
                 </div>
-
 
                 <div className="mb-6 max-w-sm">    
                     <label className="block text-sm text-neutral-500 mb-1">Lote</label>    
@@ -76,8 +79,6 @@ const Cultivos = () => {
                 {!loteIdNum && (    
                     <p className="text-neutral-400 italic mb-6">Elige un lote para ver sus cultivos.</p>
                 )}
-
-
 
                 {loading && <p className="text-neutral-500">Cargando cultivos...</p>}
                 {error && <p className="text-red-600">{error}</p>}
@@ -102,6 +103,7 @@ const Cultivos = () => {
                             >
                                 {c.estado}
                             </span>
+                            {puede('cultivos.gestionar') && (
                             <div className="flex gap-3 mt-4 pt-4 border-t border-neutral-100">
                                 {c.estado === 'activo' && (
                                     <button
@@ -122,6 +124,7 @@ const Cultivos = () => {
                                     Eliminar
                                 </button>
                             </div>
+                            )}
                         </div>
                     ))}
                 </div>

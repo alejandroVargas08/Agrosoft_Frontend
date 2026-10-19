@@ -2,7 +2,7 @@ import { api } from './axios';
 import type {
     Lote,
     SubLote,
-    CrearLotePayload,
+    CrearLotePrincipalPayload,
     CrearSubLotePayload,
     EstadoLote,
 } from '../types/territorio';
@@ -10,7 +10,7 @@ import type {
 export const lotesApi = {
     listar: () => api.get<Lote[]>('/territorio/lotes'),
     obtener: (id: number) => api.get<Lote>(`/territorio/lotes/${id}`),
-    crear: (data: CrearLotePayload) => api.post<Lote>('/territorio/lotes', data),
+    crear: (data: CrearLotePrincipalPayload) => api.post<Lote>('/territorio/lotes', data),
     cambiarEstado: (id: number, nuevoEstado: EstadoLote) =>
         api.patch<Lote>(`/territorio/lotes/${id}/estado`, { nuevoEstado }),
     eliminar: (id: number) => api.delete(`/territorio/lotes/${id}`),

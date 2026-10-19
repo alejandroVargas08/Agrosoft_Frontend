@@ -21,4 +21,5 @@ export function InicioUsuario(): { user: AuthUser | null; isAuthenticated: boole
 export function cerrarSesion(): void {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+  window.location.assign('/login');
 }
