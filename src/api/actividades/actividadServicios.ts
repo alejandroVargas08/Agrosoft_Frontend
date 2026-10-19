@@ -6,10 +6,10 @@ export const actividadServiciosApi = {
         api.get<ActividadServicio[]>(`/actividades/${actividadId}/servicios`),
 
     registrar: (actividadId: number, data: CrearActividadServicioPayload) =>
-        api.post<ActividadServicio>(`/actividades/${actividadId}/servicio`, data),
+        api.post<ActividadServicio>(`/actividades/${actividadId}/servicios`, data),
 
-    actualizarHoras: (actividadId: number, id:number, horas: number) =>
-        api.patch<ActividadServicio>(`/actividades/${actividadId}/servicios/${id}`, { horas}),
+    actualizarHoras: (actividadId: number, id: number, horas: number) =>
+        api.patch<ActividadServicio>(`/actividades/${actividadId}/servicios/${id}`, { horas }),
 
     eliminar: (actividadId: number, id: number) =>
         api.delete<void>(`/actividades/${actividadId}/servicios/${id}`),

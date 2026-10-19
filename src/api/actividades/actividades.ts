@@ -4,12 +4,10 @@ import { api } from "../axios";
 
 export const actividadesApi = {
     listarPorCultivo: (cultivoId: number) => api.get<Actividad[]>(`/actividades/cultivo/${cultivoId}`),
-    obtenerPorId: (id:number) => api.get<Actividad>(`/Actividades/${id}`),
+    obtenerPorId: (id: number) => api.get<Actividad>(`/actividades/${id}`),
     crear: (data: CrearActividadPayLoad) => api.post<Actividad>('/actividades', data),
-    cambiarEstado: (
-        id: number,
-        estado: string
-    ) => api.patch<Actividad> (`/actividades/${id}/estado`, {estado}),
+    cambiarEstado: (id: number, estado: string) =>
+        api.patch<Actividad>(`/actividades/${id}/estado`, { estado }),
 };
 
 export const lotesApi = {
@@ -23,4 +21,4 @@ export const cultivosApi = {
 
 export const productosAgroApi = {
     listar: () => api.get('/productos-agro'),
-}; 
+};

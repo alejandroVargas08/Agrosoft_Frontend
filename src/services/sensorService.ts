@@ -1,7 +1,7 @@
 import { apiGet } from "../api/client";
 import type { Sensor, TipoSensor } from "../types/sensor";
 
-const UMBRAL_DESCONEXION_MIN = 15; // solo se usa si la API no trae el estado
+const UMBRAL_DESCONEXION_MIN = 15;
 
 type Raw = Record<string, any>;
 
@@ -16,7 +16,6 @@ function detectarTipo(t: string): TipoSensor {
 const num = (v: unknown): number | null =>
   v === null || v === undefined || v === "" || isNaN(Number(v)) ? null : Number(v);
 
-/* Adaptador: ajusta SOLO aquí los nombres de campo de tu API */
 function normalizar(s: Raw): Sensor {
   const ultimaLectura: string | null =
     s.ultima_lectura ?? s.ultimaLectura ?? s.last_reading_at ?? null;
@@ -47,7 +46,7 @@ function normalizar(s: Raw): Sensor {
 }
 
 export async function getSensores(signal?: AbortSignal): Promise<Sensor[]> {
-  const json = await apiGet<Raw[] | Raw>("/api/sensores", signal);
+  const json = await apiGet<Raw[] | Raw>("/sensores", signal);
   const lista: Raw[] = Array.isArray(json) ? json : json.sensores ?? json.data ?? [];
   return lista.map(normalizar);
 }
