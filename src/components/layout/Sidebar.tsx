@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf } from "lucide-react";
+import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, Plane } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 import { CerrarSesionModal } from "../ui/CerrarSesionModal";
@@ -33,6 +33,7 @@ const mainItems: MenuItem[] = [
     { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
     { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
     { icon: BarChart3, label: 'Reportes', path: '/reportes' },
+    { icon: Plane, label: 'Drones', path: '/drones' },
     { icon: Bot, label: 'Consultas', path: '/agrobot' },
     { icon: Bell, label: 'Alertas', path: '/alertas' },
     { icon: History, label: 'Historial', path: '/historial' },

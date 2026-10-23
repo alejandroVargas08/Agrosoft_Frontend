@@ -29,6 +29,10 @@ import Cultivos from './pages/cultivos/cultivos'
 import Notificaciones from './pages/notificaciones/Notificaciones'
 import LayoutConNotificaciones from './components/layout/LayoutConNotificaciones'
 import Historial from './pages/historial/historial'
+import Drones from './pages/drones/Drones'
+import Vuelos from './pages/drones/Vuelos'
+import DetalleVuelo from './pages/drones/DetalleVuelo'
+import ResultadoAnalisis from './pages/drones/ResultadoAnalisis'
 
 function App() {
   return (
@@ -63,6 +67,13 @@ function App() {
         <Route path="/inventario" element={<Inventario />} />
         <Route path="/inventario/nuevo" element={<NuevoInsumo />} />
         <Route path="/sensores-iot" element={<SensoresPage />} />
+
+        {/*Drones*/}
+        <Route path="/drones" element={<Drones />} />
+        <Route path="/drones/vuelos" element={<Vuelos />} />
+        <Route path="/drones/vuelos/:id" element={<DetalleVuelo />} />
+        <Route path="/drones/analisis/:id" element={<ResultadoAnalisis />} />
+
         <Route path="/notificaciones" element={<Notificaciones />} />
       </Route>
 
