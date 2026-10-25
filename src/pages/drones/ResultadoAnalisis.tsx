@@ -7,7 +7,7 @@ import { Badge, Btn, Card, EmptyState, PageHeader, StatCard } from '../../compon
 import { BarraDistribucion, ImagenCaptura } from '../../components/drones/ComponentesDron';
 import { analisisApi, vuelosApi } from '../../api/drones/drones';
 import { mensajeError } from '../../api/errores/errores';
-import { CAPAS, CLASE_VEGETACION, LEYENDA_CAPA, NIVEL_CLASES, NIVEL_TEXTO, TIPO_HALLAZGO, type CapaMapa, type ClaseVegetacion, type EstadisticasIndice, type ResultadoCaptura } from '../../types/drones/drones';
+import { CAPAS, CLASE_VEGETACION, LEYENDA_CAPA, NIVEL_CLASES, NIVEL_TEXTO, TIPO_HALLAZGO, type CapaMapa, type ClaseVegetacion, type EstadisticasIndice, type ResultadoCaptura  } from '../../types/drones/drones';
 import { colorSalud, fechaCortaDron, fechaHoraDron } from '../../utils/drones/drones';
 
 const ORDEN_CLASES: ClaseVegetacion[] = ['SALUDABLE', 'ESTRES_MODERADO', 'ESTRES_ALTO', 'SIN_VEGETACION'];
