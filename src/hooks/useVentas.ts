@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { InicioUsuario } from './useAuth';
 import { ventasApi, clientesApi, ventasDetallesApi, loteProduccionApi } from '../api/ventas';
+import { lotesApi } from '../api/territorio';
+import { cultivosApi } from '../api/cultivo/cultivos';
+import { productosAgroApi } from '../api/actividades/actividades';
 import { mensajeError } from '../api/errores/errores';
 
 const FORM_VENTA = {
@@ -55,6 +58,41 @@ export function useVentas() {
     const clientes = clientesQuery.data ?? [];
     const detalles = detallesQuery.data ?? [];
     const lotes = lotesQuery.data ?? [];
+
+    // Catálogos para mostrar nombres en lugar de ids. Se cachean: casi no cambian.
+    const productosQuery = useQuery({
+        queryKey: ['productos-agro'],
+        queryFn: async () => (await productosAgroApi.listar()).data,
+        staleTime: 1000 * 60 * 10,
+    });
+    const lotesTerrenoQuery = useQuery({
+        queryKey: ['lotes'],
+        queryFn: async () => (await lotesApi.listar()).data,
+        staleTime: 1000 * 60 * 5,
+    });
+
+    // GET /cultivos exige loteId: se piden solo los lotes que aparecen en los
+    // lotes de producción, que son pocos.
+    const lotesConProduccion = [...new Set(lotes.map((l) => l.loteId))];
+    const cultivosPorLote = useQueries({
+        queries: lotesConProduccion.map((loteId) => ({
+            queryKey: ['cultivos', loteId],
+            queryFn: async () => (await cultivosApi.listarPorLote(loteId)).data,
+            staleTime: 1000 * 60 * 5,
+        })),
+    });
+
+    const nombreProducto = (id: number) =>
+        (productosQuery.data ?? []).find((p) => p.id === id)?.nombre ?? 'Producto #' + id;
+    const nombreLoteTerreno = (id: number) =>
+        (lotesTerrenoQuery.data ?? []).find((l) => l.id === id)?.nombre ?? 'Lote #' + id;
+    const nombreCultivo = (id: number) =>
+        cultivosPorLote.flatMap((c) => c.data ?? []).find((c) => c.id === id)?.nombreCultivo ??
+        'Cultivo #' + id;
+
+    /** El texto que identifica un lote de producción: producto, calidad y dónde salió. */
+    const etiquetaLoteProduccion = (lote: { id: number; productoAgroId: number; calidad: string; loteId: number }) =>
+        nombreProducto(lote.productoAgroId) + ' · Calidad ' + lote.calidad;
 
     const invalidarTodo = () => {
         queryClient.invalidateQueries({ queryKey: ['ventas'] });
@@ -182,6 +220,7 @@ export function useVentas() {
 
     return {
         ventas, clientes, lotes,
+        nombreProducto, nombreLoteTerreno, nombreCultivo, etiquetaLoteProduccion,
         cargando: ventasQuery.isLoading,
         error: ventasQuery.error ? 'No se pudieron cargar las ventas.' : '',
 

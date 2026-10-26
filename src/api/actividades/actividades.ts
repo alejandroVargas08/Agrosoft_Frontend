@@ -19,6 +19,15 @@ export const cultivosApi = {
     listarPorLote: (loteId: number) => api.get<Cultivo[]>(`/cultivos?loteId=${loteId}`),
 };
 
+/** Un producto agrícola vendible. unidadBase suele ser 'kg'. */
+export interface ProductoAgro {
+    id: number;
+    nombre: string;
+    unidadBase: string;
+    descripcion?: string | null;
+    imagen?: string | null;
+}
+
 export const productosAgroApi = {
-    listar: () => api.get('/productos-agro'),
+    listar: () => api.get<ProductoAgro[]>('/productos-agro'),
 };

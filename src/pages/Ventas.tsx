@@ -35,6 +35,7 @@ const Ventas = () => {
 
     const {
         ventas, clientes, lotes, cargando, error,
+        nombreProducto, nombreLoteTerreno, nombreCultivo, etiquetaLoteProduccion,
         totalVentas, totalPagadas, ingresos, nombreCliente, productosDe,
         formVenta, setVenta, subtotal, descuento, impuestos, total,
         crearVenta, creandoVenta, errorForm,
@@ -138,8 +139,10 @@ const Ventas = () => {
                                 <Card key={l.id}>
                                     <div className="flex items-start justify-between mb-2">
                                         <div>
-                                            <p className="font-semibold text-foreground">Lote de producción #{l.id}</p>
-                                            <p className="text-xs text-muted-foreground">Cultivo #{l.cultivoId}</p>
+                                            <p className="font-semibold text-foreground">{nombreProducto(l.productoAgroId)}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {nombreCultivo(l.cultivoId)} · {nombreLoteTerreno(l.loteId)}
+                                            </p>
                                         </div>
                                         <StatusBadge status={l.calidad} />
                                     </div>
@@ -213,7 +216,7 @@ const Ventas = () => {
                             { value: '', label: 'Seleccionar producto...' },
                             ...lotes.map((l) => ({
                                 value: String(l.id),
-                                label: 'Lote #' + l.id + ' (' + l.stockDisponibleKg + ' kg disp.)',
+                                label: etiquetaLoteProduccion(l) + ' — ' + l.stockDisponibleKg + ' kg disp.',
                             })),
                         ]}
                     />
