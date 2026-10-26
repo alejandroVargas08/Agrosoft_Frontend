@@ -28,6 +28,8 @@ import MisFichas from './pages/instructor/MisFichas'
 import Revision from './pages/instructor/Revision'
 import MisTareas from './pages/instructor/MisTareas'
 import InicioInstructor from './pages/instructor/InicioInstructor'
+import FichaDetalle from './pages/instructor/FichaDetalle'
+import AprendizDetalle from './pages/instructor/AprendizDetalle'
 import SensoresPage from './pages/SensorPage'
 import Actividades from './pages/actividades/actividades'
 import ActividadDetalle from './pages/actividades/ActividadDetalle'
@@ -69,6 +71,8 @@ function App() {
         {/* Instructor */}
         <Route path="/panel-instructor" element={<InicioInstructor />} />
         <Route path="/mis-fichas" element={<MisFichas />} />
+        <Route path="/mis-fichas/:id" element={<FichaDetalle />} />
+        <Route path="/aprendices/:id" element={<AprendizDetalle />} />
         <Route path="/por-revisar" element={<Revision />} />
         <Route path="/mis-tareas" element={<MisTareas />} />
         <Route path="/cultivos" element={<Cultivos />} />

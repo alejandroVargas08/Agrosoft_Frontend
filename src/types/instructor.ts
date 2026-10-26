@@ -72,3 +72,24 @@ export interface EntregarTareaPayload {
     horasTrabajadas: number;
     comentario?: string;
 }
+
+/** Lo que devuelve GET /aprendices/resumen. Trae documento y teléfono porque
+ *  un instructor no puede leer GET /usuarios/:id de otra persona. */
+export interface ResumenAprendiz {
+    id: number;
+    nombre: string;
+    apellido: string;
+    identificacion: string;
+    correo: string;
+    telefono: string;
+    idFicha: string | null;
+    programaFormacionId: number | null;
+    tareas: number;
+    aprobadas: number;
+    /** Entregadas y esperando revisión. */
+    entregadas: number;
+    /** Con el plazo encima y todavía sin entregar. */
+    vencidas: number;
+    horas: number;
+    ultimoIngreso: string | null;
+}

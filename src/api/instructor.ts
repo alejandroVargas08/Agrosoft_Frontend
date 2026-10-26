@@ -1,6 +1,7 @@
 import { api } from './axios';
 import type {
     Aprendiz,
+    ResumenAprendiz,
     AsignarActividadPayload,
     Asignacion,
     EntregarTareaPayload,
@@ -12,6 +13,15 @@ import type {
  *  administrador son todas. */
 export const misFichasApi = {
     listar: () => api.get<Ficha[]>('/mi-acceso/programas'),
+};
+
+export const resumenAprendicesApi = {
+    // Sin programaFormacionId devuelve todos los que el alcance permite
+    listar: (programaFormacionId?: number) =>
+        api.get<ResumenAprendiz[]>('/aprendices/resumen', {
+            params: programaFormacionId ? { programaFormacionId } : undefined,
+        }),
+    tareas: (aprendizId: number) => api.get<Asignacion[]>(`/aprendices/${aprendizId}/tareas`),
 };
 
 export const aprendicesApi = {
