@@ -1,16 +1,9 @@
 // Tipos del perfil instructor: fichas a cargo, aprendices y asignaciones de
 // actividades. Espejo de lo que devuelve el backend.
 
-/** Una ficha es un programa de formación. El backend lo llama así. */
-export interface Ficha {
-    id: number;
-    nombre: string;
-    tipo: string;
-    ficha: string;
-    fechaInicio: string;
-    fechaFin: string;
-    estado: string;
-}
+// Una ficha ES un programa de formación: mismo dato, dos nombres según quién
+// lo mire. Se reusa el tipo en lugar de declararlo dos veces.
+export type { ProgramaFormacion as Ficha } from '../api/programa_formacion/programasFormacion';
 
 export interface Aprendiz {
     id: number;

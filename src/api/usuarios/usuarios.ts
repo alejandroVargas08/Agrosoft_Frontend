@@ -59,10 +59,28 @@ export interface ActualizarUsuario {
     estado?: string;
 }
 
+/** Lo que devuelve restablecer la contraseña. Si no se manda una, el backend
+ *  genera una temporal y la devuelve aquí: es la única vez que se ve. */
+export interface ContrasenaRestablecida {
+    usuarioId: number;
+    contrasenaTemporal: string | null;
+}
+
 export const usuarioApi = {
     listar: () => api.get<Usuario[]>('/usuarios'),
+    // Solo el propio usuario o un administrador
     obtenerPorId: (id: number) => api.get<Usuario>(`/usuarios/${id}`),
     crear: (data: CrearUsuario) => api.post<UsuarioRegistrado>('/usuarios', data),
     actualizar: (id: number, data: ActualizarUsuario) => api.patch<Usuario>(`/usuarios/${id}`, data),
     eliminar: (id: number) => api.delete(`/usuarios/${id}`),
+
+    // Estos exigen usuarios.gestionar
+    cambiarRol: (id: number, rolId: number) => api.patch<Usuario>(`/usuarios/${id}/rol`, { rolId }),
+    cambiarPrograma: (id: number, programaFormacionId: number | null) =>
+        api.patch<Usuario>(`/usuarios/${id}/programa`, { programaFormacionId }),
+    restablecerContrasena: (id: number, nuevaContrasena?: string) =>
+        api.patch<ContrasenaRestablecida>(
+            `/usuarios/${id}/contrasena`,
+            nuevaContrasena ? { nuevaContrasena } : {},
+        ),
 };

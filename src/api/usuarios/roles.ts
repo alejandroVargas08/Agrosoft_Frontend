@@ -1,5 +1,7 @@
 import { api } from "../axios";
 
+/** El backend devuelve la entidad Rol tal cual: los campos privados de la
+ *  clase salen en el JSON con esos nombres. */
 export interface Rol {
     id: number;
     nombre: string;
@@ -16,10 +18,10 @@ export interface CrearRol {
 
 export type ActualizarRol = Partial<Omit<CrearRol, 'esSistema'>>;
 
+// Ojo: el controlador no tiene GET /roles/:id, y la actualización es PUT
 export const rolesApi = {
     listar: () => api.get<Rol[]>('/roles'),
-    obtenerPorId: (id: number) => api.get<Rol>(`/roles/${id}`),
     crear: (data: CrearRol) => api.post<Rol>('/roles', data),
-    actualizar: (id: number, data: ActualizarRol) => api.patch<Rol>(`/roles/${id}`, data),
+    actualizar: (id: number, data: ActualizarRol) => api.put<Rol>(`/roles/${id}`, data),
     eliminar: (id: number) => api.delete(`/roles/${id}`),
 };
