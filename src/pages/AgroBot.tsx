@@ -13,7 +13,7 @@ export default function AgroBot() {
 
   if (cargando || !perfil) {
     return (
-      <DashboardLayout unreadNotifications={2} mostrarChatFlotante={false}>
+      <DashboardLayout mostrarChatFlotante={false}>
         <div className="p-4 sm:p-8">
           <div className="animate-pulse h-96 bg-gray-200 rounded-xl max-w-5xl" />
         </div>
@@ -42,7 +42,7 @@ export default function AgroBot() {
   }
 
   return (
-    <DashboardLayout unreadNotifications={2} mostrarChatFlotante={!mostrarChat}>
+    <DashboardLayout mostrarChatFlotante={!mostrarChat}>
       <div className="p-4 sm:p-8 h-[calc(100vh-5rem)]">
         <div className="max-w-5xl mx-auto h-full flex flex-col">
           <div className="flex items-center gap-3 mb-4">

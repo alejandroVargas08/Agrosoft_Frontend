@@ -145,3 +145,24 @@ export interface Movimiento {
     fecha?: string;              // ISO, la pone el backend
     stockResultante?: number;    // solo al registrar
 }
+
+// ---------- Reservas ----------
+// El backend expone POST /inventario/reservas y los PATCH de confirmar y
+// cancelar. No hay endpoint de listado: la pantalla acumula lo que va creando.
+export type EstadoReserva = 'pendiente' | 'confirmada' | 'cancelada';
+
+export interface Reserva {
+    id: number;
+    insumoId: number;
+    cantidad: number;
+    estado: EstadoReserva;
+}
+
+export interface CrearReservaPayload {
+    insumoId: number;
+    cantidad: number;
+    fechaReserva: string;
+    motivo?: string;
+    usuarioId: number;
+    actividadId?: number;
+}

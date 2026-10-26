@@ -77,7 +77,7 @@ export default function EditarPerfil() {
 
   if (cargando) {
     return (
-      <DashboardLayout unreadNotifications={2}>
+      <DashboardLayout>
         <div className="p-4 sm:p-8">
           <div className="animate-pulse space-y-4 max-w-xl mx-auto">
             <div className="h-8 w-40 bg-gray-200 rounded" />
@@ -89,7 +89,7 @@ export default function EditarPerfil() {
   }
 
   return (
-    <DashboardLayout unreadNotifications={2}>
+    <DashboardLayout>
       <div className="p-4 sm:p-8">
         <div className="max-w-xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
