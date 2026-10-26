@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Pencil, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { usePerfil } from '../hooks/usePerfil';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import Notificaciones from './notificaciones/Notificaciones';
 
 function formatearFecha(fecha?: string) {
   if (!fecha) return 'No registrada';

@@ -39,7 +39,7 @@ export function usePerfil() {
       try {
         setCargando(true);
         setError(null);
-        const { data } = await usuarioApi.obtenerPorIp(user.id);
+        const { data } = await usuarioApi.obtenerPorId(user.id);
         setPerfil(data);
       } catch (err) {
         console.error('Error al cargar el perfil:', err);

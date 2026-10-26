@@ -3,7 +3,7 @@ import type { Sensor, TipoSensor } from "../types/sensor";
 
 const UMBRAL_DESCONEXION_MIN = 15;
 
-type Raw = Record<string, any>;
+type Raw = Record<string, unknown>;
 
 function detectarTipo(t: string): TipoSensor {
   const v = t.toLowerCase();

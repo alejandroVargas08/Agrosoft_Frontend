@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf } from "lucide-react";
+import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, UserCheck } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 import { CerrarSesionModal } from "../ui/CerrarSesionModal";
+import { usePermisos } from "../../hooks/permisos/usePermisos";
 
 interface SubItem {
     label: string;
@@ -38,6 +39,10 @@ const mainItems: MenuItem[] = [
     { icon: History, label: 'Historial', path: '/historial' },
 ];
 
+// Solo lo ve quien puede gestionar usuarios
+const PERMISO_GESTIONAR_USUARIOS = 'usuarios.gestionar';
+const itemSolicitudes: MenuItem = { icon: UserCheck, label: 'Solicitudes', path: '/solicitudes' };
+
 const main2Items: MenuItem[] = [
     { icon: Bell, label: 'Notificaciones', path: '/notificaciones' },
     { icon: User, label: 'Perfil', path: '/perfil' },
@@ -52,6 +57,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [modalCerrarSesion, setModalCerrarSesion] = useState(false);
+  const { puede } = usePermisos();
+
+  const itemsPrincipales = puede(PERMISO_GESTIONAR_USUARIOS)
+    ? [...mainItems, itemSolicitudes]
+    : mainItems;
 
   async function confirmarCerrarSesion() {
     await cerrarSesion();
@@ -83,7 +93,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         <nav className="flex flex-col items-center gap-2 w-full px-2 flex-1 min-h-0 overflow-y-auto">
-          {mainItems.map((item) => {
+          {itemsPrincipales.map((item) => {
             const target = item.children ? item.children[0].path : item.path;
             const isActive = location.pathname.startsWith(item.path);
             return (
@@ -175,14 +185,14 @@ function SidebarContent({
 }) {
   const location = useLocation();
   const [abierto, setAbierto] = useState<string | null>(() => {
-    const actual = mainItems.find(
+    const actual = itemsPrincipales.find(
       (i) => i.children && location.pathname.startsWith(i.path)
     );
     return actual ? actual.label : null;
   });
 
   useEffect(() => {
-    const actual = mainItems.find(
+    const actual = itemsPrincipales.find(
       (i) => i.children && location.pathname.startsWith(i.path)
     );
     if (actual) {
@@ -193,7 +203,7 @@ function SidebarContent({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <nav className="flex-1 min-h-0 overflow-y-auto py-2">
-        {mainItems.map((item) => {
+        {itemsPrincipales.map((item) => {
           if (item.children) {
             const estaAbierto = abierto === item.label;
             const grupoActivo = location.pathname.startsWith(item.path);

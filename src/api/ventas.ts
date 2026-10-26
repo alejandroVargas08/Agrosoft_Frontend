@@ -9,6 +9,7 @@ import type {
 export const ventasApi = {
     listar: () => api.get<Venta[]>('/ventas'),
     crear: (data: CrearVentaPayload) => api.post<Venta>('/ventas', data),
+    marcarPagada: (id: number) => api.patch<Venta>(`/ventas/${id}/pagar`),
     anular: (id: number, usuarioId: number) =>
         api.patch<Venta>(`/ventas/${id}/anular`, { usuarioId }),
 };

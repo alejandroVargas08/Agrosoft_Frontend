@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { InicioUsuario } from './useAuth';
 import { ventasApi, clientesApi, ventasDetallesApi, loteProduccionApi } from '../api/ventas';
+import { mensajeError } from '../api/errores/errores';
 
 const FORM_VENTA = {
     clienteId: '',
@@ -159,6 +160,11 @@ export function useVentas() {
         crearClienteMutation.mutate(undefined, { onSuccess: () => alTerminar?.() });
     };
 
+    const pagarMutation = useMutation({
+        mutationFn: (id: number) => ventasApi.marcarPagada(id),
+        onSuccess: invalidarTodo,
+    });
+
     const anularMutation = useMutation({
         mutationFn: (id: number) => ventasApi.anular(id, usuarioId as number),
         onSuccess: invalidarTodo,
@@ -195,6 +201,12 @@ export function useVentas() {
         crearCliente,
         creandoCliente: crearClienteMutation.isPending,
 
+        marcarPagada: (id: number) => pagarMutation.mutate(id),
         anular: (id: number) => anularMutation.mutate(id),
+        cambiandoEstado: pagarMutation.isPending || anularMutation.isPending,
+        errorEstado:
+            pagarMutation.error || anularMutation.error
+                ? mensajeError(pagarMutation.error ?? anularMutation.error, 'No se pudo cambiar el estado de la venta.')
+                : '',
     };
 }

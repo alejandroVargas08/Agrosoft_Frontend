@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { lotesApi } from "../../api/territorio";
 import { LuSprout, LuCalendar } from "react-icons/lu";
 import { usePermisos } from "../../hooks/permisos/usePermisos";
+import type { Lote, SubLote } from '../../types/territorio';
 
 const Cultivos = () => {
     const [loteFiltro, setLoteFiltro] = useState<string>('');
@@ -70,7 +71,7 @@ const Cultivos = () => {
                         className="w-full rounded-xl border border-neutral-200 py-3 px-4 bg-white"    
                     >        
                         <option value="">Selecciona un lote...</option>        
-                        {lotesFiltro.map((l: any) => (            
+                        {lotesFiltro.map((l: Lote) => (            
                             <option key={l.id} value={l.id}>{l.nombre}</option>        
                         ))}    
                     </select>
@@ -146,7 +147,7 @@ const Cultivos = () => {
                                     className="w-full rounded-xl border border-neutral-200 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white"
                                     >
                                         <option value=""> Seleccione un lote</option>
-                                        {lotes.map((l: any) => (
+                                        {lotes.map((l: Lote) => (
                                             <option key={l.id} value={l.id}> {l.nombre}
                                             </option>
                                         ))}
@@ -190,7 +191,7 @@ const Cultivos = () => {
                                         className="w-full rounded-xl border border-neutral-200 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white"
                                     >
                                         <option value="">Ninguno</option>
-                                        {sublotes.map((s: any) => (
+                                        {sublotes.map((s: SubLote) => (
                                             <option key={s.id} value={s.id}>
                                                 {s.nombre}
                                             </option>

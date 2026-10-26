@@ -6,12 +6,23 @@ import { mensajeError } from '../api/errores/errores';
 import { etiquetaPrograma, programasFormacionApi } from '../api/programa_formacion/programasFormacion';
 import logoAgrosoft from '../assets/img/logo-agrosoft.png';
 import logoSena from '../assets/img/logo-sena-blanco.png';
-import { LuSprout, LuCpu, LuUser, LuIdCard, LuPhone, LuMail, LuGraduationCap, LuLock, LuAsterisk, LuChevronLeft } from 'react-icons/lu';
+import { LuSprout, LuCpu, LuUser, LuIdCard, LuPhone, LuMail, LuGraduationCap, LuLock, LuAsterisk, LuChevronLeft, LuCircleCheck, LuClock, LuShieldCheck } from 'react-icons/lu';
 import { FiBarChart2 } from 'react-icons/fi';
+
+// Los roles que alguien puede pedir al registrarse. El backend valida que existan;
+// cualquiera distinto de Aprendiz deja la cuenta pendiente de aprobación.
+const ROL_APRENDIZ = 'Aprendiz';
+
+const ROLES_SOLICITABLES = [
+    { valor: ROL_APRENDIZ, etiqueta: 'Aprendiz', ayuda: 'Entras de una vez.' },
+    { valor: 'Instructor', etiqueta: 'Instructor', ayuda: 'Un administrador debe aprobar tu cuenta.' },
+    { valor: 'Administrador', etiqueta: 'Administrador', ayuda: 'Un administrador debe aprobar tu cuenta.' },
+];
 
 export const Register = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
+    const [exito, setExito] = useState<{ pendiente: boolean } | null>(null);
     const [enviando, setEnviando] = useState(false);
     const [error, setError] = useState('');
 
@@ -26,10 +37,15 @@ export const Register = () => {
         identificacion: '',
         telefono: '',
         email: '',
+        rolSolicitado: ROL_APRENDIZ,
         programaFormacionId: '',
         password: '',
         confirmarPassword: '',
     });
+
+    const esAprendizForm = form.rolSolicitado === ROL_APRENDIZ;
+    const programaElegido = programas.find((p) => String(p.id) === form.programaFormacionId);
+    const rolElegido = ROLES_SOLICITABLES.find((r) => r.valor === form.rolSolicitado);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setForm({
@@ -57,6 +73,7 @@ export const Register = () => {
         }
 
         const programa = programas.find((p) => String(p.id) === form.programaFormacionId);
+        const esAprendiz = form.rolSolicitado === ROL_APRENDIZ;
 
         try {
             setEnviando(true);
@@ -66,12 +83,12 @@ export const Register = () => {
                 identificacion: form.identificacion,
                 telefono: form.telefono,
                 email: form.email,
-                programaFormacionId: programa ? programa.id : undefined,
-                idFicha: programa ? programa.ficha : undefined,
+                rolSolicitado: form.rolSolicitado,
+                programaFormacionId: esAprendiz && programa ? programa.id : undefined,
+                idFicha: esAprendiz && programa ? programa.ficha : undefined,
                 password: form.password,
             });
-            alert('¡Usuario registrado con éxito! Ya puedes iniciar sesión.');
-            navigate('/login');
+            setExito({ pendiente: !esAprendiz });
         } catch (err) {
             setError(mensajeError(err, 'Error al registrar usuario'));
         } finally {
@@ -140,6 +157,52 @@ export const Register = () => {
 
             <main className="flex w-full flex-1 flex-col bg-neutral-50 px-6 py-10 lg:w-1/2 lg:px-16 lg:py-16">
                 <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
+                    {exito && (
+                        <div className="flex flex-col items-center py-6 text-center">
+                            <div className={'mb-6 flex h-20 w-20 items-center justify-center rounded-2xl ' + (exito.pendiente ? 'bg-amber-50' : 'bg-green-50')}>
+                                {exito.pendiente
+                                    ? <LuClock size={36} className="text-amber-600" />
+                                    : <LuCircleCheck size={36} className="text-green-700" />}
+                            </div>
+
+                            <h2 className="mb-2 text-2xl font-extrabold text-neutral-900">
+                                {exito.pendiente ? 'Solicitud enviada' : '¡Tu cuenta está lista!'}
+                            </h2>
+
+                            <p className="mb-6 max-w-sm text-sm leading-relaxed text-neutral-500">
+                                {exito.pendiente
+                                    ? 'Te avisaremos por correo cuando un administrador apruebe tu solicitud. Hasta entonces no podrás iniciar sesión.'
+                                    : 'Tu cuenta fue creada correctamente. Ya puedes ingresar a AgroSoft.'}
+                            </p>
+
+                            <div className="mb-6 w-full max-w-sm rounded-xl border border-green-200 bg-green-50/60 p-4 text-left">
+                                <div className="flex justify-between py-1 text-sm">
+                                    <span className="text-neutral-500">Rol solicitado</span>
+                                    <span className="font-semibold text-neutral-800">{form.rolSolicitado}</span>
+                                </div>
+                                <div className="flex justify-between py-1 text-sm">
+                                    <span className="text-neutral-500">Correo</span>
+                                    <span className="font-semibold text-neutral-800">{form.email}</span>
+                                </div>
+                                {form.rolSolicitado === ROL_APRENDIZ && programaElegido && (
+                                    <div className="flex justify-between gap-4 py-1 text-sm">
+                                        <span className="shrink-0 text-neutral-500">Ficha</span>
+                                        <span className="text-right font-semibold text-neutral-800">{programaElegido.ficha}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => navigate('/login')}
+                                className="w-full max-w-sm rounded-xl bg-green-800 py-3.5 font-semibold text-white transition hover:bg-green-900"
+                            >
+                                {exito.pendiente ? 'Volver al inicio' : 'Iniciar sesión'}
+                            </button>
+                        </div>
+                    )}
+
+                    {!exito && (
                     <header className="mb-8">
                         {step === 1 ? (
                             <Link
@@ -173,8 +236,9 @@ export const Register = () => {
                             />
                         </div>
                     </header>
+                    )}
 
-                    {step === 1 && (
+                    {!exito && step === 1 && (
                         <form className="flex flex-col gap-5" onSubmit={handleNextStep}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="flex flex-col gap-1.5">
@@ -277,13 +341,35 @@ export const Register = () => {
                         </form>
                     )}
 
-                    {step === 2 && (
+                    {!exito && step === 2 && (
                         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-                            <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                                <LuGraduationCap size={18} className="shrink-0" />
-                                <span>Tu cuenta se crea como Aprendiz. La ficha es opcional.</span>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-semibold text-neutral-800">
+                                    Tipo de usuario <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <LuShieldCheck className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                                    <select
+                                        name="rolSolicitado"
+                                        value={form.rolSolicitado}
+                                        onChange={handleChange}
+                                        className={inputClasses}
+                                    >
+                                        {ROLES_SOLICITABLES.map((rol) => (
+                                            <option key={rol.valor} value={rol.valor}>{rol.etiqueta}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
 
+                            <div className={'flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ' + (esAprendizForm ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-800')}>
+                                {esAprendizForm
+                                    ? <LuGraduationCap size={18} className="mt-0.5 shrink-0" />
+                                    : <LuClock size={18} className="mt-0.5 shrink-0" />}
+                                <span>{rolElegido?.ayuda}</span>
+                            </div>
+
+                            {esAprendizForm && (
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-sm font-semibold text-neutral-800">
                                     Programa de Formación <span className="text-neutral-400 font-normal">(opcional)</span>
@@ -308,6 +394,7 @@ export const Register = () => {
                                     <p className="text-xs text-neutral-500">¿No aparece tu ficha? Pide al administrador que la registre.</p>
                                 )}
                             </div>
+                            )}
 
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-sm font-semibold text-neutral-800">

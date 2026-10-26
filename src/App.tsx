@@ -22,6 +22,8 @@ import Tratamientos from './pages/Tratamientos'
 import Reportes from './pages/Reportes'
 import Ventas from './pages/Ventas'
 import Alertas from './pages/Alertas'
+import WikiEpa from './pages/WikiEpa'
+import SolicitudesAcceso from './pages/SolicitudesAcceso'
 import SensoresPage from './pages/SensorPage'
 import Actividades from './pages/actividades/actividades'
 import ActividadDetalle from './pages/actividades/ActividadDetalle'
@@ -53,6 +55,8 @@ function App() {
         <Route path="/reportes" element={<Reportes />} />
         <Route path="/ventas" element={<Ventas />} />
         <Route path="/alertas" element={<Alertas />} />
+        <Route path="/wiki-epa" element={<WikiEpa />} />
+        <Route path="/solicitudes" element={<SolicitudesAcceso />} />
         <Route path="/cultivos" element={<Cultivos />} />
         <Route path="/historial" element={<Historial />} />
         <Route path="/unidades-productivas" element={<UnidadesProductivas />} />

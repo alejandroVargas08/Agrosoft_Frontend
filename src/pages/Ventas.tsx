@@ -3,6 +3,9 @@ import { CheckCircle2, DollarSign, Mail, Phone, Plus, ShoppingCart } from 'lucid
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Input, Modal, PageHeader, Select, StatCard, StatusBadge, Tab } from '../components/ui/AgroUI';
 import { useVentas } from '../hooks/useVentas';
+import type { Venta } from '../types/ventas';
+
+type DecisionVenta = { venta: Venta; accion: 'pagar' | 'anular' };
 
 // El backend guarda los estados en español; el StatusBadge los conoce en inglés
 const ESTADO_BADGE: Record<string, string> = {
@@ -28,14 +31,14 @@ const Ventas = () => {
     const [tab, setTab] = useState('Ventas');
     const [showNew, setShowNew] = useState(false);
     const [showCliente, setShowCliente] = useState(false);
+    const [decision, setDecision] = useState<DecisionVenta | null>(null);
 
     const {
         ventas, clientes, lotes, cargando, error,
         totalVentas, totalPagadas, ingresos, nombreCliente, productosDe,
         formVenta, setVenta, subtotal, descuento, impuestos, total,
         crearVenta, creandoVenta, errorForm,
-        formCliente, setCliente, crearCliente, creandoCliente,
-    } = useVentas();
+        formCliente, setCliente, crearCliente, creandoCliente, marcarPagada, anular, cambiandoEstado, errorEstado, } = useVentas();
 
     return (
         <DashboardLayout>
@@ -47,6 +50,12 @@ const Ventas = () => {
                         ? <Btn size="sm" onClick={() => setShowNew(true)}><Plus size={14} />Nueva Venta</Btn>
                         : undefined}
                 />
+
+                {errorEstado && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                        {errorEstado}
+                    </div>
+                )}
 
                 <Tab tabs={['Ventas', 'Producción', 'Clientes']} active={tab} onChange={setTab} />
 
@@ -90,6 +99,28 @@ const Ventas = () => {
                                             {Number(v.descuento) > 0 && <span>-{fmtPesos(Number(v.descuento))}</span>}
                                             {Number(v.impuestos) > 0 && <span>+{fmtPesos(Number(v.impuestos))} IVA</span>}
                                         </div>
+
+                                        {v.estado === 'pendiente' && (
+                                            <div className="flex gap-2 mt-3">
+                                                <Btn
+                                                    size="sm"
+                                                    disabled={cambiandoEstado}
+                                                    onClick={() => setDecision({ venta: v, accion: 'pagar' })}
+                                                    className="flex-1 justify-center"
+                                                >
+                                                    Marcar pagada
+                                                </Btn>
+                                                <Btn
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={cambiandoEstado}
+                                                    onClick={() => setDecision({ venta: v, accion: 'anular' })}
+                                                    className="flex-1 justify-center"
+                                                >
+                                                    Anular
+                                                </Btn>
+                                            </div>
+                                        )}
                                     </Card>
                                 ))}
                             </div>
@@ -241,6 +272,57 @@ const Ventas = () => {
                         <Btn variant="outline" onClick={() => setShowCliente(false)}>Cancelar</Btn>
                     </div>
                 </form>
+            </Modal>
+
+            <Modal
+                open={!!decision}
+                onClose={() => setDecision(null)}
+                title={decision?.accion === 'pagar' ? 'Marcar como pagada' : 'Anular venta'}
+            >
+                {decision && (
+                    <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                            {decision.accion === 'pagar' ? (
+                                <>
+                                    La venta #{decision.venta.id} de{' '}
+                                    <strong className="text-foreground">{nombreCliente(decision.venta.clienteId)}</strong>{' '}
+                                    por <strong className="text-foreground">{fmtPesos(Number(decision.venta.total))}</strong>{' '}
+                                    quedará registrada como pagada y entrará en los ingresos.
+                                </>
+                            ) : (
+                                <>
+                                    La venta #{decision.venta.id} quedará anulada y dejará de contar en los totales.
+                                    Esta acción no se puede deshacer.
+                                </>
+                            )}
+                        </p>
+
+                        {decision.accion === 'anular' && (
+                            <div className="p-3 bg-muted rounded-xl text-xs text-muted-foreground">
+                                Los kilos de esta venta vuelven al lote de producción automáticamente.
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <Btn
+                                variant={decision.accion === 'pagar' ? 'primary' : 'danger'}
+                                disabled={cambiandoEstado}
+                                onClick={() => {
+                                    const cerrar = () => setDecision(null);
+                                    if (decision.accion === 'pagar') marcarPagada(decision.venta.id);
+                                    else anular(decision.venta.id);
+                                    cerrar();
+                                }}
+                                className="flex-1 justify-center"
+                            >
+                                {cambiandoEstado ? 'Guardando...' : decision.accion === 'pagar' ? 'Confirmar' : 'Anular'}
+                            </Btn>
+                            <Btn variant="outline" onClick={() => setDecision(null)} className="flex-1 justify-center">
+                                Cancelar
+                            </Btn>
+                        </div>
+                    </div>
+                )}
             </Modal>
         </DashboardLayout>
     );

@@ -4,6 +4,7 @@ import { ArrowLeft, Camera } from 'lucide-react';
 import { usePerfil } from '../hooks/usePerfil';
 import { InicioUsuario } from '../hooks/useAuth';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import { mensajeError } from '../api/errores/errores';
 
 function inicial(nombre?: string) {
   const caracter = nombre?.trim()?.charAt(0)?.toUpperCase();
@@ -67,10 +68,8 @@ export default function EditarPerfil() {
     try {
       await actualizarPerfil({ nombre, apellido, telefono });
       navigate('/perfil');
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message || 'No se pudo guardar los cambios. Intenta de nuevo.'
-      );
+    } catch (err: unknown) {
+      setError(mensajeError(err, 'No se pudo guardar los cambios. Intenta de nuevo.'));
     } finally {
       setGuardando(false);
     }
