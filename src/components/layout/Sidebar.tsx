@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, UserCheck, Plane, GraduationCap, CheckSquare, ListTodo, LayoutDashboard, BookMarked, Users, Shield } from "lucide-react";
+import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, UserCheck, Plane, GraduationCap, CheckSquare, ListTodo, LayoutDashboard, BookMarked, Users, Shield, MessageSquare, Inbox } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 import { CerrarSesionModal } from "../ui/CerrarSesionModal";
@@ -54,9 +54,11 @@ const itemMisFichas: MenuItem = { icon: GraduationCap, label: 'Mis Fichas', path
 // Solo quien revisa entregas (instructor o administrador)
 const PERMISO_REVISAR_ACTIVIDADES = 'actividades.revisar';
 const itemPorRevisar: MenuItem = { icon: CheckSquare, label: 'Por revisar', path: '/por-revisar' };
+const itemNovedades: MenuItem = { icon: Inbox, label: 'Novedades', path: '/novedades' };
 // Solo quien ejecuta actividades (aprendiz)
 const PERMISO_EJECUTAR_ACTIVIDADES = 'actividades.ejecutar';
 const itemMisTareas: MenuItem = { icon: ListTodo, label: 'Mis Tareas', path: '/mis-tareas' };
+const itemMisNovedades: MenuItem = { icon: MessageSquare, label: 'Mis Novedades', path: '/mis-novedades' };
 
 const main2Items: MenuItem[] = [
     { icon: Bell, label: 'Notificaciones', path: '/notificaciones' },
@@ -76,8 +78,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const itemsPrincipales = [
     ...mainItems,
-    ...(puede(PERMISO_EJECUTAR_ACTIVIDADES) ? [itemMisTareas] : []),
-    ...(puede(PERMISO_ASIGNAR_ACTIVIDADES) ? [itemPanelInstructor, itemMisFichas] : []),
+    ...(puede(PERMISO_EJECUTAR_ACTIVIDADES) ? [itemMisTareas, itemMisNovedades] : []),
+    ...(puede(PERMISO_ASIGNAR_ACTIVIDADES) ? [itemPanelInstructor, itemMisFichas, itemNovedades] : []),
     ...(puede(PERMISO_REVISAR_ACTIVIDADES) ? [itemPorRevisar] : []),
     ...(puede(PERMISO_GESTIONAR_USUARIOS) ? [itemAdministracion, itemUsuarios, itemSolicitudes, itemProgramas, itemRoles] : []),
   ];

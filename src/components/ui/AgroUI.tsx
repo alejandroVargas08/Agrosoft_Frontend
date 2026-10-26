@@ -49,6 +49,10 @@ const STATUS_MAP: Record<string, [BadgeColor, string]> = {
     ENTREGADA: ['primary', 'Entregada'],
     APROBADA: ['success', 'Aprobada'],
     DEVUELTA: ['danger', 'Devuelta'],
+    // Novedades
+    pendiente: ['warning', 'Pendiente'],
+    atendida: ['success', 'Atendida'],
+    descartada: ['muted', 'Descartada'],
 };
 
 export const StatusBadge = ({ status }: { status: string }) => {

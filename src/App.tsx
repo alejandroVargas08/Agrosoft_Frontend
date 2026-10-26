@@ -30,6 +30,8 @@ import MisTareas from './pages/instructor/MisTareas'
 import InicioInstructor from './pages/instructor/InicioInstructor'
 import FichaDetalle from './pages/instructor/FichaDetalle'
 import AprendizDetalle from './pages/instructor/AprendizDetalle'
+import MisNovedades from './pages/novedades/MisNovedades'
+import NovedadesInstructor from './pages/novedades/NovedadesInstructor'
 import Programas from './pages/admin/Programas'
 import Usuarios from './pages/admin/Usuarios'
 import RolesPermisos from './pages/admin/RolesPermisos'
@@ -85,6 +87,8 @@ function App() {
         <Route path="/roles" element={<RolesPermisos />} />
         <Route path="/por-revisar" element={<Revision />} />
         <Route path="/mis-tareas" element={<MisTareas />} />
+        <Route path="/mis-novedades" element={<MisNovedades />} />
+        <Route path="/novedades" element={<NovedadesInstructor />} />
         <Route path="/cultivos" element={<Cultivos />} />
         <Route path="/historial" element={<Historial />} />
         <Route path="/unidades-productivas" element={<UnidadesProductivas />} />
