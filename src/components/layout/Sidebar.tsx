@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, UserCheck } from "lucide-react";
+import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, UserCheck, Plane } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 import { CerrarSesionModal } from "../ui/CerrarSesionModal";
@@ -34,6 +34,7 @@ const mainItems: MenuItem[] = [
     { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
     { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
     { icon: BarChart3, label: 'Reportes', path: '/reportes' },
+    { icon: Plane, label: 'Drones', path: '/drones' },
     { icon: Bot, label: 'Consultas', path: '/agrobot' },
     { icon: Bell, label: 'Alertas', path: '/alertas' },
     { icon: History, label: 'Historial', path: '/historial' },
@@ -84,7 +85,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           </div>
         </div>
-        <SidebarContent onCerrarSesion={() => setModalCerrarSesion(true)} />
+        <SidebarContent items={itemsPrincipales} onCerrarSesion={() => setModalCerrarSesion(true)} />
       </aside>
 
       <aside className="hidden md:flex lg:hidden w-20 bg-white h-screen fixed left-0 top-0 border-r border-gray-200 flex-col items-center py-4 z-30">
@@ -160,6 +161,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               </button>
             </div>
             <SidebarContent
+              items={itemsPrincipales}
               onNavigate={onClose}
               onCerrarSesion={() => setModalCerrarSesion(true)}
             />
@@ -177,22 +179,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 }
 
 function SidebarContent({
+  items,
   onNavigate,
   onCerrarSesion,
 }: {
+  items: MenuItem[];
   onNavigate?: () => void;
   onCerrarSesion: () => void;
 }) {
   const location = useLocation();
   const [abierto, setAbierto] = useState<string | null>(() => {
-    const actual = itemsPrincipales.find(
+    const actual = items.find(
       (i) => i.children && location.pathname.startsWith(i.path)
     );
     return actual ? actual.label : null;
   });
 
   useEffect(() => {
-    const actual = itemsPrincipales.find(
+    const actual = items.find(
       (i) => i.children && location.pathname.startsWith(i.path)
     );
     if (actual) {
@@ -203,7 +207,7 @@ function SidebarContent({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <nav className="flex-1 min-h-0 overflow-y-auto py-2">
-        {itemsPrincipales.map((item) => {
+        {items.map((item) => {
           if (item.children) {
             const estaAbierto = abierto === item.label;
             const grupoActivo = location.pathname.startsWith(item.path);

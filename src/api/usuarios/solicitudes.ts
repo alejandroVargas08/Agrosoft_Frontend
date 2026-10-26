@@ -1,18 +1,10 @@
 import { api } from '../axios';
+import type { Usuario } from './usuarios';
 
-/** Un usuario esperando aprobación. El backend lo devuelve como UsuarioPublico. */
-export interface SolicitudAcceso {
-    id: number;
-    nombre: string;
-    apellido: string;
-    identificacion: string;
-    correo: string;
-    telefono: string;
-    rolId: number;
-    programaFormacionId: number | null;
-    idFicha: string | null;
-    estado: string;
-}
+export type { SolicitudRegistro } from './usuarios';
+
+/** Una solicitud de acceso es un usuario en estado 'pendiente'. */
+export type SolicitudAcceso = Usuario;
 
 export interface RolBasico {
     id: number;
@@ -20,8 +12,11 @@ export interface RolBasico {
 }
 
 export const solicitudesApi = {
-    listar: () => api.get<SolicitudAcceso[]>('/usuarios/pendientes'),
+    listar: () => api.get<SolicitudAcceso[]>('/usuarios/solicitudes'),
     aprobar: (id: number) => api.patch<SolicitudAcceso>(`/usuarios/${id}/aprobar`),
-    rechazar: (id: number) => api.patch<SolicitudAcceso>(`/usuarios/${id}/rechazar`),
+    // El motivo es obligatorio: el backend lo guarda y se lo muestra a la
+    // persona cuando intenta entrar.
+    rechazar: (id: number, motivo: string) =>
+        api.patch<SolicitudAcceso>(`/usuarios/${id}/rechazar`, { motivo }),
     roles: () => api.get<RolBasico[]>('/roles'),
 };

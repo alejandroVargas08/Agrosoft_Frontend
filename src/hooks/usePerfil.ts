@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { InicioUsuario } from './useAuth';
 import { usuarioApi } from '../api/usuarios/usuarios';
+import type { Usuario } from '../api/usuarios/usuarios';
 
 interface ProgramaFormacion {
   nombre: string;
@@ -11,12 +12,8 @@ interface ProgramaFormacion {
   estado: string;
 }
 
-interface PerfilUsuario {
-  id: number;
-  nombre: string;
-  apellido: string;
-  email: string;
-  telefono?: string;
+/** El backend devuelve `correo`; aquí no se inventa un `email`. */
+interface PerfilUsuario extends Usuario {
   ubicacion?: string;
   rol?: string;
   emailVerificado?: boolean;

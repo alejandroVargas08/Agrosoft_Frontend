@@ -55,7 +55,7 @@ export default function Perfil() {
     );
   }
 
-  const { nombre, email, telefono, ubicacion, rol, emailVerificado, programaFormacion } = perfil;
+  const { nombre, correo: email, telefono, ubicacion, rol, emailVerificado, programaFormacion } = perfil;
 
   return (
     <DashboardLayout>

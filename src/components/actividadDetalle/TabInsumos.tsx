@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useActividadInsumos } from "../../hooks/actividades/useActividadInsumos";
+import { useActividadInsumos } from "../../hooks/Actividades/useActividadInsumos";
 
 export function TabInsumos({actividadId}: {actividadId: number | undefined}) {
     const { 

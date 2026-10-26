@@ -31,7 +31,8 @@ export function useSolicitudes() {
     });
 
     const rechazarMutation = useMutation({
-        mutationFn: (id: number) => solicitudesApi.rechazar(id),
+        mutationFn: ({ id, motivo }: { id: number; motivo: string }) =>
+            solicitudesApi.rechazar(id, motivo),
         onSuccess: refrescar,
     });
 
@@ -49,7 +50,7 @@ export function useSolicitudes() {
         nombreRol,
         aprobar: (id: number, alTerminar?: () => void) =>
             aprobarMutation.mutate(id, { onSuccess: () => alTerminar?.() }),
-        rechazar: (id: number, alTerminar?: () => void) =>
-            rechazarMutation.mutate(id, { onSuccess: () => alTerminar?.() }),
+        rechazar: (id: number, motivo: string, alTerminar?: () => void) =>
+            rechazarMutation.mutate({ id, motivo }, { onSuccess: () => alTerminar?.() }),
     };
 }

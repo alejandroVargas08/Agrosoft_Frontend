@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { UserCheck } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { Badge, Btn, Card, EmptyState, Modal, PageHeader } from '../components/ui/AgroUI';
+import { Badge, Btn, Card, EmptyState, Modal, PageHeader, Textarea } from '../components/ui/AgroUI';
 import { useSolicitudes } from '../hooks/useSolicitudes';
 import type { SolicitudAcceso } from '../api/usuarios/solicitudes';
 
@@ -11,15 +11,23 @@ const SolicitudesAcceso = () => {
     const { solicitudes, total, cargando, error, errorAccion, procesando, nombreRol, aprobar, rechazar } =
         useSolicitudes();
     const [decision, setDecision] = useState<Decision | null>(null);
+    const [motivo, setMotivo] = useState('');
+
+    const cerrar = () => {
+        setDecision(null);
+        setMotivo('');
+    };
 
     const confirmar = () => {
         if (!decision) return;
-        const cerrar = () => setDecision(null);
         if (decision.accion === 'aprobar') aprobar(decision.solicitud.id, cerrar);
-        else rechazar(decision.solicitud.id, cerrar);
+        else rechazar(decision.solicitud.id, motivo.trim(), cerrar);
     };
 
     const esAprobar = decision?.accion === 'aprobar';
+    // El backend exige un motivo para rechazar y se lo muestra a la persona
+    // cuando intente entrar.
+    const faltaMotivo = !esAprobar && motivo.trim().length === 0;
     const nombreCompleto = (s: SolicitudAcceso) => s.nombre + ' ' + s.apellido;
 
     return (
@@ -102,7 +110,7 @@ const SolicitudesAcceso = () => {
 
                 <Modal
                     open={!!decision}
-                    onClose={() => setDecision(null)}
+                    onClose={cerrar}
                     title={esAprobar ? 'Aprobar solicitud' : 'Rechazar solicitud'}
                 >
                     {decision && (
@@ -122,16 +130,26 @@ const SolicitudesAcceso = () => {
                                 )}
                             </p>
 
+                            {!esAprobar && (
+                                <Textarea
+                                    label="Motivo del rechazo"
+                                    rows={3}
+                                    value={motivo}
+                                    onChange={setMotivo}
+                                    placeholder="Se lo mostraremos cuando intente iniciar sesión"
+                                />
+                            )}
+
                             <div className="flex gap-3">
                                 <Btn
                                     variant={esAprobar ? 'primary' : 'danger'}
-                                    disabled={procesando}
+                                    disabled={procesando || faltaMotivo}
                                     onClick={confirmar}
                                     className="flex-1 justify-center"
                                 >
                                     {procesando ? 'Guardando...' : esAprobar ? 'Confirmar' : 'Rechazar'}
                                 </Btn>
-                                <Btn variant="outline" onClick={() => setDecision(null)} className="flex-1 justify-center">
+                                <Btn variant="outline" onClick={cerrar} className="flex-1 justify-center">
                                     Cancelar
                                 </Btn>
                             </div>

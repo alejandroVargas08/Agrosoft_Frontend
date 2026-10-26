@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useActividadInsumoReserva } from "../../hooks/actividades/useActividadInsumoReserva";
+import { useActividadInsumoReserva } from "../../hooks/Actividades/useActividadInsumoReserva";
 
 export function TabReservas({ actividadId} : {actividadId: number | undefined}) {
     const { 
