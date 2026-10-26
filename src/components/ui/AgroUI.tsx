@@ -43,6 +43,12 @@ const STATUS_MAP: Record<string, [BadgeColor, string]> = {
     A: ['success', 'Calidad A'], B: ['warning', 'Calidad B'], C: ['danger', 'Calidad C'],
     low: ['info', 'Baja'], medium: ['warning', 'Media'], high: ['danger', 'Alta'],
     plot: ['primary', 'Lote'], subplot: ['info', 'Sublote'],
+    // Asignaciones de actividades (el backend las guarda en mayúscula)
+    ASIGNADA: ['info', 'Asignada'],
+    EN_PROGRESO: ['warning', 'En progreso'],
+    ENTREGADA: ['primary', 'Entregada'],
+    APROBADA: ['success', 'Aprobada'],
+    DEVUELTA: ['danger', 'Devuelta'],
 };
 
 export const StatusBadge = ({ status }: { status: string }) => {

@@ -1,0 +1,74 @@
+// Tipos del perfil instructor: fichas a cargo, aprendices y asignaciones de
+// actividades. Espejo de lo que devuelve el backend.
+
+/** Una ficha es un programa de formación. El backend lo llama así. */
+export interface Ficha {
+    id: number;
+    nombre: string;
+    tipo: string;
+    ficha: string;
+    fechaInicio: string;
+    fechaFin: string;
+    estado: string;
+}
+
+export interface Aprendiz {
+    id: number;
+    nombre: string;
+    apellido: string;
+    correo: string;
+    programaFormacionId: number | null;
+}
+
+export type EstadoAsignacion =
+    | 'ASIGNADA'
+    | 'EN_PROGRESO'
+    | 'ENTREGADA'
+    | 'APROBADA'
+    | 'DEVUELTA';
+
+export interface PersonaResumen {
+    id: number;
+    nombre: string;
+    apellido: string;
+}
+
+export interface ActividadResumen {
+    id: number;
+    nombre: string;
+    tipo: string;
+    subtipo: string | null;
+    descripcion: string;
+    fecha: string;
+    loteId: number;
+    subLoteId: number | null;
+    cultivoId: number;
+    estado: string;
+}
+
+export interface Asignacion {
+    id: number;
+    estado: EstadoAsignacion;
+    vencida: boolean;
+    fechaLimite: string | null;
+    horasTrabajadas: number | null;
+    comentarioAprendiz: string | null;
+    comentarioInstructor: string | null;
+    iniciadaEn: string | null;
+    entregadaEn: string | null;
+    revisadaEn: string | null;
+    creadoEn: string | null;
+    aprendiz: PersonaResumen | null;
+    asignadoPor: PersonaResumen | null;
+    actividad: ActividadResumen | null;
+}
+
+export interface AsignarActividadPayload {
+    aprendizIds: number[];
+    fechaLimite?: string;
+}
+
+export interface EntregarTareaPayload {
+    horasTrabajadas: number;
+    comentario?: string;
+}

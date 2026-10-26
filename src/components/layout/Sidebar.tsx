@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, UserCheck, Plane } from "lucide-react";
+import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, UserCheck, Plane, GraduationCap, CheckSquare, ListTodo, LayoutDashboard } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 import { CerrarSesionModal } from "../ui/CerrarSesionModal";
@@ -43,6 +43,16 @@ const mainItems: MenuItem[] = [
 // Solo lo ve quien puede gestionar usuarios
 const PERMISO_GESTIONAR_USUARIOS = 'usuarios.gestionar';
 const itemSolicitudes: MenuItem = { icon: UserCheck, label: 'Solicitudes', path: '/solicitudes' };
+// Solo lo ve quien puede asignar actividades (instructor o administrador)
+const PERMISO_ASIGNAR_ACTIVIDADES = 'actividades.asignar';
+const itemPanelInstructor: MenuItem = { icon: LayoutDashboard, label: 'Panel del instructor', path: '/panel-instructor' };
+const itemMisFichas: MenuItem = { icon: GraduationCap, label: 'Mis Fichas', path: '/mis-fichas' };
+// Solo quien revisa entregas (instructor o administrador)
+const PERMISO_REVISAR_ACTIVIDADES = 'actividades.revisar';
+const itemPorRevisar: MenuItem = { icon: CheckSquare, label: 'Por revisar', path: '/por-revisar' };
+// Solo quien ejecuta actividades (aprendiz)
+const PERMISO_EJECUTAR_ACTIVIDADES = 'actividades.ejecutar';
+const itemMisTareas: MenuItem = { icon: ListTodo, label: 'Mis Tareas', path: '/mis-tareas' };
 
 const main2Items: MenuItem[] = [
     { icon: Bell, label: 'Notificaciones', path: '/notificaciones' },
@@ -60,9 +70,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [modalCerrarSesion, setModalCerrarSesion] = useState(false);
   const { puede } = usePermisos();
 
-  const itemsPrincipales = puede(PERMISO_GESTIONAR_USUARIOS)
-    ? [...mainItems, itemSolicitudes]
-    : mainItems;
+  const itemsPrincipales = [
+    ...mainItems,
+    ...(puede(PERMISO_EJECUTAR_ACTIVIDADES) ? [itemMisTareas] : []),
+    ...(puede(PERMISO_ASIGNAR_ACTIVIDADES) ? [itemPanelInstructor, itemMisFichas] : []),
+    ...(puede(PERMISO_REVISAR_ACTIVIDADES) ? [itemPorRevisar] : []),
+    ...(puede(PERMISO_GESTIONAR_USUARIOS) ? [itemSolicitudes] : []),
+  ];
 
   async function confirmarCerrarSesion() {
     await cerrarSesion();
@@ -188,21 +202,20 @@ function SidebarContent({
   onCerrarSesion: () => void;
 }) {
   const location = useLocation();
-  const [abierto, setAbierto] = useState<string | null>(() => {
-    const actual = items.find(
-      (i) => i.children && location.pathname.startsWith(i.path)
-    );
-    return actual ? actual.label : null;
-  });
 
-  useEffect(() => {
-    const actual = items.find(
-      (i) => i.children && location.pathname.startsWith(i.path)
-    );
-    if (actual) {
-      setAbierto(actual.label);
-    }
-  }, [location.pathname]);
+  // El grupo que corresponde a la ruta actual, calculado en el render
+  const grupoDeLaRuta =
+    items.find((i) => i.children && location.pathname.startsWith(i.path))?.label ?? null;
+
+  const [abierto, setAbierto] = useState<string | null>(grupoDeLaRuta);
+  const [rutaVista, setRutaVista] = useState(location.pathname);
+
+  // Al cambiar de ruta se abre el grupo que la contiene. Se ajusta en el
+  // render, no en un efecto: así no hay un segundo pase de renderizado.
+  if (rutaVista !== location.pathname) {
+    setRutaVista(location.pathname);
+    if (grupoDeLaRuta) setAbierto(grupoDeLaRuta);
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0">

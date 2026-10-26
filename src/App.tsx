@@ -24,6 +24,10 @@ import Ventas from './pages/Ventas'
 import Alertas from './pages/Alertas'
 import WikiEpa from './pages/WikiEpa'
 import SolicitudesAcceso from './pages/SolicitudesAcceso'
+import MisFichas from './pages/instructor/MisFichas'
+import Revision from './pages/instructor/Revision'
+import MisTareas from './pages/instructor/MisTareas'
+import InicioInstructor from './pages/instructor/InicioInstructor'
 import SensoresPage from './pages/SensorPage'
 import Actividades from './pages/actividades/actividades'
 import ActividadDetalle from './pages/actividades/ActividadDetalle'
@@ -61,6 +65,12 @@ function App() {
         <Route path="/alertas" element={<Alertas />} />
         <Route path="/wiki-epa" element={<WikiEpa />} />
         <Route path="/solicitudes" element={<SolicitudesAcceso />} />
+
+        {/* Instructor */}
+        <Route path="/panel-instructor" element={<InicioInstructor />} />
+        <Route path="/mis-fichas" element={<MisFichas />} />
+        <Route path="/por-revisar" element={<Revision />} />
+        <Route path="/mis-tareas" element={<MisTareas />} />
         <Route path="/cultivos" element={<Cultivos />} />
         <Route path="/historial" element={<Historial />} />
         <Route path="/unidades-productivas" element={<UnidadesProductivas />} />
