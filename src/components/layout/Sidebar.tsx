@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, UserCheck, Plane, GraduationCap, CheckSquare, ListTodo, LayoutDashboard, BookMarked, Users } from "lucide-react";
+import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, UserCheck, Plane, GraduationCap, CheckSquare, ListTodo, LayoutDashboard, BookMarked, Users, Shield } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 import { CerrarSesionModal } from "../ui/CerrarSesionModal";
@@ -44,7 +44,9 @@ const mainItems: MenuItem[] = [
 const PERMISO_GESTIONAR_USUARIOS = 'usuarios.gestionar';
 const itemSolicitudes: MenuItem = { icon: UserCheck, label: 'Solicitudes', path: '/solicitudes' };
 const itemProgramas: MenuItem = { icon: BookMarked, label: 'Programas', path: '/programas' };
+const itemAdministracion: MenuItem = { icon: LayoutDashboard, label: 'Administración', path: '/administracion' };
 const itemUsuarios: MenuItem = { icon: Users, label: 'Usuarios', path: '/usuarios' };
+const itemRoles: MenuItem = { icon: Shield, label: 'Roles y permisos', path: '/roles' };
 // Solo lo ve quien puede asignar actividades (instructor o administrador)
 const PERMISO_ASIGNAR_ACTIVIDADES = 'actividades.asignar';
 const itemPanelInstructor: MenuItem = { icon: LayoutDashboard, label: 'Panel del instructor', path: '/panel-instructor' };
@@ -77,7 +79,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     ...(puede(PERMISO_EJECUTAR_ACTIVIDADES) ? [itemMisTareas] : []),
     ...(puede(PERMISO_ASIGNAR_ACTIVIDADES) ? [itemPanelInstructor, itemMisFichas] : []),
     ...(puede(PERMISO_REVISAR_ACTIVIDADES) ? [itemPorRevisar] : []),
-    ...(puede(PERMISO_GESTIONAR_USUARIOS) ? [itemUsuarios, itemSolicitudes, itemProgramas] : []),
+    ...(puede(PERMISO_GESTIONAR_USUARIOS) ? [itemAdministracion, itemUsuarios, itemSolicitudes, itemProgramas, itemRoles] : []),
   ];
 
   async function confirmarCerrarSesion() {

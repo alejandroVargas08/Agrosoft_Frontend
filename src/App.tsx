@@ -32,6 +32,8 @@ import FichaDetalle from './pages/instructor/FichaDetalle'
 import AprendizDetalle from './pages/instructor/AprendizDetalle'
 import Programas from './pages/admin/Programas'
 import Usuarios from './pages/admin/Usuarios'
+import RolesPermisos from './pages/admin/RolesPermisos'
+import DashboardAdmin from './pages/admin/DashboardAdmin'
 import SensoresPage from './pages/SensorPage'
 import Actividades from './pages/actividades/actividades'
 import ActividadDetalle from './pages/actividades/ActividadDetalle'
@@ -77,8 +79,10 @@ function App() {
         <Route path="/aprendices/:id" element={<AprendizDetalle />} />
 
         {/* Administración */}
+        <Route path="/administracion" element={<DashboardAdmin />} />
         <Route path="/programas" element={<Programas />} />
         <Route path="/usuarios" element={<Usuarios />} />
+        <Route path="/roles" element={<RolesPermisos />} />
         <Route path="/por-revisar" element={<Revision />} />
         <Route path="/mis-tareas" element={<MisTareas />} />
         <Route path="/cultivos" element={<Cultivos />} />
