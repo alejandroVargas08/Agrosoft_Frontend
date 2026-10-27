@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Sprout, Package, Radio, BarChart3, Bell, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, Plane, GraduationCap, UserCheck, Users, Shield, Map, ClipboardList, AlertTriangle, FlaskConical, ShoppingCart, BookOpen, History } from "lucide-react";
+import { Sprout, Package, Radio, BarChart3, Bell, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, Plane, GraduationCap, UserCheck, Users, Shield } from "lucide-react";
 import { useSolicitudesPendientes } from "../../hooks/admin/useDatosAdmin";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
@@ -36,17 +36,6 @@ const adminItems: MenuItem[] = [
     { icon: BarChart3, label: 'Reportes', path: '/reportes' },
     { icon: Bot, label: 'Consultas', path: '/agrobot' },
     { icon: Settings, label: 'Config. Sistema', path: '/ajustes' },
-    // main deja estas fuera, pero la tabla de roles del Figma le da permiso al
-    // admin sobre todo: quitarlas lo dejaria sin acceso a media aplicacion
-    { icon: GraduationCap, label: 'Fichas', path: '/fichas' },
-    { icon: Map, label: 'Lotes y Sublotes', path: '/territorio' },
-    { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
-    { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
-    { icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos' },
-    { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
-    { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
-    { icon: Bell, label: 'Alertas', path: '/alertas' },
-    { icon: History, label: 'Historial', path: '/historial' },
 ];
 
 function useItemsMenu(): MenuItem[] {
