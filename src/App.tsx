@@ -9,6 +9,8 @@ import NuevaContrasena from './pages/NuevaContrasena'
 import Perfil from './pages/Perfil'
 import EditarPerfil from './pages/EditarPerfil'
 import Configuracion from './pages/Configuracion'
+import CentroAyuda from './pages/CentroAyuda'
+import Privacidad from './pages/Privacidad'
 import AgroBot from './pages/AgroBot'
 import LotesSublotes from './pages/LotesSublotes'
 import NuevoLote from './pages/NuevoLote'
@@ -64,6 +66,8 @@ function App() {
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/editar-perfil" element={<EditarPerfil />} />
         <Route path="/configuracion" element={<Configuracion />} />
+        <Route path="/ayuda" element={<CentroAyuda />} />
+        <Route path="/privacidad" element={<Privacidad />} />
         <Route path="/agrobot" element={<AgroBot />} />
         <Route path="/actividades" element={<Actividades />} />
         <Route path="/actividades/:id" element={<ActividadDetalle />} />

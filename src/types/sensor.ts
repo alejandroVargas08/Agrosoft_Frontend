@@ -12,6 +12,10 @@ export interface Sensor {
   ultimaLectura: string | null;
   enLinea: boolean;
   alerta: boolean;
+  // Necesarios para agrupar los sensores por lote, como en el Figma
+  loteId: number | null;
+  subLoteId: number | null;
+  cultivoId: number | null;
 }
 
 export interface ResumenSensores {
