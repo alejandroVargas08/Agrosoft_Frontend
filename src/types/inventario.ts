@@ -53,6 +53,12 @@ export interface Insumo {
     proveedorId: number;
     categoriaId: number;
     valorInventario: number;
+    // Solo vienen con valor en las herramientas
+    costoAdquisicion?: number;
+    valorResidual?: number;
+    vidaUtilHoras?: number;
+    horasUsadas?: number;
+    depreciacionAcumulada?: number;
 }
 
 export interface CrearInsumoPayload {

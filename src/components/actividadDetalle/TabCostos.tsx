@@ -4,6 +4,7 @@ import { actividadInsumosApi } from '../../api/actividades/actividadInsumos';
 import { actividadInsumoUsoApi } from '../../api/actividades/actividadInsumoUso';
 import { actividadServiciosApi } from '../../api/actividades/actividadServicios';
 import { actividadHerramientasApi } from '../../api/actividades/actividadHerramientas';
+import { insumosApi } from '../../api/inventario';
 import type { Actividad } from '../../types/actividades';
 
 const pesos = (valor: number) =>
@@ -41,6 +42,14 @@ export function TabCostos({ actividadId, actividad }: Props) {
         enabled: habilitado,
     });
 
+    // La ficha del insumo trae el costo de adquisicion, el valor residual y la
+    // vida util: con eso se calcula la depreciacion por hora de cada herramienta
+    const catalogoInsumos = useQuery({
+        queryKey: ['insumos'],
+        queryFn: async () => (await insumosApi.listar()).data,
+        staleTime: 60_000,
+    });
+
     const horas = actividad?.horasActividad ?? 0;
     const precioHora = actividad?.precioHoraActividad ?? 0;
     const manoDeObra = horas * precioHora;
@@ -50,15 +59,35 @@ export function TabCostos({ actividadId, actividad }: Props) {
     const costoServicios = (servicios.data ?? []).reduce((s, x) => s + (x.costo || 0), 0);
     const horasHerramienta = (herramientas.data ?? []).reduce((s, h) => s + (h.horasEstimadas || 0), 0);
 
-    const total = manoDeObra + costoInsumos + costoUsos + costoServicios;
+    // Depreciacion lineal: (costo - valor residual) / vida util, por hora de uso.
+    // Solo cuenta la herramienta cuya ficha tenga los tres datos.
+    const porInsumo = new Map((catalogoInsumos.data ?? []).map((i) => [i.id, i]));
+    let costoHerramientas = 0;
+    let herramientasSinDatos = 0;
 
-    const cargando = insumos.isLoading || usos.isLoading || servicios.isLoading;
+    for (const h of herramientas.data ?? []) {
+        const insumo = porInsumo.get(h.insumoId);
+        const vidaUtil = insumo?.vidaUtilHoras ?? 0;
+
+        if (!insumo || vidaUtil <= 0 || insumo.costoAdquisicion === undefined) {
+            if ((h.horasEstimadas || 0) > 0) herramientasSinDatos++;
+            continue;
+        }
+
+        const depreciable = insumo.costoAdquisicion - (insumo.valorResidual ?? 0);
+        costoHerramientas += (depreciable / vidaUtil) * (h.horasEstimadas || 0);
+    }
+
+    const total = manoDeObra + costoInsumos + costoUsos + costoServicios + costoHerramientas;
+
+    const cargando = insumos.isLoading || usos.isLoading || servicios.isLoading || catalogoInsumos.isLoading;
 
     const RUBROS = [
         { icono: Users, titulo: 'Mano de obra', detalle: horas + 'h × ' + pesos(precioHora) + '/h', valor: manoDeObra },
         { icono: Wrench, titulo: 'Insumos planeados', detalle: (insumos.data ?? []).length + ' registros', valor: costoInsumos },
         { icono: Hammer, titulo: 'Insumos usados', detalle: (usos.data ?? []).length + ' registros', valor: costoUsos },
         { icono: Truck, titulo: 'Servicios', detalle: (servicios.data ?? []).length + ' contratados', valor: costoServicios },
+        { icono: Hammer, titulo: 'Herramientas', detalle: horasHerramienta + 'h de uso · depreciación', valor: costoHerramientas },
     ];
 
     if (cargando) {
@@ -87,10 +116,11 @@ export function TabCostos({ actividadId, actividad }: Props) {
                 <span className="text-lg font-bold text-[#2d7a3e]">{pesos(total)}</span>
             </div>
 
-            {horasHerramienta > 0 && (
+            {herramientasSinDatos > 0 && (
                 <p className="text-xs text-neutral-500 pt-1">
-                    Se registraron {horasHerramienta}h de uso de herramientas. No entran en el total:
-                    el backend guarda las horas pero no la depreciación por hora.
+                    {herramientasSinDatos} herramienta{herramientasSinDatos === 1 ? '' : 's'} con horas
+                    registradas no entra{herramientasSinDatos === 1 ? '' : 'n'} en el total: a su ficha de
+                    inventario le falta el costo de adquisición o la vida útil.
                 </p>
             )}
 
