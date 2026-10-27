@@ -1,255 +1,378 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useCultivos } from "../../hooks/cultivos/useCultivos";
-import { useCultivoForm } from "../../hooks/cultivos/useCultivosForm";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { useQuery } from "@tanstack/react-query";
-import { lotesApi } from "../../api/territorio";
-import { LuSprout, LuCalendar } from "react-icons/lu";
-import { usePermisos } from "../../hooks/permisos/usePermisos";
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Calendar, Crop, Leaf, MapPin, Plus, Scale, X } from 'lucide-react';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import { Btn, EmptyState, Input, Modal, PageHeader, Select, StatusBadge } from '../../components/ui/AgroUI';
+import { useCultivosConCosechas } from '../../hooks/cultivos/useCultivosConCosechas';
+import { useCultivoForm } from '../../hooks/cultivos/useCultivosForm';
+import { usePermisos } from '../../hooks/permisos/usePermisos';
 import type { Lote, SubLote } from '../../types/territorio';
+
+const GESTIONAR = 'cultivos.gestionar';
+
+const numero = (valor: number) => new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(valor || 0);
+
+const fecha = (valor?: string | null) =>
+    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
+// Colores por tipo de cultivo, tal cual el diseño
+const FONDO_TIPO: Record<string, string> = {
+    Tomate: 'bg-red-100', 'Maíz': 'bg-blue-100', Lechuga: 'bg-icon-bg',
+    'Café': 'bg-icon-bg', Cebolla: 'bg-purple-100',
+};
+const ICONO_TIPO: Record<string, string> = {
+    Tomate: 'text-red-500', 'Maíz': 'text-blue-600', Lechuga: 'text-primary',
+    'Café': 'text-primary', Cebolla: 'text-purple-500',
+};
+
+const ETIQUETA_CALIDAD: Record<string, string> = { A: 'Primera', B: 'Segunda', C: 'Tercera' };
+const COLOR_CALIDAD: Record<string, string> = {
+    A: 'bg-chip-bg text-chip-fg',
+    B: 'bg-[#FFF3E0] text-[#F16C07]',
+    C: 'bg-red-100 text-red-700',
+};
+
+type Pestana = 'Cultivo' | 'Cosecha';
 
 const Cultivos = () => {
     const navigate = useNavigate();
-    const [loteFiltro, setLoteFiltro] = useState<string>('');
-    const loteIdNum = loteFiltro ? Number(loteFiltro) : undefined;
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const { puede } = usePermisos();
-
-    const { data: lotesFiltro = [] } = useQuery({
-        queryKey: ['lotes'],
-        queryFn: async () => (await lotesApi.listar()).data,
-    });
+    const [pestana, setPestana] = useState<Pestana>('Cultivo');
+    const [filtroLote, setFiltroLote] = useState('');
+    const [modalNuevo, setModalNuevo] = useState(false);
+    const [modalCosecha, setModalCosecha] = useState(false);
+    const [cultivoCosecha, setCultivoCosecha] = useState('');
 
     const {
-    cultivos,
-    loading,
-    error,
-    handleFinalizar,
-    finalizando,
-    handleEliminar,
-    eliminando,
-    } = useCultivos(loteIdNum);
+        cultivos, cosechas, lotes, cargando, error,
+        finalizar, finalizando, eliminar, eliminando,
+    } = useCultivosConCosechas(filtroLote ? Number(filtroLote) : undefined);
 
-    const { 
-        form, 
-        lotes,
-        sublotes, 
-        handleFormChange,
-        handleCreateSubmit, 
-        creando,
-        errorForm
+    const {
+        form, lotes: lotesForm, sublotes, handleFormChange, handleCreateSubmit, creando, errorForm,
     } = useCultivoForm({
-        isModalOpen,
-        onSucces: (loteCreado) => {
-            setIsModalOpen(false);
-            setLoteFiltro(String(loteCreado));
-        },
+        isModalOpen: modalNuevo,
+        onSucces: () => setModalNuevo(false),
     });
+
+    // El nombre del cultivo de cada cosecha, para la tabla
+    const nombrePorCultivo = useMemo(
+        () => new Map(cultivos.map((c) => [c.id, { nombre: c.nombreCultivo, tipo: c.tipoCultivo }])),
+        [cultivos],
+    );
+
+    const cosechasOrdenadas = useMemo(
+        () => [...cosechas].sort((a, b) => (b.fechaCosecha ?? '').localeCompare(a.fechaCosecha ?? '')),
+        [cosechas],
+    );
+
+    // El formulario completo de cosecha vive en el detalle del cultivo:
+    // aquí solo se elige a cuál y se navega con ?cosecha=1 para que se abra solo
+    const irARegistrarCosecha = () => {
+        if (!cultivoCosecha) return;
+        navigate('/cultivos/' + cultivoCosecha + '?cosecha=1');
+    };
+
+    const puedeGestionar = puede(GESTIONAR);
 
     return (
         <DashboardLayout>
             <div className="p-6 max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-neutral-900">Cultivos</h1>
-                        <p className="text-neutral-500">Gestión de cultivos y registros de cosecha</p>
-                    </div>
-                    {puede('cultivos.gestionar') && (
+                <PageHeader
+                    title="Cultivos"
+                    subtitle="Gestión de cultivos y sus cosechas"
+                    action={
+                        puedeGestionar
+                            ? pestana === 'Cultivo'
+                                ? <Btn onClick={() => setModalNuevo(true)}><Plus size={16} />Nuevo Cultivo</Btn>
+                                : <Btn onClick={() => setModalCosecha(true)}><Plus size={16} />Registrar cosecha</Btn>
+                            : undefined
+                    }
+                />
+
+                {/* Barra de pestañas segmentada */}
+                <div className="flex bg-primary/10 rounded-xl p-1 mb-5">
+                    {(['Cultivo', 'Cosecha'] as const).map((t) => (
                         <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="rounded-xl bg-green-800 px-6 py-3.5 text-white hover:bg-green-700 transition"
+                            key={t}
+                            onClick={() => setPestana(t)}
+                            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                                pestana === t
+                                    ? 'bg-white text-primary shadow-sm border border-primary/10'
+                                    : 'text-primary/60 hover:text-primary/80'
+                            }`}
                         >
-                            + Nuevo Cultivo
+                            {t}
                         </button>
-                    )}
-                </div>
-
-                <div className="mb-6 max-w-sm">    
-                    <label className="block text-sm text-neutral-500 mb-1">Lote</label>    
-                    <select        
-                        value={loteFiltro}        
-                        onChange={(e) => setLoteFiltro(e.target.value)}        
-                        className="w-full rounded-xl border border-neutral-200 py-3 px-4 bg-white"    
-                    >        
-                        <option value="">Selecciona un lote...</option>        
-                        {lotesFiltro.map((l: Lote) => (            
-                            <option key={l.id} value={l.id}>{l.nombre}</option>        
-                        ))}    
-                    </select>
-                </div>
-
-                {!loteIdNum && (    
-                    <p className="text-neutral-400 italic mb-6">Elige un lote para ver sus cultivos.</p>
-                )}
-
-                {loading && <p className="text-neutral-500">Cargando cultivos...</p>}
-                {error && <p className="text-red-600">{error}</p>}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {cultivos.map((c) => (
-                        <div key={c.id} className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-200">
-                            <button
-                                type="button"
-                                onClick={() => navigate('/cultivos/' + c.id)}
-                                className="flex items-center gap-2 text-left cursor-pointer hover:opacity-70 transition-opacity"
-                            >
-                                <LuSprout className="text-green-700 text-xl" />
-                                <h3 className="text-lg font-bold text-neutral-800">{c.nombreCultivo}</h3>
-                            </button>
-                            <p className="text-sm text-neutral-500 mt-1">{c.tipoCultivo}</p>
-                            <p className="flex items-center gap-2 text-sm text-neutral-400 mt-2">
-                                <LuCalendar /> Sembrado: {c.fechaSiembra}
-                            </p>
-                            <span
-                                className={`inline-block mt-3 text-xs px-3 py-1 rounded-full font-medium ${
-                                    c.estado === 'activo'
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-neutral-100 text-neutral-600'
-                                }`}
-                            >
-                                {c.estado}
-                            </span>
-                            <div className="mt-4 pt-4 border-t border-neutral-100">
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/cultivos/' + c.id)}
-                                    className="text-sm font-semibold text-[#2d7a3e] hover:underline cursor-pointer"
-                                >
-                                    Ver detalle y cosechas
-                                </button>
-                            </div>
-                            {puede('cultivos.gestionar') && (
-                            <div className="flex gap-3 mt-3 pt-3 border-t border-neutral-100">
-                                {c.estado === 'activo' && (
-                                    <button
-                                        disabled={finalizando}
-                                        onClick={() =>
-                                            handleFinalizar(c.id, new Date().toISOString().slice(0, 10))
-                                        }
-                                        className="text-sm text-amber-700 underline disabled:opacity-50 hover:text-amber-800"
-                                    >
-                                        Finalizar
-                                    </button>
-                                )}
-                                <button
-                                    disabled={eliminando}
-                                    onClick={() => handleEliminar(c.id)}
-                                    className="text-sm text-red-600 underline disabled:opacity-50 hover:text-red-700"
-                                >
-                                    Eliminar
-                                </button>
-                            </div>
-                            )}
-                        </div>
                     ))}
                 </div>
 
-                {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                        <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-xl">
-                            <h2 className="text-xl font-bold mb-4 text-neutral-900">Nuevo Cultivo</h2>
-                            {errorForm && <p className="text-red-600 mb-3 text-sm">{errorForm}</p>}
-                            <form onSubmit={handleCreateSubmit} className="grid grid-cols-2 gap-4">
+                {error && <p className="text-red-600 mb-4 text-sm">{error}</p>}
+                {cargando && <p className="text-muted-foreground text-sm mb-4">Cargando cultivos...</p>}
 
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-neutral-700 mb-1"> Lote</label>
-                                    <select 
-                                    required
-                                    name="loteId"
-                                    value={form.loteId}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-xl border border-neutral-200 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white"
-                                    >
-                                        <option value=""> Seleccione un lote</option>
-                                        {lotes.map((l: Lote) => (
-                                            <option key={l.id} value={l.id}> {l.nombre}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-neutral-700 mb-1">
-                                        Nombre del cultivo
-                                    </label>
-                                    <input
-                                        required
-                                        name="nombreCultivo"
-                                        value={form.nombreCultivo}
-                                        onChange={handleFormChange}
-                                        className="w-full rounded-xl border border-neutral-200 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-600"
-                                        placeholder="Ej: Maíz amarillo"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-neutral-700 mb-1">
-                                        Tipo de cultivo
-                                    </label>
-                                    <input
-                                        required
-                                        name="tipoCultivo"
-                                        value={form.tipoCultivo}
-                                        onChange={handleFormChange}
-                                        className="w-full rounded-xl border border-neutral-200 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-600"
-                                        placeholder="Ej: Transitorio"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-neutral-700 mb-1">
-                                        Sublote (opcional)
-                                    </label>
-                                    <select
-                                        name="subLoteId"
-                                        value={form.subLoteId}
-                                        onChange={handleFormChange}
-                                        className="w-full rounded-xl border border-neutral-200 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white"
-                                    >
-                                        <option value="">Ninguno</option>
-                                        {sublotes.map((s: SubLote) => (
-                                            <option key={s.id} value={s.id}>
-                                                {s.nombre}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-neutral-700 mb-1">
-                                        Fecha de siembra
-                                    </label>
-                                    <input
-                                        required
-                                        type="date"
-                                        name="fechaSiembra"
-                                        value={form.fechaSiembra}
-                                        onChange={handleFormChange}
-                                        className="w-full rounded-xl border border-neutral-200 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-600"
-                                    />
-                                </div>
-                                <div className="col-span-2 flex justify-end gap-3 mt-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="px-6 py-3 rounded-xl border border-neutral-200 text-neutral-600 hover:bg-neutral-50"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={creando}
-                                        className="bg-green-800 text-white px-6 py-3 rounded-xl disabled:opacity-50 hover:bg-green-700 transition"
-                                    >
-                                        {creando ? 'Guardando...' : 'Guardar'}
-                                    </button>
-                                </div>
-                            </form>
+                {pestana === 'Cultivo' && (
+                    <div>
+                        {/* Filtro por lote */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+                            <label className="text-sm font-semibold text-foreground shrink-0">Lote</label>
+                            <select
+                                value={filtroLote}
+                                onChange={(e) => setFiltroLote(e.target.value)}
+                                className="w-full sm:w-56 px-3 py-2 rounded-lg border border-border bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                            >
+                                <option value="">Todos los lotes</option>
+                                {lotes.map((l: Lote) => (
+                                    <option key={l.id} value={l.id}>{l.nombre}</option>
+                                ))}
+                            </select>
+                            {filtroLote && (
+                                <button
+                                    onClick={() => setFiltroLote('')}
+                                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+                                >
+                                    <X size={12} />Limpiar
+                                </button>
+                            )}
                         </div>
+
+                        {!cargando && cultivos.length === 0 ? (
+                            <EmptyState
+                                icon={Leaf}
+                                title={filtroLote ? 'No hay cultivos en este lote' : 'Aún no hay cultivos'}
+                                description="Prueba seleccionando otro lote o agrega un nuevo cultivo."
+                            />
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                {cultivos.map((c) => (
+                                    <div
+                                        key={c.id}
+                                        onClick={() => navigate('/cultivos/' + c.id)}
+                                        className="bg-card border border-border rounded-xl p-3 cursor-pointer hover:shadow-md transition-shadow"
+                                    >
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div className={`p-1.5 rounded-lg ${FONDO_TIPO[c.tipoCultivo] ?? 'bg-icon-bg'}`}>
+                                                <Leaf size={16} className={ICONO_TIPO[c.tipoCultivo] ?? 'text-primary'} />
+                                            </div>
+                                            <StatusBadge status={c.estado} />
+                                        </div>
+                                        <p className="font-semibold text-[14px] text-foreground mb-0.5 leading-tight">{c.nombreCultivo}</p>
+                                        <p className="text-[12px] text-primary font-medium mb-1.5">{c.tipoCultivo}</p>
+                                        <div className="flex flex-col gap-0.5 text-[12px] text-muted-foreground mb-1">
+                                            <span className="flex items-center gap-1">
+                                                <MapPin size={10} />{c.nombreLote}{c.nombreSubLote ? ` › ${c.nombreSubLote}` : ''}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <Scale size={10} />{numero(c.areaM2 ?? 0)} m²
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <Calendar size={10} />Inicio: {fecha(c.fechaSiembra)}
+                                            </span>
+                                        </div>
+                                        <div className="pt-2 border-t border-border">
+                                            {c.cosechas.length > 0 ? (
+                                                <div className="space-y-0.5 text-[11px]">
+                                                    <p className="flex justify-between">
+                                                        <span className="text-muted-foreground">Total cosechado</span>
+                                                        <span className="font-bold text-primary">{numero(c.totalKg)} kg</span>
+                                                    </p>
+                                                    <p className="flex justify-between">
+                                                        <span className="text-muted-foreground">Cosechas</span>
+                                                        <span className="font-semibold">{c.cosechas.length}</span>
+                                                    </p>
+                                                    <p className="flex justify-between">
+                                                        <span className="text-muted-foreground">Última cosecha</span>
+                                                        <span className="font-semibold">{fecha(c.ultimaCosecha)}</span>
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <p className="text-[10px] text-muted-foreground italic text-center py-0.5">
+                                                    Sin cosechas registradas
+                                                </p>
+                                            )}
+                                        </div>
+                                        {puedeGestionar && (
+                                            <div
+                                                className="flex gap-3 mt-2 pt-2 border-t border-border"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {c.estado === 'activo' && (
+                                                    <button
+                                                        disabled={finalizando}
+                                                        onClick={() => finalizar(c.id)}
+                                                        className="text-[11px] font-semibold text-[#F16C07] hover:underline disabled:opacity-50"
+                                                    >
+                                                        Finalizar
+                                                    </button>
+                                                )}
+                                                <button
+                                                    disabled={eliminando}
+                                                    onClick={() => eliminar(c.id)}
+                                                    className="text-[11px] font-semibold text-red-600 hover:underline disabled:opacity-50"
+                                                >
+                                                    Eliminar
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
+
+                {pestana === 'Cosecha' && (
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <p className="text-sm text-muted-foreground">
+                                {cosechasOrdenadas.length} registro{cosechasOrdenadas.length !== 1 ? 's' : ''} de cosecha
+                            </p>
+                        </div>
+                        {!cargando && cosechasOrdenadas.length === 0 ? (
+                            <EmptyState
+                                icon={Crop}
+                                title="Sin registros de cosecha"
+                                description="Aún no se han registrado cosechas en ningún cultivo."
+                                action={
+                                    puedeGestionar
+                                        ? <Btn onClick={() => setModalCosecha(true)}><Plus size={14} />Registrar primera cosecha</Btn>
+                                        : undefined
+                                }
+                            />
+                        ) : (
+                            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm min-w-[820px]">
+                                        <thead>
+                                            <tr className="bg-muted border-b border-border">
+                                                {['Cultivo', 'Fecha', 'Cantidad', 'Unidad', 'Calidad', 'Responsable', 'Destino', 'Observaciones'].map((col) => (
+                                                    <th key={col} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                                                        {col}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {cosechasOrdenadas.map((h, i) => {
+                                                const cultivo = nombrePorCultivo.get(h.cultivoId);
+                                                const tipo = cultivo?.tipo ?? '';
+                                                return (
+                                                    <tr
+                                                        key={h.id}
+                                                        className={`border-b border-border last:border-0 hover:bg-muted/20 transition-colors ${
+                                                            i % 2 === 0 ? 'bg-white' : 'bg-muted/10'
+                                                        }`}
+                                                    >
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${FONDO_TIPO[tipo] ?? 'bg-icon-bg'}`}>
+                                                                    <Leaf size={10} className={ICONO_TIPO[tipo] ?? 'text-primary'} />
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => navigate('/cultivos/' + h.cultivoId)}
+                                                                    className="text-xs font-semibold text-foreground whitespace-nowrap hover:text-primary hover:underline"
+                                                                >
+                                                                    {cultivo?.nombre ?? '—'}
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs whitespace-nowrap text-muted-foreground">{fecha(h.fechaCosecha)}</td>
+                                                        <td className="px-4 py-3 text-xs font-bold text-foreground">{numero(h.cantidadKg)}</td>
+                                                        <td className="px-4 py-3 text-xs text-muted-foreground">kg</td>
+                                                        <td className="px-4 py-3">
+                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${COLOR_CALIDAD[h.calidad] ?? 'bg-muted text-muted-foreground'}`}>
+                                                                {ETIQUETA_CALIDAD[h.calidad] ?? h.calidad}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{h.responsable || '—'}</td>
+                                                        <td className="px-4 py-3 text-xs text-muted-foreground">{h.destino || '—'}</td>
+                                                        <td className="px-4 py-3 text-xs text-muted-foreground max-w-[200px] truncate">{h.observaciones || '—'}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Nuevo cultivo */}
+                <Modal open={modalNuevo} onClose={() => setModalNuevo(false)} title="Nuevo Cultivo">
+                    {errorForm && <p className="text-red-600 mb-3 text-sm">{errorForm}</p>}
+                    <form onSubmit={handleCreateSubmit} className="flex flex-col gap-3">
+                        <Select
+                            label="Lote"
+                            value={form.loteId}
+                            onChange={(v) => handleFormChange({ target: { name: 'loteId', value: v } } as React.ChangeEvent<HTMLSelectElement>)}
+                            options={[
+                                { value: '', label: 'Seleccione un lote' },
+                                ...lotesForm.map((l: Lote) => ({ value: String(l.id), label: l.nombre })),
+                            ]}
+                        />
+                        <Input
+                            label="Nombre del cultivo"
+                            required
+                            value={form.nombreCultivo}
+                            onChange={(v) => handleFormChange({ target: { name: 'nombreCultivo', value: v } } as React.ChangeEvent<HTMLInputElement>)}
+                            placeholder="Ej: Maíz amarillo"
+                        />
+                        <Input
+                            label="Tipo de cultivo"
+                            required
+                            value={form.tipoCultivo}
+                            onChange={(v) => handleFormChange({ target: { name: 'tipoCultivo', value: v } } as React.ChangeEvent<HTMLInputElement>)}
+                            placeholder="Ej: Transitorio"
+                        />
+                        <Select
+                            label="Sublote (opcional)"
+                            value={form.subLoteId}
+                            onChange={(v) => handleFormChange({ target: { name: 'subLoteId', value: v } } as React.ChangeEvent<HTMLSelectElement>)}
+                            options={[
+                                { value: '', label: 'Ninguno' },
+                                ...sublotes.map((s: SubLote) => ({ value: String(s.id), label: s.nombre })),
+                            ]}
+                        />
+                        <Input
+                            label="Fecha de siembra"
+                            type="date"
+                            required
+                            value={form.fechaSiembra}
+                            onChange={(v) => handleFormChange({ target: { name: 'fechaSiembra', value: v } } as React.ChangeEvent<HTMLInputElement>)}
+                        />
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Btn variant="outline" onClick={() => setModalNuevo(false)}>Cancelar</Btn>
+                            <Btn type="submit" disabled={creando}>{creando ? 'Guardando...' : 'Guardar'}</Btn>
+                        </div>
+                    </form>
+                </Modal>
+
+                {/* Elegir cultivo para registrar la cosecha */}
+                <Modal open={modalCosecha} onClose={() => setModalCosecha(false)} title="Registrar cosecha">
+                    <div className="flex flex-col gap-3">
+                        <Select
+                            label="¿En qué cultivo?"
+                            value={cultivoCosecha}
+                            onChange={setCultivoCosecha}
+                            options={[
+                                { value: '', label: 'Seleccione un cultivo' },
+                                ...cultivos
+                                    .filter((c) => c.estado === 'activo')
+                                    .map((c) => ({ value: String(c.id), label: `${c.nombreCultivo} · ${c.nombreLote}` })),
+                            ]}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            El registro se completa en la ficha del cultivo, donde está el producto y los costos.
+                        </p>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Btn variant="outline" onClick={() => setModalCosecha(false)}>Cancelar</Btn>
+                            <Btn onClick={irARegistrarCosecha} disabled={!cultivoCosecha}>Continuar</Btn>
+                        </div>
+                    </div>
+                </Modal>
             </div>
         </DashboardLayout>
-    )
-
+    );
 };
 
 export default Cultivos;

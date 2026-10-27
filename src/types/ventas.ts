@@ -77,4 +77,6 @@ export interface LoteProduccion {
     destino?: string | null;
     responsable?: string | null;
     observaciones?: string | null;
+    /** Fecha de registro de la cosecha (created_at en la tabla) */
+    fechaCosecha?: string | null;
 }

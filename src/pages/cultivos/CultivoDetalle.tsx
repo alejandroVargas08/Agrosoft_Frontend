@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ClipboardList, Coins, Leaf, Pencil, Plus, Scale, Sprout, TrendingUp } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Input, Modal, PageHeader, Select, StatCard, StatusBadge, Textarea } from '../../components/ui/AgroUI';
@@ -29,6 +29,7 @@ const EDITAR_VACIO = { nombreCultivo: '', tipoCultivo: '', fechaSiembra: '', sub
 const CultivoDetalle = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const [parametros, setParametros] = useSearchParams();
     const { puede } = usePermisos();
     const {
         cultivo, lote, cosechas, actividades, productos, metricas,
@@ -37,6 +38,14 @@ const CultivoDetalle = () => {
         sublotes, modalEditar, abrirModalEditar, cerrarModalEditar,
         editando, errorEdicion, editarCultivo,
     } = useCultivoDetalle(id ? Number(id) : undefined);
+
+    // Se llega con ?cosecha=1 desde la pestana Cosecha de la lista de cultivos
+    useEffect(() => {
+        if (parametros.get('cosecha') === '1' && cultivo) {
+            abrirModal();
+            setParametros({}, { replace: true });
+        }
+    }, [parametros, cultivo, abrirModal, setParametros]);
 
     const [form, setForm] = useState(FORM_VACIO);
     const campo = (clave: keyof typeof FORM_VACIO) => (valor: string) =>
