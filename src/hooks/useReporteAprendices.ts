@@ -40,6 +40,7 @@ export function useReporteAprendices(habilitado: boolean) {
             entregadas: sumar('entregadas'),
             vencidas: sumar('vencidas'),
             horas: sumar('horas'),
+            costoHoras: sumar('costoHoras'),
         },
         cargando: resumenQuery.isLoading,
         error: resumenQuery.error

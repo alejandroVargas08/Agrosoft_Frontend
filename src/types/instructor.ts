@@ -84,5 +84,7 @@ export interface ResumenAprendiz {
     /** Con el plazo encima y todavía sin entregar. */
     vencidas: number;
     horas: number;
+    /** Horas trabajadas x el precio por hora de cada actividad. */
+    costoHoras: number;
     ultimoIngreso: string | null;
 }

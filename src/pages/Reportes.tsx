@@ -184,7 +184,10 @@ const Reportes = () => {
                         <StatCard icon={Users} label="Aprendices" value={alumnos.totales.aprendices} color="primary" />
                         <StatCard icon={ClipboardList} label="Tareas asignadas" value={alumnos.totales.tareas} color="blue" />
                         <StatCard icon={CheckCircle2} label="Tareas aprobadas" value={alumnos.totales.aprobadas} color="emerald" />
-                        <StatCard icon={Clock} label="Horas acumuladas" value={alumnos.totales.horas + 'h'} color="amber" />
+                        <StatCard
+                            icon={Clock} label="Horas acumuladas" value={alumnos.totales.horas + 'h'} color="amber"
+                            sub={fmtPesos(alumnos.totales.costoHoras) + ' de mano de obra'}
+                        />
                     </div>
 
                     {alumnos.cargando ? (
@@ -248,6 +251,44 @@ const Reportes = () => {
                                 </div>
                             </Card>
                         </div>
+                    )}
+
+                    {alumnos.aprendices.length > 0 && (
+                        <Card className="mt-4">
+                            <h3 className="font-semibold text-foreground mb-3">Costo por horas trabajadas</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-border text-xs text-muted-foreground">
+                                            <th className="text-left py-2 pr-4 font-semibold">Aprendiz</th>
+                                            <th className="text-center py-2 px-2 font-semibold">Tareas</th>
+                                            <th className="text-center py-2 px-2 font-semibold">Horas</th>
+                                            <th className="text-right py-2 pl-2 font-semibold">Costo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {alumnos.aprendices.map((a) => (
+                                            <tr key={a.id} className="border-b border-border last:border-0">
+                                                <td className="py-2 pr-4 font-medium text-foreground">{a.nombreCompleto}</td>
+                                                <td className="py-2 px-2 text-center text-muted-foreground">{a.aprobadas} de {a.tareas}</td>
+                                                <td className="py-2 px-2 text-center">{a.horas}h</td>
+                                                <td className="py-2 pl-2 text-right font-semibold text-primary">{fmtPesos(a.costoHoras)}</td>
+                                            </tr>
+                                        ))}
+                                        <tr className="bg-muted/50">
+                                            <td className="py-2 pr-4 font-bold">Total</td>
+                                            <td className="py-2 px-2 text-center font-bold">{alumnos.totales.aprobadas} de {alumnos.totales.tareas}</td>
+                                            <td className="py-2 px-2 text-center font-bold">{alumnos.totales.horas}h</td>
+                                            <td className="py-2 pl-2 text-right font-bold text-primary">{fmtPesos(alumnos.totales.costoHoras)}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-3">
+                                Cada actividad tiene su propio precio por hora, así que el costo se suma por tarea y no
+                                con una tarifa única. Solo cuentan las actividades que puedes ver.
+                            </p>
+                        </Card>
                     )}
                 </>}
             </div>
