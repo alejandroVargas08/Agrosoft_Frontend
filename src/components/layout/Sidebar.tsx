@@ -69,6 +69,7 @@ const itemsAdmin: MenuItem[] = [
     { icon: Users, label: 'Gestión de Usuarios', path: '/usuarios' },
     { icon: Shield, label: 'Roles y Permisos', path: '/roles' },
     { icon: BookMarked, label: 'Programas SENA', path: '/programas' },
+    { icon: GraduationCap, label: 'Fichas', path: '/fichas' },
     { icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas' },
     { icon: Leaf, label: 'Cultivos', path: '/cultivos' },
     { icon: Map, label: 'Lotes y Sublotes', path: '/territorio' },
@@ -84,6 +85,7 @@ const itemsAdmin: MenuItem[] = [
     { icon: Bot, label: 'Consultas', path: '/agrobot' },
     { icon: Bell, label: 'Alertas', path: '/alertas' },
     { icon: History, label: 'Historial', path: '/historial' },
+    { icon: Settings, label: 'Ajustes del sistema', path: '/ajustes' },
 ];
 
 const main2Items: MenuItem[] = [

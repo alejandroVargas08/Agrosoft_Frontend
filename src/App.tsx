@@ -11,6 +11,8 @@ import EditarPerfil from './pages/EditarPerfil'
 import Configuracion from './pages/Configuracion'
 import CentroAyuda from './pages/CentroAyuda'
 import Privacidad from './pages/Privacidad'
+import Fichas from './pages/admin/Fichas'
+import ConfiguracionSistema from './pages/admin/ConfiguracionSistema'
 import AgroBot from './pages/AgroBot'
 import LotesSublotes from './pages/LotesSublotes'
 import NuevoLote from './pages/NuevoLote'
@@ -68,6 +70,8 @@ function App() {
         <Route path="/configuracion" element={<Configuracion />} />
         <Route path="/ayuda" element={<CentroAyuda />} />
         <Route path="/privacidad" element={<Privacidad />} />
+        <Route path="/fichas" element={<Fichas />} />
+        <Route path="/ajustes" element={<ConfiguracionSistema />} />
         <Route path="/agrobot" element={<AgroBot />} />
         <Route path="/actividades" element={<Actividades />} />
         <Route path="/actividades/:id" element={<ActividadDetalle />} />
