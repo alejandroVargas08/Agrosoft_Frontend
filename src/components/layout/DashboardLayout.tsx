@@ -1,8 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import Sidebar from './Sidebar';
+import SidebarAdmin from './SidebarAdmin';
 import Header from './Header';
 import ChatBotFlotante from '../Chatbot/ChatBotFlotante';
 import { useNotificacionesContext } from '../../context/NotificacionesContext';
+import { useEsAdmin } from '../../hooks/admin/useDatosAdmin';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -15,10 +17,12 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { sinLeer } = useNotificacionesContext();
+  const { esAdmin } = useEsAdmin();
+  const Menu = esAdmin ? SidebarAdmin : Sidebar;
 
   return (
     <div className="min-h-screen bg-[#F9FAF7] flex">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Menu isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 min-w-0 ml-0 md:ml-20 lg:ml-64 flex flex-col min-h-screen">
         <Header

@@ -2,7 +2,7 @@ import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Register } from './pages/Register'
 import Login from './pages/Login'
-import Inicio from './pages/inicio'
+import Inicio from './pages/InicioPorRol'
 import RecuperarPassword from './pages/RecuperarPassword'
 import VerificarCodigo from './pages/VerificarCodigo'
 import NuevaContrasena from './pages/NuevaContrasena'
@@ -33,6 +33,11 @@ import Drones from './pages/drones/Drones'
 import Vuelos from './pages/drones/Vuelos'
 import DetalleVuelo from './pages/drones/DetalleVuelo'
 import ResultadoAnalisis from './pages/drones/ResultadoAnalisis'
+import SolicitudesAcceso from './pages/admin/SolicitudesAcceso'
+import GestionUsuarios from './pages/admin/GestionUsuarios'
+import RolesPermisos from './pages/admin/RolesPermisos'
+import ProgramasFormacion from './pages/admin/ProgramasFormacion'
+import ConfiguracionSistema from './pages/admin/ConfiguracionSistema'
 
 function App() {
   return (
@@ -74,6 +79,14 @@ function App() {
         <Route path="/drones/vuelos/:id" element={<DetalleVuelo />} />
         <Route path="/drones/analisis/:id" element={<ResultadoAnalisis />} />
 
+        {/*Administrador*/}
+        <Route path="/admin" element={<Navigate to="/inicio" replace />} />
+        <Route path="/admin/solicitudes" element={<SolicitudesAcceso />} />
+        <Route path="/admin/usuarios" element={<GestionUsuarios />} />
+        <Route path="/admin/roles" element={<RolesPermisos />} />
+        <Route path="/admin/programas" element={<ProgramasFormacion />} />
+        <Route path="/admin/configuracion" element={<ConfiguracionSistema />} />
+
         <Route path="/notificaciones" element={<Notificaciones />} />
       </Route>
 
@@ -92,4 +105,3 @@ function App() {
 }
 
 export default App
-
