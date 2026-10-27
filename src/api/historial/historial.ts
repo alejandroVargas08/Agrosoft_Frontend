@@ -7,6 +7,11 @@ import { api } from "../axios";
 export const actividadHistorialApi = {
     listarPorActividad: (actividadId: number) =>
         api.get<ActividadHistorial[]>(`/actividadHistorial/actividad/${actividadId}`),
+    /** Todo el historial que el usuario puede ver, lo más reciente primero */
+    listarTodo: (limite?: number) =>
+        api.get<ActividadHistorial[]>('/actividadHistorial', {
+            params: limite ? { limite } : undefined,
+        }),
 };
 
 export const historialCultivoApi = {
