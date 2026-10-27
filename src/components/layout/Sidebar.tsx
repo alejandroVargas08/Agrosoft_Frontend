@@ -21,8 +21,54 @@ interface SidebarProps {
     onClose: () => void;
 }
 
-const mainItems: MenuItem[] = [
+// ─── Menús por rol, igual que navItemsUser / Instructor / Admin del Figma ────
+const PERMISO_GESTIONAR_USUARIOS = 'usuarios.gestionar';
+const PERMISO_ASIGNAR_ACTIVIDADES = 'actividades.asignar';
+const PERMISO_EJECUTAR_ACTIVIDADES = 'actividades.ejecutar';
+
+const itemsAprendiz: MenuItem[] = [
     { icon: Home, label: 'Inicio', path: '/inicio' },
+    { icon: ListTodo, label: 'Mis Tareas', path: '/mis-tareas' },
+    { icon: MessageSquare, label: 'Mis Novedades', path: '/mis-novedades' },
+    { icon: Leaf, label: 'Cultivos', path: '/cultivos' },
+    { icon: Map, label: 'Lotes y Sublotes', path: '/territorio' },
+    { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
+    { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
+    { icon: Package, label: 'Inventario', path: '/inventario' },
+    { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
+    { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
+    { icon: Plane, label: 'Drones', path: '/drones' },
+    { icon: Bot, label: 'Consultas / AgroBot', path: '/agrobot' },
+    { icon: Bell, label: 'Alertas y Notificaciones', path: '/alertas' },
+];
+
+const itemsInstructor: MenuItem[] = [
+    { icon: Home, label: 'Inicio', path: '/inicio' },
+    { icon: GraduationCap, label: 'Mis Fichas', path: '/mis-fichas' },
+    { icon: CheckSquare, label: 'Por revisar', path: '/por-revisar' },
+    { icon: Inbox, label: 'Novedades', path: '/novedades' },
+    { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
+    { icon: Leaf, label: 'Cultivos', path: '/cultivos' },
+    { icon: Map, label: 'Lotes y Sublotes', path: '/territorio' },
+    { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
+    { icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos' },
+    { icon: Package, label: 'Inventario', path: '/inventario' },
+    { icon: Plane, label: 'Drones', path: '/drones' },
+    { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
+    { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
+    { icon: BarChart3, label: 'Reportes', path: '/reportes' },
+    { icon: Bot, label: 'Consultas', path: '/agrobot' },
+];
+
+// El Figma arranca el menú del admin con lo suyo. Los módulos de abajo no
+// están en su lista, pero su propia tabla de roles le da permiso sobre todo,
+// así que se conservan en lugar de dejarlo sin acceso a media aplicación.
+const itemsAdmin: MenuItem[] = [
+    { icon: LayoutDashboard, label: 'Dashboard Admin', path: '/administracion' },
+    { icon: UserCheck, label: 'Solicitudes de acceso', path: '/solicitudes' },
+    { icon: Users, label: 'Gestión de Usuarios', path: '/usuarios' },
+    { icon: Shield, label: 'Roles y Permisos', path: '/roles' },
+    { icon: BookMarked, label: 'Programas SENA', path: '/programas' },
     { icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas' },
     { icon: Leaf, label: 'Cultivos', path: '/cultivos' },
     { icon: Map, label: 'Lotes y Sublotes', path: '/territorio' },
@@ -33,32 +79,12 @@ const mainItems: MenuItem[] = [
     { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
     { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
     { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
-    { icon: BarChart3, label: 'Reportes', path: '/reportes' },
     { icon: Plane, label: 'Drones', path: '/drones' },
+    { icon: BarChart3, label: 'Reportes', path: '/reportes' },
     { icon: Bot, label: 'Consultas', path: '/agrobot' },
     { icon: Bell, label: 'Alertas', path: '/alertas' },
     { icon: History, label: 'Historial', path: '/historial' },
 ];
-
-// Solo lo ve quien puede gestionar usuarios
-const PERMISO_GESTIONAR_USUARIOS = 'usuarios.gestionar';
-const itemSolicitudes: MenuItem = { icon: UserCheck, label: 'Solicitudes', path: '/solicitudes' };
-const itemProgramas: MenuItem = { icon: BookMarked, label: 'Programas', path: '/programas' };
-const itemAdministracion: MenuItem = { icon: LayoutDashboard, label: 'Administración', path: '/administracion' };
-const itemUsuarios: MenuItem = { icon: Users, label: 'Usuarios', path: '/usuarios' };
-const itemRoles: MenuItem = { icon: Shield, label: 'Roles y permisos', path: '/roles' };
-// Solo lo ve quien puede asignar actividades (instructor o administrador)
-const PERMISO_ASIGNAR_ACTIVIDADES = 'actividades.asignar';
-const itemPanelInstructor: MenuItem = { icon: LayoutDashboard, label: 'Panel del instructor', path: '/panel-instructor' };
-const itemMisFichas: MenuItem = { icon: GraduationCap, label: 'Mis Fichas', path: '/mis-fichas' };
-// Solo quien revisa entregas (instructor o administrador)
-const PERMISO_REVISAR_ACTIVIDADES = 'actividades.revisar';
-const itemPorRevisar: MenuItem = { icon: CheckSquare, label: 'Por revisar', path: '/por-revisar' };
-const itemNovedades: MenuItem = { icon: Inbox, label: 'Novedades', path: '/novedades' };
-// Solo quien ejecuta actividades (aprendiz)
-const PERMISO_EJECUTAR_ACTIVIDADES = 'actividades.ejecutar';
-const itemMisTareas: MenuItem = { icon: ListTodo, label: 'Mis Tareas', path: '/mis-tareas' };
-const itemMisNovedades: MenuItem = { icon: MessageSquare, label: 'Mis Novedades', path: '/mis-novedades' };
 
 const main2Items: MenuItem[] = [
     { icon: Bell, label: 'Notificaciones', path: '/notificaciones' },
@@ -76,13 +102,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [modalCerrarSesion, setModalCerrarSesion] = useState(false);
   const { puede } = usePermisos();
 
-  const itemsPrincipales = [
-    ...mainItems,
-    ...(puede(PERMISO_EJECUTAR_ACTIVIDADES) ? [itemMisTareas, itemMisNovedades] : []),
-    ...(puede(PERMISO_ASIGNAR_ACTIVIDADES) ? [itemPanelInstructor, itemMisFichas, itemNovedades] : []),
-    ...(puede(PERMISO_REVISAR_ACTIVIDADES) ? [itemPorRevisar] : []),
-    ...(puede(PERMISO_GESTIONAR_USUARIOS) ? [itemAdministracion, itemUsuarios, itemSolicitudes, itemProgramas, itemRoles] : []),
-  ];
+  // El menú depende del rol, como en el Figma. El admin manda sobre el resto.
+  const itemsPrincipales = puede(PERMISO_GESTIONAR_USUARIOS)
+    ? itemsAdmin
+    : puede(PERMISO_ASIGNAR_ACTIVIDADES)
+      ? itemsInstructor
+      : puede(PERMISO_EJECUTAR_ACTIVIDADES)
+        ? itemsAprendiz
+        : itemsAprendiz.filter((i) => i.path !== '/mis-tareas' && i.path !== '/mis-novedades');
 
   async function confirmarCerrarSesion() {
     await cerrarSesion();

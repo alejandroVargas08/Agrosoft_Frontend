@@ -113,6 +113,8 @@ export function useMisTareas() {
 
     return {
         tareas: visibles,
+        /** Todas, sin filtrar por pestaña: lo usa el Inicio del aprendiz. */
+        todas,
         pestana,
         setPestana,
         conteos: {

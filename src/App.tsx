@@ -2,7 +2,7 @@ import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Register } from './pages/Register'
 import Login from './pages/Login'
-import Inicio from './pages/inicio'
+import InicioSegunRol from './pages/InicioSegunRol'
 import RecuperarPassword from './pages/RecuperarPassword'
 import VerificarCodigo from './pages/VerificarCodigo'
 import NuevaContrasena from './pages/NuevaContrasena'
@@ -59,7 +59,7 @@ function App() {
 
       {/* Pongan las rutas del sidebar aquí */}
       <Route element={<LayoutConNotificaciones />}>
-        <Route path="/inicio" element={<Inicio />} />
+        <Route path="/inicio" element={<InicioSegunRol />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/editar-perfil" element={<EditarPerfil />} />
         <Route path="/configuracion" element={<Configuracion />} />
