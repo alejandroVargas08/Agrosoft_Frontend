@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCultivos } from "../../hooks/cultivos/useCultivos";
 import { useCultivoForm } from "../../hooks/cultivos/useCultivosForm";
 import DashboardLayout from "../../components/layout/DashboardLayout";
@@ -9,6 +10,7 @@ import { usePermisos } from "../../hooks/permisos/usePermisos";
 import type { Lote, SubLote } from '../../types/territorio';
 
 const Cultivos = () => {
+    const navigate = useNavigate();
     const [loteFiltro, setLoteFiltro] = useState<string>('');
     const loteIdNum = loteFiltro ? Number(loteFiltro) : undefined;
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -87,10 +89,14 @@ const Cultivos = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {cultivos.map((c) => (
                         <div key={c.id} className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-200">
-                            <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => navigate('/cultivos/' + c.id)}
+                                className="flex items-center gap-2 text-left cursor-pointer hover:opacity-70 transition-opacity"
+                            >
                                 <LuSprout className="text-green-700 text-xl" />
                                 <h3 className="text-lg font-bold text-neutral-800">{c.nombreCultivo}</h3>
-                            </div>
+                            </button>
                             <p className="text-sm text-neutral-500 mt-1">{c.tipoCultivo}</p>
                             <p className="flex items-center gap-2 text-sm text-neutral-400 mt-2">
                                 <LuCalendar /> Sembrado: {c.fechaSiembra}
@@ -104,8 +110,17 @@ const Cultivos = () => {
                             >
                                 {c.estado}
                             </span>
+                            <div className="mt-4 pt-4 border-t border-neutral-100">
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/cultivos/' + c.id)}
+                                    className="text-sm font-semibold text-[#2d7a3e] hover:underline cursor-pointer"
+                                >
+                                    Ver detalle y cosechas
+                                </button>
+                            </div>
                             {puede('cultivos.gestionar') && (
-                            <div className="flex gap-3 mt-4 pt-4 border-t border-neutral-100">
+                            <div className="flex gap-3 mt-3 pt-3 border-t border-neutral-100">
                                 {c.estado === 'activo' && (
                                     <button
                                         disabled={finalizando}

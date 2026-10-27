@@ -25,8 +25,26 @@ export const ventasDetallesApi = {
         api.post<VentaDetalle>('/ventas-detalles', data),
 };
 
+export interface CrearLoteProduccionPayload {
+    productoAgroId: number;
+    cultivoId: number;
+    loteId: number;
+    subLoteId?: number;
+    calidad: string;
+    cantidadKg: number;
+    stockDisponibleKg: number;
+    costoUnitarioKg: number;
+    costoTotal: number;
+    precioSugeridoKg: number;
+}
+
 export const loteProduccionApi = {
     listar: () => api.get<LoteProduccion[]>('/loteProduccion'),
+    /** Las cosechas de un cultivo. El backend filtra por cultivoId. */
+    listarPorCultivo: (cultivoId: number) =>
+        api.get<LoteProduccion[]>('/loteProduccion', { params: { cultivoId } }),
+    crear: (data: CrearLoteProduccionPayload) =>
+        api.post<LoteProduccion>('/loteProduccion', data),
     descontarStock: (id: number, cantidadKg: number) =>
         api.patch(`/loteProduccion/${id}/stock`, { cantidadKg }),
 };
