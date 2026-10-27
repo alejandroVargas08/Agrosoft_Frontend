@@ -39,4 +39,6 @@ export const ESTADO_INICIAL_CULTIVO_FORM: CultivoFormState = {
 export interface ActualizarCultivoPayload {
     nombreCultivo?: string;
     tipoCultivo?: string;
+    fechaSiembra?: string;
+    subLoteId?: number;
 }

@@ -73,4 +73,8 @@ export interface LoteProduccion {
     costoUnitarioKg: number;
     costoTotal: number;
     precioSugeridoKg: number;
+    // Trazabilidad de la cosecha
+    destino?: string | null;
+    responsable?: string | null;
+    observaciones?: string | null;
 }

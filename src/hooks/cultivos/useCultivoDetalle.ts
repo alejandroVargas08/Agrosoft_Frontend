@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cultivosApi } from '../../api/cultivo/cultivos';
+import type { ActualizarCultivoPayload } from '../../types/cultivos';
 import { actividadesApi, productosAgroApi } from '../../api/actividades/actividades';
 import { loteProduccionApi, type CrearLoteProduccionPayload } from '../../api/ventas';
-import { lotesApi } from '../../api/territorio';
+import { lotesApi, sublotesApi } from '../../api/territorio';
 import { mensajeError } from '../../api/errores/errores';
 
 export interface MetricasCultivo {
@@ -26,6 +27,7 @@ export interface MetricasCultivo {
 export function useCultivoDetalle(cultivoId: number | undefined) {
     const queryClient = useQueryClient();
     const [modalAbierto, setModalAbierto] = useState(false);
+    const [modalEditar, setModalEditar] = useState(false);
     const habilitado = cultivoId !== undefined && !Number.isNaN(cultivoId);
 
     const cultivoQuery = useQuery({
@@ -61,6 +63,15 @@ export function useCultivoDetalle(cultivoId: number | undefined) {
 
     const cultivo = cultivoQuery.data ?? null;
     const cosechas = cosechasQuery.data ?? [];
+
+    // Los sublotes solo hacen falta al editar: el cultivo se puede mover de
+    // sublote, pero no de lote (eso invalidaria sus cosechas y actividades)
+    const sublotesQuery = useQuery({
+        queryKey: ['sublotes', cultivo?.loteId],
+        queryFn: async () => (await sublotesApi.porLote(cultivo!.loteId)).data,
+        enabled: modalEditar && cultivo != null,
+        staleTime: 1000 * 60 * 5,
+    });
     const lote = (lotesQuery.data ?? []).find((l) => l.id === cultivo?.loteId) ?? null;
 
     const totalKg = cosechas.reduce((s, c) => s + (c.cantidadKg || 0), 0);
@@ -89,6 +100,15 @@ export function useCultivoDetalle(cultivoId: number | undefined) {
         },
     });
 
+    const editarMutation = useMutation({
+        mutationFn: (data: ActualizarCultivoPayload) => cultivosApi.actualizar(cultivoId!, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['cultivo', cultivoId] });
+            // La lista de cultivos del lote muestra el nombre y el tipo
+            queryClient.invalidateQueries({ queryKey: ['cultivos'] });
+        },
+    });
+
     const error = cultivoQuery.error || cosechasQuery.error;
 
     return {
@@ -109,5 +129,16 @@ export function useCultivoDetalle(cultivoId: number | undefined) {
             : '',
         registrarCosecha: (data: CrearLoteProduccionPayload, alTerminar?: () => void) =>
             registrarMutation.mutate(data, { onSuccess: () => alTerminar?.() }),
+
+        sublotes: sublotesQuery.data ?? [],
+        modalEditar,
+        abrirModalEditar: () => setModalEditar(true),
+        cerrarModalEditar: () => { setModalEditar(false); editarMutation.reset(); },
+        editando: editarMutation.isPending,
+        errorEdicion: editarMutation.error
+            ? mensajeError(editarMutation.error, 'No se pudo guardar el cultivo.')
+            : '',
+        editarCultivo: (data: ActualizarCultivoPayload, alTerminar?: () => void) =>
+            editarMutation.mutate(data, { onSuccess: () => alTerminar?.() }),
     };
 }

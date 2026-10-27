@@ -36,6 +36,9 @@ export interface CrearLoteProduccionPayload {
     costoUnitarioKg: number;
     costoTotal: number;
     precioSugeridoKg: number;
+    destino?: string;
+    responsable?: string;
+    observaciones?: string;
 }
 
 export const loteProduccionApi = {
