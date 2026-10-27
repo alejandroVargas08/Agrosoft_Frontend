@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Sprout, Map, ClipboardList, AlertTriangle, FlaskConical, Package, ShoppingCart, BookOpen, Radio, BarChart3, Bell, History, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, UserCheck, Plane, GraduationCap, CheckSquare, ListTodo, LayoutDashboard, BookMarked, Users, Shield, MessageSquare, Inbox } from "lucide-react";
+import { Home, Map, ClipboardList, AlertTriangle, FlaskConical, Package, BookOpen, Radio, BarChart3, Bell, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, Plane, GraduationCap, CheckSquare, ListTodo, MessageSquare, Inbox } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 import { CerrarSesionModal } from "../ui/CerrarSesionModal";
@@ -22,7 +22,6 @@ interface SidebarProps {
 }
 
 // ─── Menús por rol, igual que navItemsUser / Instructor / Admin del Figma ────
-const PERMISO_GESTIONAR_USUARIOS = 'usuarios.gestionar';
 const PERMISO_ASIGNAR_ACTIVIDADES = 'actividades.asignar';
 const PERMISO_EJECUTAR_ACTIVIDADES = 'actividades.ejecutar';
 
@@ -60,33 +59,6 @@ const itemsInstructor: MenuItem[] = [
     { icon: Bot, label: 'Consultas', path: '/agrobot' },
 ];
 
-// El Figma arranca el menú del admin con lo suyo. Los módulos de abajo no
-// están en su lista, pero su propia tabla de roles le da permiso sobre todo,
-// así que se conservan en lugar de dejarlo sin acceso a media aplicación.
-const itemsAdmin: MenuItem[] = [
-    { icon: LayoutDashboard, label: 'Dashboard Admin', path: '/administracion' },
-    { icon: UserCheck, label: 'Solicitudes de acceso', path: '/solicitudes' },
-    { icon: Users, label: 'Gestión de Usuarios', path: '/usuarios' },
-    { icon: Shield, label: 'Roles y Permisos', path: '/roles' },
-    { icon: BookMarked, label: 'Programas SENA', path: '/programas' },
-    { icon: GraduationCap, label: 'Fichas', path: '/fichas' },
-    { icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas' },
-    { icon: Leaf, label: 'Cultivos', path: '/cultivos' },
-    { icon: Map, label: 'Lotes y Sublotes', path: '/territorio' },
-    { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
-    { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
-    { icon: FlaskConical, label: 'Tratamientos', path: '/tratamientos' },
-    { icon: Package, label: 'Inventario', path: '/inventario' },
-    { icon: ShoppingCart, label: 'Ventas', path: '/ventas' },
-    { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
-    { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
-    { icon: Plane, label: 'Drones', path: '/drones' },
-    { icon: BarChart3, label: 'Reportes', path: '/reportes' },
-    { icon: Bot, label: 'Consultas', path: '/agrobot' },
-    { icon: Bell, label: 'Alertas', path: '/alertas' },
-    { icon: History, label: 'Historial', path: '/historial' },
-    { icon: Settings, label: 'Ajustes del sistema', path: '/ajustes' },
-];
 
 const main2Items: MenuItem[] = [
     { icon: Bell, label: 'Notificaciones', path: '/notificaciones' },
@@ -105,9 +77,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { puede } = usePermisos();
 
   // El menú depende del rol, como en el Figma. El admin manda sobre el resto.
-  const itemsPrincipales = puede(PERMISO_GESTIONAR_USUARIOS)
-    ? itemsAdmin
-    : puede(PERMISO_ASIGNAR_ACTIVIDADES)
+  // El administrador no pasa por aqui: DashboardLayout le da SidebarAdmin
+  const itemsPrincipales = puede(PERMISO_ASIGNAR_ACTIVIDADES)
       ? itemsInstructor
       : puede(PERMISO_EJECUTAR_ACTIVIDADES)
         ? itemsAprendiz
