@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Calendar, Clock, ClipboardList, Droplets, RotateCcw, Star, Thermometer } from 'lucide-react';
+import { Bell, Calendar, Clock, ClipboardList, Droplets, FlaskConical, Lightbulb, RotateCcw, Star, Thermometer } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, StatCard, StatusBadge } from '../../components/ui/AgroUI';
 import { InicioUsuario } from '../../hooks/useAuth';
@@ -18,7 +18,37 @@ const haceCuanto = (iso: string) => {
     return 'Hace ' + Math.floor(ms / 86_400_000) + 'd';
 };
 
-const ICONO_SENSOR = { temperatura: Thermometer, humedad: Droplets } as const;
+/**
+ * El Figma muestra una etiqueta genérica ("Temperatura"), no el nombre completo
+ * del sensor, que aquí viene como "Temperatura - La Esperanza".
+ */
+const etiquetaSensor = (nombre: string) => nombre.split(' - ')[0].trim();
+
+const iconoSensor = (nombre: string) => {
+    const n = nombre.toLowerCase();
+    if (n.includes('temp')) return Thermometer;
+    if (n.includes('hum')) return Droplets;
+    if (n.includes('lumin') || n.includes('luz')) return Lightbulb;
+    if (n.includes('ph')) return FlaskConical;
+    return Thermometer;
+};
+
+/** El Figma formatea el valor con su unidad pegada: 24.5°C, 68%, 42,5 klx */
+const valorSensor = (valor: number, unidad: string): string => {
+    const u = unidad.trim().toLowerCase();
+    const num = (v: number, decimales = 1) =>
+        v.toLocaleString('es-CO', { maximumFractionDigits: decimales });
+
+    if (u === 'c' || u === '°c') return num(valor) + '°C';
+    if (u === '%') return num(valor) + '%';
+    if (u === 'lux') {
+        const klx = valor / 1000;
+        // El Figma acompaña la luminosidad con una lectura en palabras
+        const calidad = klx < 10 ? 'Luz baja' : klx <= 50 ? 'Luz media' : 'Luz alta';
+        return num(klx) + ' klx · ' + calidad;
+    }
+    return num(valor, 2) + (unidad ? ' ' + unidad : '');
+};
 
 const InicioAprendiz = () => {
     const { user } = InicioUsuario();
@@ -47,22 +77,14 @@ const InicioAprendiz = () => {
             <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold text-foreground">Hola, {nombre || 'aprendiz'}</h1>
-                    <p className="text-sm text-muted-foreground mt-1 first-letter:uppercase">{hoyLargo()}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{hoyLargo()}</p>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                    <StatCard
-                        icon={ClipboardList} label="Tareas pendientes" value={conteos.Pendientes}
-                        color={conteos.Pendientes > 0 ? 'amber' : 'emerald'}
-                    />
-                    <StatCard
-                        icon={Calendar} label="Por vencer esta semana" value={porVencer}
-                        color={porVencer > 0 ? 'amber' : 'emerald'}
-                    />
-                    <StatCard
-                        icon={RotateCcw} label="Devueltas" value={devueltas}
-                        color={devueltas > 0 ? 'red' : 'emerald'}
-                    />
+                    {/* Los colores son fijos, como en el Figma: no cambian con el valor */}
+                    <StatCard icon={ClipboardList} label="Tareas pendientes" value={conteos.Pendientes} color="amber" />
+                    <StatCard icon={Calendar} label="Por vencer esta semana" value={porVencer} color="amber" />
+                    <StatCard icon={RotateCcw} label="Devueltas" value={devueltas} color="red" />
                     <StatCard icon={Clock} label="Horas acumuladas" value={horas + 'h'} color="primary" />
                 </div>
 
@@ -106,18 +128,18 @@ const InicioAprendiz = () => {
                 {enLinea.length > 0 && (
                     <Card className="mb-4">
                         <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                            <Thermometer className="w-4 h-4 text-primary" />Sensores de tu lote
+                            <Thermometer className="w-4 h-4 text-primary" />Clima ahora en tu lote
                         </h3>
                         <div className="flex items-center gap-3 flex-wrap">
                             {enLinea.map((s) => {
-                                const Icono = ICONO_SENSOR[s.tipo as keyof typeof ICONO_SENSOR] ?? Thermometer;
+                                const Icono = iconoSensor(s.nombre);
                                 return (
-                                    <div key={s.id} className="flex items-center gap-2 p-3 bg-muted rounded-xl">
+                                    <div key={s.id} className="flex items-center gap-2 rounded-xl bg-icon-bg p-3">
                                         <Icono className={`w-5 h-5 ${s.alerta ? 'text-[#F16C07]' : 'text-primary'}`} />
                                         <div>
-                                            <p className="text-xs text-muted-foreground">{s.nombre}</p>
+                                            <p className="text-xs text-muted-foreground">{etiquetaSensor(s.nombre)}</p>
                                             <p className={`text-lg font-bold ${s.alerta ? 'text-[#F16C07]' : 'text-foreground'}`}>
-                                                {s.valor}{s.unidad ? ' ' + s.unidad : ''}
+                                                {valorSensor(s.valor!, s.unidad)}
                                             </p>
                                         </div>
                                     </div>

@@ -1,57 +1,56 @@
-import { useState } from "react";
-import { useActividades } from "../../hooks/Actividades/useActividad";
-import { useActividadForm } from "../../hooks/Actividades/useActividadForm";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { useNavigate } from "react-router-dom";
-import { useCultivos } from "../../hooks/cultivos/useCultivos";
-import { useTerritorio } from "../../hooks/useTerritorio";
-import { usePermisos } from "../../hooks/permisos/usePermisos";
-import { useAsignarAprendices } from "../../hooks/Actividades/useAsignarAprendices";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ClipboardList, Package, Plus } from 'lucide-react';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import { Btn, EmptyState, Input, Modal, PageHeader, Select, Textarea } from '../../components/ui/AgroUI';
+import { useActividades } from '../../hooks/Actividades/useActividad';
+import { useActividadForm } from '../../hooks/Actividades/useActividadForm';
+import { useAsignarAprendices } from '../../hooks/Actividades/useAsignarAprendices';
+import { usePermisos } from '../../hooks/permisos/usePermisos';
+import { useMisTareas } from '../../hooks/instructor/useMisTareas';
+
+const FILTROS = ['Todas', 'Pendiente', 'En progreso', 'Finalizada'];
+
+// El chip del estado, con los colores del sistema
+const ESTILO_ESTADO: Record<string, string> = {
+    Finalizada: 'bg-chip-bg text-chip-fg',
+    En_progreso: 'bg-[#FFF3E0] text-[#F16C07]',
+    Pendiente: 'bg-red-100 text-red-700',
+};
+
+// Los avatares rotan de color, como en el diseño
+const COLORES_AVATAR = [
+    'bg-primary/20 text-primary',
+    'bg-blue-100 text-blue-700',
+    'bg-amber-100 text-amber-700',
+    'bg-purple-100 text-purple-700',
+];
+
+const EJECUTAR_ACTIVIDADES = 'actividades.ejecutar';
+const GESTIONAR_ACTIVIDADES = 'actividades.gestionar';
 
 const Actividades = () => {
     const navigate = useNavigate();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [loteFiltroId, setLoteFiltroId] = useState<number | undefined>(undefined);
-    const [cultivoIdActual, setCultivoIdActual] = useState<number | null>(null);
-    const {lotes: lotesFiltro } = useTerritorio();
     const { puede } = usePermisos();
-    const {cultivos: cultivosDisponibles} = useCultivos(loteFiltroId);
-    const {
-        actividades,
-        loading,
-        error,
-        filtroEstado,
-        setFiltroEstado,
-        handleChangeEstado,
-    } = useActividades(cultivoIdActual);
+    const puedeGestionar = puede(GESTIONAR_ACTIVIDADES);
+    const esAprendiz = puede(EJECUTAR_ACTIVIDADES) && !puedeGestionar;
+
+    const [modalNueva, setModalNueva] = useState(false);
+    const { actividades, loading, error, filtroEstado, setFiltroEstado, handleChangeEstado } =
+        useActividades(null);
 
     const {
-        form,
-        lotes: lotesForm,
-        sublotes,
-        cultivos: cultivosForm,
-        productos,
-        handleFormChange,
-        handleCreateSubmit,
-        enviando,
-        errorForm } =
-    useActividadForm({
-        isModalOpen,
-        onSuccess: () => setIsModalOpen(false),
-        cultivoIdDefault: cultivoIdActual ?? undefined,
-    });
+        form, lotes, sublotes, cultivos, productos,
+        handleFormChange, handleCreateSubmit, enviando, errorForm,
+    } = useActividadForm({ isModalOpen: modalNueva, onSuccess: () => setModalNueva(false) });
 
-    const Filtros: { label: string; value: string }[] = [
-        { label: 'Todas', value: 'Todas' },
-        { label: 'Pendiente', value: 'Pendiente' },
-        { label: 'En progreso', value: 'En progreso' },
-        { label: 'Finalizada', value: 'Finalizada' },
-    ];
-
-    // Asignación de aprendices: solo consulta si el usuario puede asignar
     const asignacion = useAsignarAprendices(actividades.map((a) => a.id));
     const [seleccionados, setSeleccionados] = useState<number[]>([]);
     const [fechaLimite, setFechaLimite] = useState('');
+
+    // El aviso que el Figma le muestra al aprendiz
+    const { conteos } = useMisTareas();
+    const pendientes = esAprendiz ? conteos.Pendientes : 0;
 
     const cerrarAsignar = () => {
         asignacion.cerrar();
@@ -63,434 +62,327 @@ const Actividades = () => {
         setSeleccionados((previos) =>
             previos.includes(id) ? previos.filter((x) => x !== id) : [...previos, id]);
 
-    const getEstadoBadge = (estado: string) => {
-        switch (estado) {
-            case 'Todas':
-            return 'bg-green-200 text-white-800';
-            case 'Finalizada':
-                return 'bg-[#e2f4ed] text-[#0d5433]';
-            case 'En_progreso':
-                return 'bg-[#e8f0fe] text-[#1a73e8]';
-            case 'Pendiente':
-                return 'bg-[#fef3d6] text-[#b7791f]';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    };
+    // El formulario del modal usa eventos, no valores sueltos
+    const campo = (name: string) => (valor: string) =>
+        handleFormChange({ target: { name, value: valor } } as React.ChangeEvent<HTMLInputElement>);
 
     return (
-            <DashboardLayout>
-            <div className="p-4 sm:p-8">
+        <DashboardLayout>
+            <div className="mx-auto max-w-7xl p-4 sm:p-6">
+                <PageHeader
+                    title="Actividades Agrícolas"
+                    subtitle="Labores y Tareas de Campo"
+                    action={
+                        <div className="flex gap-2">
+                            <Btn variant="outline" onClick={() => navigate('/inventario')}>
+                                <Package size={16} />Productos
+                            </Btn>
+                            {puedeGestionar && (
+                                <Btn onClick={() => setModalNueva(true)}>
+                                    <Plus size={16} />Nueva Actividad
+                                </Btn>
+                            )}
+                        </div>
+                    }
+                />
 
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                    <h1 className="text-3xl sm:text-3xl font-bold text-neutral-900 mx-auto">Actividades Agrícolas</h1>
-                    <p className="text-neutral-500 text-base mt-1">Labores y Tareas de Campo</p>
+                {pendientes > 0 && (
+                    <div className="mb-4 flex items-center gap-3 rounded-xl border border-primary/20 bg-icon-bg p-3">
+                        <div className="rounded-lg bg-primary/10 p-2">
+                            <ClipboardList size={16} className="text-primary" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-semibold text-foreground">
+                                {pendientes} tarea{pendientes === 1 ? '' : 's'} pendiente{pendientes === 1 ? '' : 's'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Tienes actividades asignadas por tu instructor
+                            </p>
+                        </div>
+                        <Btn size="sm" variant="outline" onClick={() => navigate('/mis-tareas')}>
+                            Ver tareas
+                        </Btn>
                     </div>
-                {puede('actividades.gestionar') && (
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="rounded-xl bg-green-800 hover:bg-[#418750] transition-colors px-6 py-3.5 text-white font-medium flex items-center gap-2">
-                        + Nueva Actividad </button>
                 )}
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-                    <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-1">Filtrar por Lote:</label>
-                        <select
-                            value={loteFiltroId || ""}
-                            onChange={(e) => {
-                                setLoteFiltroId(e.target.value ? Number(e.target.value) : undefined);
-                                setCultivoIdActual(null);
-                            }}
-                            className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
+                <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+                    {FILTROS.map((f) => (
+                        <button
+                            key={f}
+                            onClick={() => setFiltroEstado(f)}
+                            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+                                filtroEstado === f
+                                    ? 'bg-primary text-white'
+                                    : 'bg-muted text-muted-foreground hover:bg-primary/10'
+                            }`}
                         >
-                            <option value="">Seleccione un lote...</option>
-                            {lotesFiltro?.map((lote) => (
-                                <option key={lote.id} value={lote.id}>
-                                    {lote.nombre}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-1">Cultivo a visualizar:</label>
-
-                        <select
-                            value={cultivoIdActual ?? 0}
-                            onChange={(e) => setCultivoIdActual(Number(e.target.value) || null)}
-                            disabled={!loteFiltroId}
-                            className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700 disabled:bg-neutral-100 disabled:text-neutral-400"
-                        >
-                            <option value={0}>
-                                {!loteFiltroId ? "Primero seleccione un lote" : "Seleccione un cultivo"}
-                            </option>
-                            {cultivosDisponibles?.map((cultivoItem) => (
-                                <option key={cultivoItem.id} value={cultivoItem.id}>
-                                    {cultivoItem.nombreCultivo || cultivoItem.tipoCultivo || `Cultivo #${cultivoItem.id}`}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                <div className="flex gap-2 mb-8">
-                    {Filtros.map((f) => (
-                    <button
-                        key={f.value}
-                        onClick={() => setFiltroEstado(f.value)}
-                        className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-                            filtroEstado === f.value
-                            ? 'bg-[#2d7a3e] text-white shadow-sm'
-                            : 'bg-[#edf2ee] text-neutral-600 hover:bg-[#e2ebd7]'}`}>
-                        {f.label}
-                    </button>
+                            {f}
+                        </button>
                     ))}
                 </div>
-                {cultivoIdActual === null && (
-                    <p className="text-center py-8 text-neutral-500 font-medium">Selecciona un lote y un cultivo para ver sus actividades</p>
-                )}
-                {loading && (
-                    <p className="text-center py-8 text-neutral-500 font-medium"> Cargando Actividades</p>
-                )}
+
                 {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-center mb-6 text-sm"> {error} </div>
-                )}
-
-                {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-                        <div className="bg-white rounded-3xl w-full max-w-xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-                            <div className="flex justify-between items-center pb-4 border-b border-neutral-100 mb-5">
-                                <h2 className="text-xl font-bold mb-4 text-neutral-900">Nueva Actividad</h2>
-                                <button
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="text-neutral-400 hover:text-neutral-600 p-1 rounded-full hover:bg-neutral-100 transition-colors"
-                                > X
-                                </button>
-                            </div>
-                        { errorForm && <p className="text-red-600 mb-3 text-sm">{errorForm}</p>}
-                            <form onSubmit={handleCreateSubmit} className="space-y-4">
-
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-800 mb-1">Tipo de Actividad <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    required
-                                    name="tipo"
-                                    value={form.tipo || ""}
-                                    onChange={handleFormChange}
-                                    placeholder="Ej: Fertilización"
-                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                    />          
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-800 mb-1">Lote</label>
-                                <select
-                                    name="loteId"
-                                    value={form.loteId || ""}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                >
-                                <option value="">Seleccione un lote</option>
-                                {lotesForm?.map((lote: { id: number | string; nombre?: string; tipo?: string }) => (
-                                <option key={lote.id} value={lote.id}>{lote.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-800 mb-1">Sublote</label>
-                                <select
-                                    name="subLoteId"
-                                    value={form.subLoteId || ""}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                >
-                                    <option value="">Seleccione un sublote</option>
-                                    {sublotes?.map((sub: { id: number | string; nombre: string }) => (
-                                        <option key={sub.id} value={sub.id}>{sub.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-800 mb-1">Cultivo</label>
-                                <select
-                                    name="cultivoId"
-                                    value={form.cultivoId || ""}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                >
-                                    <option value="">Seleccione un cultivo</option>
-                                    {cultivosForm?.map((cultivosItem: { id: number | string; nombreCultivo?: string; tipoCultivo?: string }) => (
-                                        <option key={cultivosItem.id} value={cultivosItem.id}>
-                                            {cultivosItem.nombreCultivo || cultivosItem.tipoCultivo || `Cultivo #${cultivosItem.id}`}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-800 mb-1">Producto / Insumo</label>
-                                <select
-                                    name="productoAgroId"
-                                    value={form.productoAgroId || ""}
-                                    onChange={handleFormChange}
-                                    className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                >
-                                    <option value="">Seleccione un producto</option>
-                                    {productos?.map((producto: { id: number | string; nombre: string }) => (
-                                        <option key={producto.id} value={producto.id}>{producto.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-neutral-800 mb-1">
-                                        Fecha <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        required
-                                        name="fecha"
-                                        value={form.fecha || ""}
-                                        onChange={handleFormChange}
-                                        className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-neutral-800 mb-1">Descripción</label>
-                                    <textarea
-                                        name="descripcion"
-                                        value={form.descripcion || ""}
-                                        onChange={handleFormChange}
-                                        rows={3}
-                                        placeholder="Detalles adicionales de la labor..."
-                                        className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-end gap-3 pt-5 mt-6 border-t border-neutral-100">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="px-5 py-2.5 rounded-2xl text-sm font-medium text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 transition-colors"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={enviando}
-                                        className="bg-[#2d7a3e] hover:bg-[#418750] text-white px-6 py-2.5 rounded-2xl text-sm font-medium shadow-sm disabled:opacity-50 transition-colors"
-                                    >
-                                        {enviando ? 'Guardando...' : 'Guardar'}
-                                    </button>
-                                </div>
-
-                            </form>
-                        </div>
+                    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        {error}
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {actividades.map((actividad) => (
-                        <div
-                            key={actividad.id}
-                            onClick={() => navigate(`/actividades/${actividad.id}`, {state: {actividad} })}
-                            className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100 relative flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer"
-                            >
-                            <div className="flex justify-between items-start gap-2 mb-3">
-                                    <h3 className="text-sm font-semibold text-neutral-900 leading-snug">
-                                        {actividad.tipo} {actividad.subtipo ? `-${actividad.subtipo}` : ''}
-                                    </h3>
-                                    <span
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (puede('actividades.gestionar')) handleChangeEstado(actividad.id, actividad.estado);
-                                    }} 
-                                    className={`text-xs font-semibold px-3 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity shrink-0 ${getEstadoBadge(actividad.estado)}`}>
-                                        {actividad.estado ? actividad.estado.replace('_', ' ') : ''}
-                                    </span>
-                                </div>
+                {loading ? (
+                    <p className="py-16 text-center text-sm text-muted-foreground">Cargando actividades…</p>
+                ) : actividades.length === 0 ? (
+                    <EmptyState
+                        icon={ClipboardList}
+                        title="No hay actividades en esta categoría"
+                        description="Las actividades que se registren para tus lotes aparecerán aquí."
+                        action={
+                            puedeGestionar
+                                ? <Btn onClick={() => setModalNueva(true)}><Plus size={16} />Nueva Actividad</Btn>
+                                : undefined
+                        }
+                    />
+                ) : (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {actividades.map((actividad) => {
+                            const p = asignacion.progreso(actividad.id);
+                            const estado = actividad.estado ?? 'Pendiente';
 
-                                <p className="text-sm text-neutral-600 mb-4 line-clamp-2">
-                                {actividad.descripcion || "Sin descripción registrada."}
-                                </p>
+                            return (
+                                <div
+                                    key={actividad.id}
+                                    onClick={() => navigate('/actividades/' + actividad.id, { state: { actividad } })}
+                                    className="cursor-pointer rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
+                                >
+                                    <div className="mb-2 flex items-start justify-between gap-2">
+                                        <p className="text-[15px] font-semibold leading-tight text-foreground">
+                                            {actividad.tipo}{actividad.subtipo ? ' — ' + actividad.subtipo : ''}
+                                        </p>
+                                        <span
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (puedeGestionar) handleChangeEstado(actividad.id, actividad.estado);
+                                            }}
+                                            className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                                ESTILO_ESTADO[estado] ?? 'bg-muted text-muted-foreground'
+                                            } ${puedeGestionar ? 'cursor-pointer hover:opacity-80' : ''}`}
+                                        >
+                                            {estado.replace('_', ' ')}
+                                        </span>
+                                    </div>
 
-                                {(() => {
-                                    const p = asignacion.progreso(actividad.id);
-                                    if (p.total === 0) return null;
-                                    return (
+                                    <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">
+                                        {actividad.descripcion || 'Sin descripción registrada.'}
+                                    </p>
+
+                                    {p.total > 0 && (
                                         <div className="mb-3">
-                                            <div className="flex items-center gap-2 mb-1.5">
+                                            <div className="mb-1.5 flex items-center gap-2">
                                                 <div className="flex -space-x-1.5">
                                                     {p.iniciales.map((inicial, i) => (
                                                         <div
                                                             key={i}
-                                                            className="w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center ring-2 ring-white"
+                                                            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ring-2 ring-background ${COLORES_AVATAR[i % 4]}`}
                                                         >
                                                             {inicial}
                                                         </div>
                                                     ))}
                                                     {p.restantes > 0 && (
-                                                        <div className="w-7 h-7 rounded-full bg-neutral-100 text-neutral-500 text-xs font-bold flex items-center justify-center ring-2 ring-white">
+                                                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground ring-2 ring-background">
                                                             +{p.restantes}
                                                         </div>
                                                     )}
                                                 </div>
-                                                <span className="text-xs text-neutral-500">
+                                                <span className="text-xs text-muted-foreground">
                                                     {p.aprobadas} de {p.total} aprobadas
                                                 </span>
                                             </div>
-                                            <div className="w-full bg-neutral-100 rounded-full h-1.5">
+                                            <div className="h-1.5 w-full rounded-full bg-muted">
                                                 <div
-                                                    className="h-1.5 rounded-full bg-[#2d7a3e] transition-all"
+                                                    className="h-1.5 rounded-full bg-primary transition-all"
                                                     style={{ width: p.porcentaje + '%' }}
                                                 />
                                             </div>
                                         </div>
-                                    );
-                                })()}
-
-                                <div className="border-t border-neutral-100 pt-3 mt-auto flex items-center justify-between gap-2">
-                                    <span className="text-xs text-neutral-400 font-medium">
-                                        {actividad.fecha}
-                                    </span>
-                                    {asignacion.puedeAsignar && (
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); asignacion.abrir(actividad.id); }}
-                                            className="text-xs font-semibold text-[#2d7a3e] hover:opacity-70 transition-opacity cursor-pointer"
-                                        >
-                                            Asignar
-                                        </button>
                                     )}
+
+                                    <div className="flex items-center justify-between border-t border-border pt-2">
+                                        <p className="text-xs text-muted-foreground">{actividad.fecha}</p>
+                                        {asignacion.puedeAsignar && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); asignacion.abrir(actividad.id); }}
+                                                className="text-xs font-semibold text-primary transition-colors hover:text-primary/70"
+                                            >
+                                                Asignar
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                <Modal open={modalNueva} onClose={() => setModalNueva(false)} title="Nueva Actividad">
+                    <form onSubmit={handleCreateSubmit} className="space-y-3">
+                        {errorForm && <p className="text-sm text-red-600">{errorForm}</p>}
+
+                        <Input
+                            label="Tipo de actividad" required
+                            value={form.tipo || ''} onChange={campo('tipo')}
+                            placeholder="Ej: Fertilización"
+                        />
+                        <Input
+                            label="Subtipo"
+                            value={form.subtipo || ''} onChange={campo('subtipo')}
+                            placeholder="Ej: Trasplante"
+                        />
+                        <Select
+                            label="Lote" value={String(form.loteId || '')} onChange={campo('loteId')}
+                            options={[
+                                { value: '', label: 'Seleccione un lote...' },
+                                ...(lotes ?? []).map((l: { id: number; nombre: string }) => ({
+                                    value: String(l.id), label: l.nombre,
+                                })),
+                            ]}
+                        />
+                        <Select
+                            label="Sublote" value={String(form.subLoteId || '')} onChange={campo('subLoteId')}
+                            options={[
+                                { value: '', label: 'Sin sublote' },
+                                ...(sublotes ?? []).map((s: { id: number; nombre: string }) => ({
+                                    value: String(s.id), label: s.nombre,
+                                })),
+                            ]}
+                        />
+                        <Select
+                            label="Cultivo" value={String(form.cultivoId || '')} onChange={campo('cultivoId')}
+                            options={[
+                                { value: '', label: 'Seleccione un cultivo...' },
+                                ...(cultivos ?? []).map((c: { id: number; nombreCultivo?: string; tipoCultivo?: string }) => ({
+                                    value: String(c.id),
+                                    label: c.nombreCultivo || c.tipoCultivo || 'Cultivo #' + c.id,
+                                })),
+                            ]}
+                        />
+                        <Select
+                            label="Producto / Insumo" value={String(form.productoAgroId || '')} onChange={campo('productoAgroId')}
+                            options={[
+                                { value: '', label: 'Sin producto' },
+                                ...(productos ?? []).map((pr: { id: number; nombre: string }) => ({
+                                    value: String(pr.id), label: pr.nombre,
+                                })),
+                            ]}
+                        />
+                        <Input label="Fecha" type="date" required value={form.fecha || ''} onChange={campo('fecha')} />
+                        <Textarea
+                            label="Descripción" rows={3}
+                            value={form.descripcion || ''} onChange={campo('descripcion')}
+                            placeholder="Detalles adicionales de la labor..."
+                        />
+
+                        <div className="flex gap-3 pt-1">
+                            <Btn type="submit" disabled={enviando} className="flex-1 justify-center">
+                                {enviando ? 'Guardando…' : 'Guardar'}
+                            </Btn>
+                            <Btn variant="outline" onClick={() => setModalNueva(false)}>Cancelar</Btn>
                         </div>
-                    ))}
-                </div>
+                    </form>
+                </Modal>
 
-                {asignacion.actividadId !== null && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-                        <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-                            <div className="flex justify-between items-center pb-4 border-b border-neutral-100 mb-5">
-                                <h2 className="text-xl font-bold text-neutral-900">Asignar aprendices</h2>
-                                <button
-                                    type="button"
-                                    onClick={cerrarAsignar}
-                                    className="text-neutral-400 hover:text-neutral-600 p-1 rounded-full hover:bg-neutral-100 transition-colors"
-                                > X
-                                </button>
-                            </div>
+                <Modal
+                    open={asignacion.actividadId !== null}
+                    onClose={cerrarAsignar}
+                    title="Asignar aprendices"
+                >
+                    <div className="space-y-4">
+                        {asignacion.errorAsignar && (
+                            <p className="text-sm text-red-600">{asignacion.errorAsignar}</p>
+                        )}
 
-                            {asignacion.errorAsignar && (
-                                <p className="text-red-600 mb-3 text-sm">{asignacion.errorAsignar}</p>
-                            )}
-
-                            {asignacion.aprendices.length === 0 ? (
-                                <p className="text-sm text-neutral-500 py-6 text-center">
-                                    No tienes aprendices a cargo. Revisa tus fichas antes de asignar.
-                                </p>
-                            ) : (
-                                <>
-                                    <label className="block text-sm font-medium text-neutral-800 mb-2">
+                        {asignacion.aprendices.length === 0 ? (
+                            <p className="py-6 text-center text-sm text-muted-foreground">
+                                No tienes aprendices a cargo. Revisa tus fichas antes de asignar.
+                            </p>
+                        ) : (
+                            <>
+                                <div>
+                                    <p className="mb-2 text-sm font-semibold text-foreground">
                                         Aprendices <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="space-y-1 max-h-56 overflow-y-auto mb-2 pr-1">
-                                        {asignacion.aprendices.map((a) => (
+                                    </p>
+                                    <div className="max-h-56 space-y-1 overflow-y-auto pr-1">
+                                        {asignacion.aprendices.map((a, i) => (
                                             <label
                                                 key={a.id}
-                                                className="flex items-center gap-3 p-2 rounded-xl hover:bg-neutral-50 cursor-pointer"
+                                                className="flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-muted"
                                             >
                                                 <input
                                                     type="checkbox"
                                                     checked={seleccionados.includes(a.id)}
                                                     onChange={() => alternar(a.id)}
-                                                    className="rounded border-neutral-300 accent-[#2d7a3e]"
+                                                    className="rounded border-border accent-primary"
                                                 />
-                                                <div className="w-7 h-7 shrink-0 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center">
+                                                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${COLORES_AVATAR[i % 4]}`}>
                                                     {a.nombre.charAt(0).toUpperCase()}
                                                 </div>
-                                                <span className="text-sm text-neutral-800 flex-1 truncate">
+                                                <span className="flex-1 truncate text-sm text-foreground">
                                                     {a.nombre} {a.apellido}
                                                 </span>
                                             </label>
                                         ))}
                                     </div>
-
-                                    <div className="flex gap-3 mb-4">
+                                    <div className="mt-2 flex gap-3">
                                         <button
                                             type="button"
                                             onClick={() => setSeleccionados(asignacion.aprendices.map((a) => a.id))}
-                                            className="text-xs text-[#2d7a3e] hover:underline cursor-pointer"
+                                            className="text-xs text-primary hover:underline"
                                         >
-                                            Seleccionar todos
+                                            Toda la ficha
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setSeleccionados([])}
-                                            className="text-xs text-neutral-500 hover:underline cursor-pointer"
+                                            className="text-xs text-muted-foreground hover:underline"
                                         >
                                             Quitar todos
                                         </button>
                                         {seleccionados.length > 0 && (
-                                            <span className="text-xs text-neutral-500 ml-auto">
+                                            <span className="ml-auto text-xs text-muted-foreground">
                                                 {seleccionados.length} seleccionado{seleccionados.length === 1 ? '' : 's'}
                                             </span>
                                         )}
                                     </div>
+                                </div>
 
-                                    <div className="mb-5">
-                                        <label className="block text-sm font-medium text-neutral-800 mb-1">
-                                            Fecha límite de entrega
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={fechaLimite}
-                                            onChange={(e) => setFechaLimite(e.target.value)}
-                                            className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
-                                        />
-                                        <p className="text-xs text-neutral-500 mt-1">
-                                            Opcional. Sin fecha, la tarea no se marca como vencida.
-                                        </p>
-                                    </div>
+                                <div>
+                                    <Input
+                                        label="Fecha límite de entrega" type="date"
+                                        value={fechaLimite} onChange={setFechaLimite}
+                                    />
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        Opcional. Sin fecha, la tarea no se marca como vencida.
+                                    </p>
+                                </div>
 
-                                    <div className="flex items-center justify-end gap-3 pt-5 border-t border-neutral-100">
-                                        <button
-                                            type="button"
-                                            onClick={cerrarAsignar}
-                                            disabled={asignacion.asignando}
-                                            className="px-5 py-2.5 rounded-2xl text-sm font-medium text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 transition-colors disabled:opacity-50"
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={seleccionados.length === 0 || asignacion.asignando}
-                                            onClick={() =>
-                                                asignacion.asignar(
-                                                    asignacion.actividadId!,
-                                                    seleccionados,
-                                                    fechaLimite,
-                                                    cerrarAsignar,
-                                                )}
-                                            className="bg-[#2d7a3e] hover:bg-[#418750] text-white px-6 py-2.5 rounded-2xl text-sm font-medium shadow-sm disabled:opacity-50 transition-colors"
-                                        >
-                                            {asignacion.asignando ? 'Asignando...' : 'Asignar'}
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                                <div className="flex gap-3">
+                                    <Btn
+                                        disabled={seleccionados.length === 0 || asignacion.asignando}
+                                        onClick={() =>
+                                            asignacion.asignar(asignacion.actividadId!, seleccionados, fechaLimite, cerrarAsignar)}
+                                        className="flex-1 justify-center"
+                                    >
+                                        {asignacion.asignando ? 'Asignando…' : 'Asignar'}
+                                    </Btn>
+                                    <Btn variant="outline" onClick={cerrarAsignar} disabled={asignacion.asignando}>
+                                        Cancelar
+                                    </Btn>
+                                </div>
+                            </>
+                        )}
                     </div>
-                )}
+                </Modal>
             </div>
-            </DashboardLayout>
-        );
+        </DashboardLayout>
+    );
 };
+
 export default Actividades;

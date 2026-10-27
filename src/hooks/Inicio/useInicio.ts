@@ -45,14 +45,10 @@ export function useInicio() {
             .reduce((suma, v) => suma + Number(v.total || 0), 0);
     }, [ventas]);
 
-    const produccion = useMemo(
-        () =>
-            reporte.produccion.map((fila) => ({
-                periodo: fila.periodo,
-                kg: reporte.cultivos.reduce((suma, c) => suma + Number(fila[c] || 0), 0),
-            })),
-        [reporte],
-    );
+    // El Figma pinta una barra por cultivo, asi que las filas van tal cual:
+    // cada una trae una clave por cultivo, y `cultivos` dice cuales son
+    const produccion = reporte.produccion;
+    const cultivos = reporte.cultivos;
 
     return {
         unidadesActivas: unidadesActivas.length,
@@ -62,6 +58,7 @@ export function useInicio() {
         sensoresTotal: resumenSensores.total,
         actividadesRecientes,
         produccion,
+        cultivos,
         cargandoResumen: cargandoUnidades || cargandoIncidencias || cargandoVentas || cargandoSensores,
         cargandoActividades: cargandoUnidades || consultasActividades.some((c) => c.isLoading),
         cargandoProduccion: cargandoReporte,

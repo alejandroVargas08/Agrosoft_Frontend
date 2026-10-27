@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Calendar, ClipboardList, Leaf, MapPin } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Input, Modal, PageHeader, StatusBadge, Tab, Textarea } from '../../components/ui/AgroUI';
 import { useMisTareas } from '../../hooks/instructor/useMisTareas';
 import type { PestanaTarea, TareaPropia } from '../../hooks/instructor/useMisTareas';
+import { ChecklistEntrega } from '../../components/instructor/ChecklistEntrega';
 
 const PESTANAS: PestanaTarea[] = ['Pendientes', 'Entregadas', 'Aprobadas'];
 
@@ -17,11 +19,14 @@ const plazo = (tarea: TareaPropia) => {
         return { texto: 'Vencida · ' + fecha(asignacion.fechaLimite), clase: 'text-red-600 font-bold' };
     }
     if (dias === null) return { texto: 'Sin fecha de entrega', clase: 'text-muted-foreground' };
-    const cuando = dias === 0 ? 'hoy' : dias === 1 ? 'mañana' : 'el ' + fecha(asignacion.fechaLimite);
-    return { texto: 'Entrega ' + cuando, clase: dias <= 2 ? 'text-[#F16C07]' : 'text-muted-foreground' };
+    return {
+        texto: 'Entrega: ' + fecha(asignacion.fechaLimite),
+        clase: dias <= 2 ? 'text-[#F16C07]' : 'text-muted-foreground',
+    };
 };
 
 const MisTareas = () => {
+    const navigate = useNavigate();
     const {
         tareas, pestana, setPestana, conteos, cargando, error, errorAccion, procesando,
         iniciar, entregar,
@@ -73,6 +78,7 @@ const MisTareas = () => {
                         icon={ClipboardList}
                         title="No tienes tareas en esta categoría"
                         description="Cuando tu instructor te asigne una actividad, aparecerá aquí."
+                        action={<Btn variant="outline" onClick={() => navigate('/inicio')}>Ir al inicio</Btn>}
                     />
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -117,13 +123,17 @@ const MisTareas = () => {
                                         </div>
                                     )}
 
-                                    {asignacion.estado === 'ENTREGADA' && (
-                                        <p className="text-xs text-muted-foreground mb-3">
-                                            Entregada con {asignacion.horasTrabajadas}h · esperando revisión
-                                        </p>
-                                    )}
-
                                     <div className="flex gap-2">
+                                        {/* El Figma pone "Ver actividad" en todas las tarjetas */}
+                                        {asignacion.actividad && (
+                                            <Btn
+                                                variant="outline" size="sm"
+                                                onClick={() => navigate('/actividades/' + asignacion.actividad!.id)}
+                                                className="flex-1 justify-center"
+                                            >
+                                                Ver actividad
+                                            </Btn>
+                                        )}
                                         {asignacion.estado === 'ASIGNADA' && (
                                             <Btn size="sm" onClick={() => setPorEmpezar(tarea)} className="flex-1 justify-center">
                                                 Empezar
@@ -139,6 +149,11 @@ const MisTareas = () => {
                                                 Entregar
                                             </Btn>
                                         )}
+                                        {asignacion.estado === 'ENTREGADA' && (
+                                            <span className="flex-1 self-center text-center text-xs text-muted-foreground">
+                                                Esperando revisión...
+                                            </span>
+                                        )}
                                     </div>
                                 </Card>
                             );
@@ -151,7 +166,8 @@ const MisTareas = () => {
                         <div className="space-y-4">
                             <p className="text-sm text-muted-foreground">
                                 Al confirmar, <strong className="text-foreground">{porEmpezar.titulo}</strong> pasará a{' '}
-                                <strong className="text-foreground">En progreso</strong>.
+                                <strong className="text-foreground">En progreso</strong>. Podrás registrar
+                                evidencias, insumos y herramientas.
                             </p>
                             <div className="flex gap-3">
                                 <Btn
@@ -172,6 +188,8 @@ const MisTareas = () => {
                 <Modal open={!!porEntregar} onClose={cerrarEntrega} title="Entregar tarea">
                     {porEntregar && (
                         <div className="space-y-4">
+                            <ChecklistEntrega actividadId={porEntregar.asignacion.actividad?.id} />
+
                             <div className="p-3 bg-[#FFF3E0] border border-[#F16C07]/30 rounded-xl flex items-start gap-2">
                                 <AlertCircle size={14} className="text-[#F16C07] shrink-0 mt-0.5" />
                                 <p className="text-xs text-[#E65100]">

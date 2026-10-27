@@ -3,6 +3,8 @@ import type { Cultivo } from "../../types/cultivos";
 import { api } from "../axios";
 
 export const actividadesApi = {
+    /** Todas las que el usuario puede ver, filtradas por su alcance */
+    listar: () => api.get<Actividad[]>('/actividades'),
     listarPorCultivo: (cultivoId: number) => api.get<Actividad[]>(`/actividades/cultivo/${cultivoId}`),
     obtenerPorId: (id: number) => api.get<Actividad>(`/actividades/${id}`),
     crear: (data: CrearActividadPayLoad) => api.post<Actividad>('/actividades', data),
