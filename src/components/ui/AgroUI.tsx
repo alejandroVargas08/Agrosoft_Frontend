@@ -4,13 +4,15 @@ import type { ElementType, ReactNode } from 'react';
 import { ChevronLeft, Search, X, Leaf } from 'lucide-react';
 
 // ─── Badge ──────────────────────────────────────────────────────────────────
-type BadgeColor = 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' | 'muted';
+type BadgeColor = 'primary' | 'secondary' | 'success' | 'vivid' | 'progress' | 'warning' | 'danger' | 'info' | 'muted';
 
 const BADGE_COLORS: Record<BadgeColor, string> = {
-    primary: 'bg-primary/10 text-primary',
-    secondary: 'bg-amber-100 text-amber-700',
+    primary: 'bg-chip-bg text-chip-fg',
+    secondary: 'bg-chip-bg text-chip-fg',
     success: 'bg-emerald-100 text-emerald-700',
-    warning: 'bg-amber-100 text-amber-700',
+    vivid: 'bg-chip-bg text-chip-fg',
+    progress: 'bg-[#FFF3E0] text-[#F16C07]',
+    warning: 'bg-[#FFF3E0] text-[#F16C07]',
     danger: 'bg-red-100 text-red-700',
     info: 'bg-blue-100 text-blue-700',
     muted: 'bg-muted text-muted-foreground',
@@ -24,34 +26,51 @@ export const Badge = ({ children, color = 'primary' }: { children: ReactNode; co
 
 // ─── StatusBadge: traduce un estado a color + texto ──────────────────────────
 const STATUS_MAP: Record<string, [BadgeColor, string]> = {
-    // Estados del backend (español)
-    activo: ['success', 'Activo'],
+    // Estados del backend (espanol)
+    activo: ['vivid', 'Activo'],
     inactivo: ['muted', 'Inactivo'],
-    en_preparacion: ['warning', 'En preparación'],
-    finalizado: ['info', 'Finalizado'],
+    en_preparacion: ['progress', 'En preparación'],
+    finalizado: ['vivid', 'Finalizado'],
     cancelado: ['danger', 'Cancelado'],
-    // Estados del diseño
-    active: ['success', 'Activo'], inactive: ['muted', 'Inactivo'],
-    open: ['danger', 'Abierta'], in_treatment: ['warning', 'En tratamiento'],
-    resolved: ['success', 'Resuelta'],
-    pending: ['warning', 'Pendiente'], in_progress: ['info', 'En progreso'],
-    completed: ['success', 'Completada'], scheduled: ['info', 'Programado'],
-    applied: ['warning', 'Aplicado'],
-    paid: ['success', 'Pagada'], cancelled: ['danger', 'Anulada'],
-    online: ['success', 'En línea'], offline: ['danger', 'Desconectado'],
+    pagada: ['vivid', 'Pagada'],
+    anulada: ['danger', 'Anulada'],
+    agotado: ['danger', 'Agotado'],
+    de_baja: ['muted', 'De baja'],
+    suspendido: ['danger', 'Suspendido'],
+    rechazado: ['danger', 'Rechazado'],
+    // Estados del diseno
+    active: ['vivid', 'Activo'], inactive: ['muted', 'Inactivo'],
+    finished: ['vivid', 'Finalizado'],
+    open: ['danger', 'Abierta'], in_treatment: ['progress', 'En tratamiento'],
+    resolved: ['vivid', 'Resuelta'],
+    pending: ['danger', 'Pendiente'], in_progress: ['progress', 'En progreso'],
+    completed: ['vivid', 'Completada'], scheduled: ['info', 'Programado'],
+    applied: ['vivid', 'Aplicado'],
+    paid: ['vivid', 'Pagada'], cancelled: ['danger', 'Anulada'],
+    online: ['vivid', 'En línea'], offline: ['danger', 'Desconectado'],
     upcoming: ['info', 'Próximo'],
-    A: ['success', 'Calidad A'], B: ['warning', 'Calidad B'], C: ['danger', 'Calidad C'],
-    low: ['info', 'Baja'], medium: ['warning', 'Media'], high: ['danger', 'Alta'],
+    A: ['vivid', 'Calidad A'], B: ['progress', 'Calidad B'], C: ['danger', 'Calidad C'],
+    low: ['vivid', 'Baja'], medium: ['progress', 'Media'], high: ['danger', 'Alta'],
     plot: ['primary', 'Lote'], subplot: ['info', 'Sublote'],
-    // Asignaciones de actividades (el backend las guarda en mayúscula)
+    assigned: ['info', 'Asignada'], delivered: ['progress', 'Entregada'],
+    approved: ['vivid', 'Aprobada'], returned: ['danger', 'Devuelta'],
+    overdue: ['danger', 'Vencida'],
+    pending_approval: ['progress', 'Pendiente de aprobación'],
+    connected: ['vivid', 'Conectada'], disconnected: ['muted', 'Desconectada'],
+    alert: ['danger', 'Con alerta'], registered: ['info', 'Registrado'],
+    with_images: ['progress', 'Con imágenes'],
+    analyzing: ['progress', 'Analizando'], analyzed: ['vivid', 'Analizado'],
+    error: ['danger', 'Error'],
+    attended: ['vivid', 'Atendida'], discarded: ['muted', 'Descartada'],
+    // Asignaciones de actividades (el backend las guarda en mayuscula)
     ASIGNADA: ['info', 'Asignada'],
-    EN_PROGRESO: ['warning', 'En progreso'],
-    ENTREGADA: ['primary', 'Entregada'],
-    APROBADA: ['success', 'Aprobada'],
+    EN_PROGRESO: ['progress', 'En progreso'],
+    ENTREGADA: ['progress', 'Entregada'],
+    APROBADA: ['vivid', 'Aprobada'],
     DEVUELTA: ['danger', 'Devuelta'],
     // Novedades
-    pendiente: ['warning', 'Pendiente'],
-    atendida: ['success', 'Atendida'],
+    pendiente: ['danger', 'Pendiente'],
+    atendida: ['vivid', 'Atendida'],
     descartada: ['muted', 'Descartada'],
 };
 
@@ -182,7 +201,7 @@ interface PageHeaderProps {
 }
 
 export const PageHeader = ({ title, subtitle, onBack, action }: PageHeaderProps) => (
-    <div className="flex items-start justify-between mb-6">
+    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
         <div className="flex items-start gap-3">
             {onBack && (
                 <button onClick={onBack} className="mt-0.5 p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
@@ -194,7 +213,7 @@ export const PageHeader = ({ title, subtitle, onBack, action }: PageHeaderProps)
                 {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
             </div>
         </div>
-        {action}
+        {action && <div className="sm:shrink-0">{action}</div>}
     </div>
 );
 
@@ -225,12 +244,12 @@ interface TabProps {
 }
 
 export const Tab = ({ tabs, active, onChange }: TabProps) => (
-    <div className="flex gap-1 bg-muted p-1 rounded-lg mb-4">
+    <div className="flex gap-1 bg-muted p-1 rounded-lg mb-4 overflow-x-auto">
         {tabs.map((t) => (
             <button
                 key={t}
                 onClick={() => onChange(t)}
-                className={`flex-1 py-1.5 text-sm font-semibold rounded-md transition-all ${active === t ? 'bg-white text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`flex-1 min-w-fit py-1.5 px-2 text-sm font-semibold rounded-md transition-all whitespace-nowrap ${active === t ? 'bg-white text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
             >
                 {t}
             </button>
