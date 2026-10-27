@@ -55,7 +55,7 @@ export default function Perfil() {
     );
   }
 
-  const { nombre, correo: email, telefono, ubicacion, rol, emailVerificado, programaFormacion } = perfil;
+  const { nombre, correo: email, telefono, ubicacion, rol, correoVerificado, programaFormacion } = perfil;
 
   return (
     <DashboardLayout>
@@ -86,7 +86,7 @@ export default function Perfil() {
               <span className="inline-block bg-green-50 text-green-700 text-xs font-semibold px-3 py-1 rounded-full mb-2">
                 {rol || 'Usuario'}
               </span>
-              {emailVerificado && (
+              {correoVerificado && (
                 <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
                   <CheckCircle2 size={14} />
                   Correo verificado

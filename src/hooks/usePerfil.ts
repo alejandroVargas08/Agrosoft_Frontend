@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { InicioUsuario } from './useAuth';
 import { usuarioApi } from '../api/usuarios/usuarios';
-import type { Usuario } from '../api/usuarios/usuarios';
+import type { ActualizarUsuario } from '../api/usuarios/usuarios';
 
 interface ProgramaFormacion {
   nombre: string;
@@ -12,12 +12,25 @@ interface ProgramaFormacion {
   estado: string;
 }
 
-/** El backend devuelve `correo`; aquí no se inventa un `email`. */
-interface PerfilUsuario extends Usuario {
+/**
+ * Lo que devuelve `GET /usuarios/:id`, que NO es el mismo objeto que el resto
+ * de endpoints de usuario: trae el programa de formación resuelto y el nombre
+ * del rol, pero no la solicitud ni las fechas. Se declara tal cual llega.
+ */
+interface PerfilUsuario {
+  id: number;
+  nombre: string;
+  apellido: string;
+  identificacion: string;
+  correo: string;
+  telefono: string;
+  estado: string;
+  correoVerificado: boolean;
+  rolId: number;
+  rol: string | null;
+  programaFormacion: ProgramaFormacion | null;
+  /** No existe en el backend todavía; la pantalla lo muestra como "No registrada". */
   ubicacion?: string;
-  rol?: string;
-  emailVerificado?: boolean;
-  programaFormacion?: ProgramaFormacion;
 }
 
 export function usePerfil() {
@@ -49,10 +62,16 @@ export function usePerfil() {
     cargarPerfil();
   }, [user?.id]);
 
-  const actualizarPerfil = async (datos: Partial<PerfilUsuario>) => {
+  // PATCH devuelve UsuarioPublico, que tiene otra forma: solo se refrescan
+  // los campos que los dos comparten, para no romper el resto del perfil.
+  const actualizarPerfil = async (datos: ActualizarUsuario) => {
     if (!user?.id) return;
     const { data } = await usuarioApi.actualizar(user.id, datos);
-    setPerfil((prev) => (prev ? { ...prev, ...data } : data));
+    setPerfil((prev) =>
+      prev
+        ? { ...prev, nombre: data.nombre, apellido: data.apellido, correo: data.correo, telefono: data.telefono, estado: data.estado }
+        : prev,
+    );
     return data;
   };
 

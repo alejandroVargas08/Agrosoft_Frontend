@@ -69,7 +69,9 @@ export interface ContrasenaRestablecida {
 export const usuarioApi = {
     listar: () => api.get<Usuario[]>('/usuarios'),
     // Solo el propio usuario o un administrador
-    obtenerPorId: (id: number) => api.get<Usuario>(`/usuarios/${id}`),
+    // Ojo: este endpoint NO devuelve un Usuario, sino el perfil con el
+    // programa de formacion y el nombre del rol resueltos. Lo tipa usePerfil.
+    obtenerPorId: (id: number) => api.get(`/usuarios/${id}`),
     crear: (data: CrearUsuario) => api.post<UsuarioRegistrado>('/usuarios', data),
     actualizar: (id: number, data: ActualizarUsuario) => api.patch<Usuario>(`/usuarios/${id}`, data),
     eliminar: (id: number) => api.delete(`/usuarios/${id}`),
