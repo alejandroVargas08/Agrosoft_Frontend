@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { misNovedadesApi } from '../../api/novedades';
 import { insumosApi } from '../../api/inventario';
@@ -37,6 +37,8 @@ export function useMisNovedades() {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mis-novedades'] }),
     });
 
+    const abrir = useCallback(() => setAbierto(true), []);
+
     return {
         novedades: novedadesQuery.data ?? [],
         // Consumibles para "se está acabando"; herramientas para "se dañó"
@@ -47,7 +49,7 @@ export function useMisNovedades() {
             .filter((t) => ['ASIGNADA', 'EN_PROGRESO', 'DEVUELTA'].includes(t.estado) && t.actividad)
             .map((t) => ({ id: t.actividad!.id, nombre: t.actividad!.nombre })),
         abierto,
-        abrir: () => setAbierto(true),
+        abrir,
         cerrar: () => { setAbierto(false); reportarMutation.reset(); },
         cargando: novedadesQuery.isLoading,
         error: novedadesQuery.error

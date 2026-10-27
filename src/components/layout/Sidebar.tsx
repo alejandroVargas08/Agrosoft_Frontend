@@ -66,9 +66,9 @@ const main2Items: MenuItem[] = [
     { icon: Settings, label: 'Configuración', path: '/configuracion' },
 ];
 
-const linkBase = "flex items-center gap-3 px-6 py-3 text-[15px] font-medium transition-colors";
-const linkActive = "bg-[#E8F0EA] text-[#2d7a3e]";
-const linkIdle = "text-gray-800 hover:bg-gray-50 hover:text-gray-900";
+const linkBase = "flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors";
+const linkActive = "bg-sidebar-accent text-sidebar-primary";
+const linkIdle = "text-sidebar-foreground hover:bg-sidebar-accent/50";
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
@@ -93,14 +93,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      <aside className="hidden lg:flex w-64 bg-white h-screen fixed left-0 top-0 border-r border-gray-200 flex-col z-30">
-        <div className="p-4 flex items-center justify-between border-b border-gray-100 shrink-0">
+      <aside className="hidden lg:flex w-64 bg-sidebar h-screen fixed left-0 top-0 border-r border-sidebar-border flex-col z-30">
+        <div className="p-4 flex items-center justify-between border-b border-sidebar-border shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
               <img src={logoAgrosoft} alt="AgroSoft" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h1 className="font-bold text-gray-900 text-lg leading-tight">AgroSoft</h1>
+              <h1 className="font-bold text-sidebar-foreground text-lg leading-tight">AgroSoft</h1>
               <span className="text-xs text-gray-500 uppercase tracking-wider">SENA</span>
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <SidebarContent items={itemsPrincipales} onCerrarSesion={() => setModalCerrarSesion(true)} />
       </aside>
 
-      <aside className="hidden md:flex lg:hidden w-20 bg-white h-screen fixed left-0 top-0 border-r border-gray-200 flex-col items-center py-4 z-30">
+      <aside className="hidden md:flex lg:hidden w-20 bg-sidebar h-screen fixed left-0 top-0 border-r border-sidebar-border flex-col items-center py-4 z-30">
         <div className="w-10 h-10 rounded-lg overflow-hidden mb-6 shrink-0">
           <img src={logoAgrosoft} alt="AgroSoft" className="w-full h-full object-cover" />
         </div>
@@ -122,7 +122,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 key={item.label}
                 to={target}
                 title={item.label}
-                className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center transition-colors ${isActive ? 'bg-[#E8F0EA] text-[#2d7a3e]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center transition-colors ${isActive ? 'bg-sidebar-accent text-sidebar-primary' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}
               >
                 <item.icon className="w-5 h-5" />
               </Link>
@@ -130,7 +130,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           })}
         </nav>
 
-        <div className="flex flex-col items-center gap-2 w-full px-2 pt-2 mt-2 border-t border-gray-200 shrink-0">
+        <div className="flex flex-col items-center gap-2 w-full px-2 pt-2 mt-2 border-t border-sidebar-border shrink-0">
           {main2Items.map((item) => {
             const isActive = location.pathname.startsWith(item.path);
             return (
@@ -138,7 +138,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 key={item.label}
                 to={item.path}
                 title={item.label}
-                className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center transition-colors ${isActive ? 'bg-[#E8F0EA] text-[#2d7a3e]' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                className={`w-10 h-10 rounded-xl shrink-0 flex items-center justify-center transition-colors ${isActive ? 'bg-sidebar-accent text-sidebar-primary' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}
               >
                 <item.icon className="w-5 h-5" />
               </Link>
@@ -160,14 +160,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <>
           <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
 
-          <aside className="fixed left-0 top-0 h-screen w-64 bg-white z-50 shadow-2xl flex flex-col">
-            <div className="p-4 flex items-center justify-between border-b border-gray-100 shrink-0">
+          <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar z-50 shadow-2xl flex flex-col">
+            <div className="p-4 flex items-center justify-between border-b border-sidebar-border shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
                   <img src={logoAgrosoft} alt="AgroSoft" className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <h1 className="font-bold text-gray-900 text-lg leading-tight">AgroSoft</h1>
+                  <h1 className="font-bold text-sidebar-foreground text-lg leading-tight">AgroSoft</h1>
                   <span className="text-xs text-gray-500 uppercase tracking-wider">SENA</span>
                 </div>
               </div>
@@ -247,7 +247,7 @@ function SidebarContent({
                 </button>
 
                 {estaAbierto && (
-                  <div className="ml-9 border-l border-gray-100">
+                  <div className="ml-9 border-l border-sidebar-border">
                     {item.children.map((sub) => {
                       const subActivo = location.pathname === sub.path;
                       return (
@@ -255,7 +255,7 @@ function SidebarContent({
                           key={sub.path}
                           to={sub.path}
                           onClick={onNavigate}
-                          className={`block px-4 py-2 text-sm transition-colors ${subActivo ? 'bg-[#E8F0EA] text-[#2d7a3e] font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                          className={`block px-4 py-2 text-sm transition-colors ${subActivo ? 'bg-sidebar-accent text-sidebar-primary font-medium' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}
                         >
                           {sub.label}
                         </Link>
@@ -282,7 +282,7 @@ function SidebarContent({
         })}
       </nav>
 
-      <div className="shrink-0 py-2 border-t border-gray-100">
+      <div className="shrink-0 py-2 border-t border-sidebar-border">
         {main2Items.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -298,7 +298,7 @@ function SidebarContent({
           );
         })}
 
-        <div className="pt-2 mt-2 border-t border-gray-100">
+        <div className="pt-2 mt-2 border-t border-sidebar-border">
           <button
             type="button"
             onClick={onCerrarSesion}

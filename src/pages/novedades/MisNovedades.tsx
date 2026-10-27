@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Box, Leaf, MessageSquare, Plus, Wrench } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Modal, PageHeader, Select, StatusBadge, Textarea } from '../../components/ui/AgroUI';
@@ -26,6 +27,16 @@ const MisNovedades = () => {
         novedades, consumibles, herramientas, tareas,
         abierto, abrir, cerrar, cargando, error, errorEnvio, enviando, reportar,
     } = useMisNovedades();
+
+    // El boton "Reportar novedad" del topbar llega aqui con ?reportar=1
+    const [searchParams, setSearchParams] = useSearchParams();
+    const pedirReporte = searchParams.get('reportar') === '1';
+
+    useEffect(() => {
+        if (!pedirReporte) return;
+        abrir();
+        setSearchParams({}, { replace: true });
+    }, [pedirReporte, abrir, setSearchParams]);
 
     const [tipo, setTipo] = useState<TipoNovedad>('insumo_bajo');
     const [urgencia, setUrgencia] = useState<UrgenciaNovedad>('medium');
