@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useCultivos } from "../../hooks/cultivos/useCultivos";
 import { useTerritorio } from "../../hooks/useTerritorio";
 import { usePermisos } from "../../hooks/permisos/usePermisos";
+import { useAsignarAprendices } from "../../hooks/Actividades/useAsignarAprendices";
 
 const Actividades = () => {
     const navigate = useNavigate();
@@ -46,6 +47,21 @@ const Actividades = () => {
         { label: 'En progreso', value: 'En progreso' },
         { label: 'Finalizada', value: 'Finalizada' },
     ];
+
+    // Asignación de aprendices: solo consulta si el usuario puede asignar
+    const asignacion = useAsignarAprendices(actividades.map((a) => a.id));
+    const [seleccionados, setSeleccionados] = useState<number[]>([]);
+    const [fechaLimite, setFechaLimite] = useState('');
+
+    const cerrarAsignar = () => {
+        asignacion.cerrar();
+        setSeleccionados([]);
+        setFechaLimite('');
+    };
+
+    const alternar = (id: number) =>
+        setSeleccionados((previos) =>
+            previos.includes(id) ? previos.filter((x) => x !== id) : [...previos, id]);
 
     const getEstadoBadge = (estado: string) => {
         switch (estado) {
@@ -306,14 +322,173 @@ const Actividades = () => {
                                 {actividad.descripcion || "Sin descripción registrada."}
                                 </p>
 
-                                <div className="border-t border-neutral-100 pt-3 mt-auto">
+                                {(() => {
+                                    const p = asignacion.progreso(actividad.id);
+                                    if (p.total === 0) return null;
+                                    return (
+                                        <div className="mb-3">
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                                <div className="flex -space-x-1.5">
+                                                    {p.iniciales.map((inicial, i) => (
+                                                        <div
+                                                            key={i}
+                                                            className="w-7 h-7 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center ring-2 ring-white"
+                                                        >
+                                                            {inicial}
+                                                        </div>
+                                                    ))}
+                                                    {p.restantes > 0 && (
+                                                        <div className="w-7 h-7 rounded-full bg-neutral-100 text-neutral-500 text-xs font-bold flex items-center justify-center ring-2 ring-white">
+                                                            +{p.restantes}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <span className="text-xs text-neutral-500">
+                                                    {p.aprobadas} de {p.total} aprobadas
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-neutral-100 rounded-full h-1.5">
+                                                <div
+                                                    className="h-1.5 rounded-full bg-[#2d7a3e] transition-all"
+                                                    style={{ width: p.porcentaje + '%' }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
+                                <div className="border-t border-neutral-100 pt-3 mt-auto flex items-center justify-between gap-2">
                                     <span className="text-xs text-neutral-400 font-medium">
                                         {actividad.fecha}
                                     </span>
+                                    {asignacion.puedeAsignar && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); asignacion.abrir(actividad.id); }}
+                                            className="text-xs font-semibold text-[#2d7a3e] hover:opacity-70 transition-opacity cursor-pointer"
+                                        >
+                                            Asignar
+                                        </button>
+                                    )}
                                 </div>
                         </div>
                     ))}
                 </div>
+
+                {asignacion.actividadId !== null && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
+                        <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                            <div className="flex justify-between items-center pb-4 border-b border-neutral-100 mb-5">
+                                <h2 className="text-xl font-bold text-neutral-900">Asignar aprendices</h2>
+                                <button
+                                    type="button"
+                                    onClick={cerrarAsignar}
+                                    className="text-neutral-400 hover:text-neutral-600 p-1 rounded-full hover:bg-neutral-100 transition-colors"
+                                > X
+                                </button>
+                            </div>
+
+                            {asignacion.errorAsignar && (
+                                <p className="text-red-600 mb-3 text-sm">{asignacion.errorAsignar}</p>
+                            )}
+
+                            {asignacion.aprendices.length === 0 ? (
+                                <p className="text-sm text-neutral-500 py-6 text-center">
+                                    No tienes aprendices a cargo. Revisa tus fichas antes de asignar.
+                                </p>
+                            ) : (
+                                <>
+                                    <label className="block text-sm font-medium text-neutral-800 mb-2">
+                                        Aprendices <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="space-y-1 max-h-56 overflow-y-auto mb-2 pr-1">
+                                        {asignacion.aprendices.map((a) => (
+                                            <label
+                                                key={a.id}
+                                                className="flex items-center gap-3 p-2 rounded-xl hover:bg-neutral-50 cursor-pointer"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={seleccionados.includes(a.id)}
+                                                    onChange={() => alternar(a.id)}
+                                                    className="rounded border-neutral-300 accent-[#2d7a3e]"
+                                                />
+                                                <div className="w-7 h-7 shrink-0 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center">
+                                                    {a.nombre.charAt(0).toUpperCase()}
+                                                </div>
+                                                <span className="text-sm text-neutral-800 flex-1 truncate">
+                                                    {a.nombre} {a.apellido}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex gap-3 mb-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSeleccionados(asignacion.aprendices.map((a) => a.id))}
+                                            className="text-xs text-[#2d7a3e] hover:underline cursor-pointer"
+                                        >
+                                            Seleccionar todos
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSeleccionados([])}
+                                            className="text-xs text-neutral-500 hover:underline cursor-pointer"
+                                        >
+                                            Quitar todos
+                                        </button>
+                                        {seleccionados.length > 0 && (
+                                            <span className="text-xs text-neutral-500 ml-auto">
+                                                {seleccionados.length} seleccionado{seleccionados.length === 1 ? '' : 's'}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="mb-5">
+                                        <label className="block text-sm font-medium text-neutral-800 mb-1">
+                                            Fecha límite de entrega
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={fechaLimite}
+                                            onChange={(e) => setFechaLimite(e.target.value)}
+                                            className="w-full rounded-2xl border border-neutral-200 py-3 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#2d7a3e]"
+                                        />
+                                        <p className="text-xs text-neutral-500 mt-1">
+                                            Opcional. Sin fecha, la tarea no se marca como vencida.
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center justify-end gap-3 pt-5 border-t border-neutral-100">
+                                        <button
+                                            type="button"
+                                            onClick={cerrarAsignar}
+                                            disabled={asignacion.asignando}
+                                            className="px-5 py-2.5 rounded-2xl text-sm font-medium text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={seleccionados.length === 0 || asignacion.asignando}
+                                            onClick={() =>
+                                                asignacion.asignar(
+                                                    asignacion.actividadId!,
+                                                    seleccionados,
+                                                    fechaLimite,
+                                                    cerrarAsignar,
+                                                )}
+                                            className="bg-[#2d7a3e] hover:bg-[#418750] text-white px-6 py-2.5 rounded-2xl text-sm font-medium shadow-sm disabled:opacity-50 transition-colors"
+                                        >
+                                            {asignacion.asignando ? 'Asignando...' : 'Asignar'}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
             </DashboardLayout>
         );

@@ -1,10 +1,13 @@
-import { DollarSign, Scale, Sprout, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, ClipboardList, Clock, DollarSign, Scale, Sprout, TrendingUp, Users } from 'lucide-react';
 import {
     Area, AreaChart, Bar, BarChart as ReBarChart, CartesianGrid, Cell,
     Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { Card, StatCard } from '../components/ui/AgroUI';
+import { Card, EmptyState, StatCard, StatusBadge, Tab } from '../components/ui/AgroUI';
+import { usePermisos } from '../hooks/permisos/usePermisos';
+import { useReporteAprendices } from '../hooks/useReporteAprendices';
 import { useReportes } from '../hooks/useReportes';
 import type { PeriodoReporte } from '../types/reportes';
 
@@ -16,6 +19,9 @@ const PERIODOS: { label: string; valor: PeriodoReporte }[] = [
     { label: 'Trimestral', valor: 'trimestral' },
     { label: 'Anual', valor: 'anual' },
 ];
+
+const GESTIONAR_USUARIOS = 'usuarios.gestionar';
+const ASIGNAR_ACTIVIDADES = 'actividades.asignar';
 
 const BOTON_BASE = 'px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ';
 const BOTON_ACTIVO = 'bg-primary text-white';
@@ -39,6 +45,17 @@ const SinDatos = ({ altura = 220 }: { altura?: number }) => (
 const Reportes = () => {
     const { periodo, setPeriodo, reporte, cargando, error } = useReportes();
     const { resumen, cultivos, produccion, distribucion, finanzas } = reporte;
+    const { puede } = usePermisos();
+
+    // Las pestañas dependen del rol, como en el diseño
+    const esAdmin = puede(GESTIONAR_USUARIOS);
+    const verAprendices = esAdmin || puede(ASIGNAR_ACTIVIDADES);
+    const pestanas = ['Producción', ...(esAdmin ? ['Finanzas'] : []), ...(verAprendices ? ['Aprendices'] : [])];
+
+    const [pestana, setPestana] = useState('Producción');
+    const activa = pestanas.includes(pestana) ? pestana : 'Producción';
+
+    const alumnos = useReporteAprendices(verAprendices && activa === 'Aprendices');
 
     return (
         <DashboardLayout>
@@ -49,7 +66,7 @@ const Reportes = () => {
                         <p className="text-sm text-muted-foreground">Análisis y estadísticas</p>
                     </div>
                     <div className="flex gap-2">
-                        {PERIODOS.map((p) => (
+                        {activa !== 'Aprendices' && PERIODOS.map((p) => (
                             <button
                                 key={p.valor}
                                 onClick={() => setPeriodo(p.valor)}
@@ -67,6 +84,11 @@ const Reportes = () => {
                     </div>
                 )}
 
+                {pestanas.length > 1 && (
+                    <Tab tabs={pestanas} active={activa} onChange={setPestana} />
+                )}
+
+                {activa === 'Producción' && <>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                     <StatCard icon={Scale} label="Producción total" value={fmtKg(resumen.produccionTotalKg)} color="emerald" />
                     <StatCard icon={DollarSign} label="Ingresos" value={fmtPesos(resumen.ingresos)} color="primary" />
@@ -128,7 +150,9 @@ const Reportes = () => {
                         )}
                     </Card>
                 </div>
+                </>}
 
+                {activa === 'Finanzas' && (
                 <Card>
                     <h3 className="font-semibold text-foreground mb-3">Finanzas: Ingresos vs Egresos</h3>
                     {cargando || finanzas.length === 0 ? (
@@ -147,6 +171,85 @@ const Reportes = () => {
                         </ResponsiveContainer>
                     )}
                 </Card>
+                )}
+
+                {activa === 'Aprendices' && <>
+                    {alumnos.error && (
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                            {alumnos.error}
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                        <StatCard icon={Users} label="Aprendices" value={alumnos.totales.aprendices} color="primary" />
+                        <StatCard icon={ClipboardList} label="Tareas asignadas" value={alumnos.totales.tareas} color="blue" />
+                        <StatCard icon={CheckCircle2} label="Tareas aprobadas" value={alumnos.totales.aprobadas} color="emerald" />
+                        <StatCard icon={Clock} label="Horas acumuladas" value={alumnos.totales.horas + 'h'} color="amber" />
+                    </div>
+
+                    {alumnos.cargando ? (
+                        <Card><SinDatos altura={160} /></Card>
+                    ) : alumnos.aprendices.length === 0 ? (
+                        <EmptyState
+                            icon={Users}
+                            title="Sin aprendices a cargo"
+                            description="Cuando tengas fichas asignadas, aquí aparece el desempeño de cada aprendiz."
+                        />
+                    ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <Card>
+                                <h3 className="font-semibold text-foreground mb-3">Desempeño por aprendiz</h3>
+                                <div className="space-y-3">
+                                    {alumnos.aprendices.map((a) => (
+                                        <div key={a.id} className="flex items-center gap-3">
+                                            <div className="w-8 h-8 shrink-0 rounded-full bg-primary/10 grid place-items-center text-primary font-bold text-sm">
+                                                {a.nombre.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between text-xs mb-1 gap-2">
+                                                    <span className="font-semibold text-foreground truncate">{a.nombreCompleto}</span>
+                                                    <span className="text-muted-foreground shrink-0">
+                                                        {a.idFicha ? 'Ficha ' + a.idFicha : 'Sin ficha'}
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-muted rounded-full h-1.5">
+                                                    <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: a.avance + '%' }} />
+                                                </div>
+                                                <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground mt-0.5">
+                                                    <span>{a.aprobadas} de {a.tareas} aprobadas</span>
+                                                    <span>{a.horas}h trabajadas</span>
+                                                    {a.vencidas > 0 && <span className="font-semibold text-red-600">{a.vencidas} vencida{a.vencidas === 1 ? '' : 's'}</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+
+                            <Card>
+                                <h3 className="font-semibold text-foreground mb-3">Estado de las tareas</h3>
+                                <div className="space-y-2">
+                                    {alumnos.aprendices.map((a) => (
+                                        <div key={a.id} className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-foreground truncate">{a.nombreCompleto}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {a.entregadas} por revisar · {a.tareas - a.aprobadas - a.entregadas} en curso
+                                                </p>
+                                            </div>
+                                            {a.vencidas > 0
+                                                ? <StatusBadge status="overdue" />
+                                                : a.entregadas > 0
+                                                    ? <StatusBadge status="delivered" />
+                                                    : <StatusBadge status="approved" />}
+                                            <span className="text-xs font-semibold text-primary shrink-0">{a.horas}h</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+                </>}
             </div>
         </DashboardLayout>
     );
