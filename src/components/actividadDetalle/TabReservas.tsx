@@ -1,78 +1,140 @@
-import { useState } from "react";
-import { useActividadInsumoReserva } from "../../hooks/Actividades/useActividadInsumoReserva";
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Package, Plus, Trash2 } from 'lucide-react';
+import { insumosApi } from '../../api/inventario';
+import { useActividadInsumoReserva } from '../../hooks/Actividades/useActividadInsumoReserva';
+import { Btn, EmptyState } from '../ui/AgroUI';
+import ModalProductos from './ModalProductos';
 
-export function TabReservas({ actividadId} : {actividadId: number | undefined}) {
-    const { 
-        reservas, 
-        loading, 
-        error,
-        reservar,
-        reservando,
-        errorReservar,
-        ajustarCantidad,
-        liberar,
-        liberando, 
+export function TabReservas({ actividadId }: { actividadId: number | undefined }) {
+    const {
+        reservas, loading, error,
+        reservar, reservando, errorReservar,
+        ajustarCantidad, liberar, liberando,
     } = useActividadInsumoReserva(actividadId);
 
-    const [form, setForm] = useState({ insumoId: '', cantidadReservada: ''});
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        reservar({
-            insumoId: Number(form.insumoId), 
-            cantidadReservada: Number(form.cantidadReservada),
-        }); 
-        setForm({insumoId: '', cantidadReservada: ''});
-    }; 
+    const [modalAbierto, setModalAbierto] = useState(false);
+
+    // El endpoint devuelve insumoId desnudo: el catalogo resuelve el nombre
+    const insumosQuery = useQuery({
+        queryKey: ['insumos'],
+        queryFn: async () => (await insumosApi.listar()).data,
+        staleTime: 60_000,
+    });
+
+    const insumoPorId = useMemo(
+        () => new Map((insumosQuery.data ?? []).map((i) => [i.id, i])),
+        [insumosQuery.data],
+    );
+
+    const yaReservados = reservas.map((r) => r.insumoId);
+
+    const confirmar = (seleccion: { insumoId: number; cantidad: number }[]) => {
+        // El endpoint reserva un insumo por llamada
+        for (const { insumoId, cantidad } of seleccion) {
+            reservar({ insumoId, cantidadReservada: cantidad });
+        }
+        setModalAbierto(false);
+    };
 
     return (
-    <div>
-        <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-3 mb-6 bg-white p-4 rounded-xl border border-neutral-200">
-        <input
-            required type="number" placeholder="ID insumo" value={form.insumoId}
-            onChange={(e) => setForm({ ...form, insumoId: e.target.value })}
-            className="rounded-lg border border-neutral-200 py-2 px-3"
-        />
-        <input
-            required type="number" step="0.01" placeholder="Cantidad a reservar" value={form.cantidadReservada}
-            onChange={(e) => setForm({ ...form, cantidadReservada: e.target.value })}
-            className="rounded-lg border border-neutral-200 py-2 px-3"
-        />
-        <button
-            type="submit" disabled={reservando}
-            className="bg-green-800 text-white rounded-lg py-2 disabled:opacity-50"
-        >
-            {reservando ? 'Reservando...' : '+ Reservar'}
-        </button>
-        {errorReservar && <p className="col-span-3 text-red-600 text-sm">{errorReservar}</p>}
-        </form>
-
-        {loading && <p className="text-neutral-500">Cargando...</p>}
-        {error && <p className="text-red-600">{error}</p>}
-
-        <div className="space-y-2">
-        {reservas.map((r) => (
-            <div key={r.id} className="flex justify-between items-center bg-white p-3 rounded-lg border border-neutral-100">
-            <span className="text-sm">Insumo #{r.insumoId} — {r.cantidadReservada} reservado</span>
-            <div className="flex gap-3">
-                <button
-                onClick={() => {
-                    const nueva = Number(prompt('Nueva cantidad reservada:', String(r.cantidadReservada)));
-                    if (nueva > 0) ajustarCantidad(r.id, nueva);
-                }}
-                className="text-sm text-amber-700 underline"
-                >
-                Ajustar
-                </button>
-                <button
-                disabled={liberando} onClick={() => liberar(r.id)}
-                className="text-sm text-red-600 underline disabled:opacity-50"
-                >
-                Liberar
-                </button>
+        <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">
+                    Lo que esta actividad tiene apartado del inventario.
+                </p>
+                <Btn onClick={() => setModalAbierto(true)} disabled={!actividadId}>
+                    <Plus className="h-4 w-4" />
+                    Productos
+                </Btn>
             </div>
-            </div>
-        ))}
+
+            {errorReservar && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    {errorReservar}
+                </div>
+            )}
+            {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    No se pudieron cargar las reservas.
+                </div>
+            )}
+
+            {loading ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">Cargando reservas…</p>
+            ) : reservas.length === 0 ? (
+                <EmptyState
+                    icon={Package}
+                    title="Sin insumos reservados"
+                    description="Usa el botón Productos para apartar insumos del inventario para esta actividad."
+                />
+            ) : (
+                <div className="space-y-2">
+                    {reservas.map((r) => {
+                        const insumo = insumoPorId.get(r.insumoId);
+                        const tope = insumo ? insumo.stockDisponible + r.cantidadReservada : Infinity;
+
+                        return (
+                            <div
+                                key={r.id}
+                                className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
+                            >
+                                <div className="shrink-0 rounded-lg bg-icon-bg p-2">
+                                    <Package size={16} className="text-primary" />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-semibold text-foreground">
+                                        {insumo ? insumo.nombre : 'Insumo #' + r.insumoId}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {r.cantidadReservada} {insumo?.unidadUso ?? ''} reservados
+                                        {insumo ? ` · quedan ${insumo.stockDisponible} libres` : ''}
+                                    </p>
+                                </div>
+
+                                <div className="flex shrink-0 items-center gap-1">
+                                    <button
+                                        onClick={() => ajustarCantidad(r.id, Math.max(1, r.cantidadReservada - 1))}
+                                        disabled={r.cantidadReservada <= 1}
+                                        className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-base font-bold leading-none text-foreground transition-colors hover:bg-primary/10 disabled:opacity-40"
+                                        aria-label="Reservar uno menos"
+                                    >
+                                        −
+                                    </button>
+                                    <span className="w-8 text-center text-sm font-bold text-primary">
+                                        {r.cantidadReservada}
+                                    </span>
+                                    <button
+                                        onClick={() => ajustarCantidad(r.id, r.cantidadReservada + 1)}
+                                        disabled={r.cantidadReservada >= tope}
+                                        className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-base font-bold leading-none text-white transition-colors hover:bg-primary/90 disabled:opacity-40"
+                                        aria-label="Reservar uno más"
+                                    >
+                                        +
+                                    </button>
+                                    <button
+                                        onClick={() => liberar(r.id)}
+                                        disabled={liberando}
+                                        className="ml-2 rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-50 disabled:opacity-40"
+                                        aria-label="Liberar la reserva"
+                                    >
+                                        <Trash2 size={15} />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            <ModalProductos
+                abierto={modalAbierto}
+                onCerrar={() => setModalAbierto(false)}
+                yaReservados={yaReservados}
+                onConfirmar={confirmar}
+                guardando={reservando}
+            />
         </div>
-    </div>
-  );
+    );
 }
