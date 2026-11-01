@@ -1,7 +1,7 @@
 import { useEffect, useState, type ElementType, type ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, Copy, Info, ShieldAlert } from 'lucide-react';
-import DashboardLayoutAdmin from '../layout/DashboardLayoutAdmin';
+import { AlertTriangle, CheckCircle2, Copy, Info, MoreVertical, ShieldAlert } from 'lucide-react';
+import DashboardLayout from '../layout/DashboardLayout';
 import { Badge, Btn, EmptyState, Input, Modal, Select } from '../ui/AgroUI';
 import { usuariosAdminApi } from '../../api/admin/admin';
 import { mensajeError } from '../../api/errores/errores';
@@ -14,6 +14,70 @@ export const Inicial = ({ nombre, tamano = 'md' }: { nombre: string; tamano?: 's
         {nombre.charAt(0).toUpperCase()}
     </div>
 );
+
+/**
+ * Avatar y MenuAcciones los importaba Fichas.tsx pero no existian en ninguna
+ * parte del repo, asi que el build de main no pasaba. Se escriben aqui sobre
+ * lo que ya habia: Avatar reusa Inicial, y MenuAcciones es el desplegable de
+ * acciones por tarjeta.
+ */
+export const Avatar = ({ persona, tamano = 'md' }: {
+    persona: { nombre: string; apellido: string } | null | undefined;
+    tamano?: 'sm' | 'md';
+}) => <Inicial nombre={nombreCompleto(persona) || '?'} tamano={tamano} />;
+
+export interface AccionMenu {
+    label: string;
+    icon?: ElementType;
+    onClick: () => void;
+    peligro?: boolean;
+}
+
+export const MenuAcciones = ({ acciones }: { acciones: AccionMenu[] }) => {
+    const [abierto, setAbierto] = useState(false);
+
+    // Un clic fuera cierra el menu
+    useEffect(() => {
+        if (!abierto) return;
+        const cerrar = () => setAbierto(false);
+        window.addEventListener('click', cerrar);
+        return () => window.removeEventListener('click', cerrar);
+    }, [abierto]);
+
+    return (
+        <div className="relative shrink-0">
+            <button
+                type="button"
+                aria-label="Acciones"
+                onClick={(e) => { e.stopPropagation(); setAbierto((v) => !v); }}
+                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted"
+            >
+                <MoreVertical size={16} />
+            </button>
+
+            {abierto && (
+                <div className="absolute right-0 z-20 mt-1 w-48 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+                    {acciones.map((a) => {
+                        const Icono = a.icon;
+                        return (
+                            <button
+                                key={a.label}
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setAbierto(false); a.onClick(); }}
+                                className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted ${
+                                    a.peligro ? 'text-red-600' : 'text-foreground'
+                                }`}
+                            >
+                                {Icono && <Icono size={14} />}
+                                {a.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
 
 export const EstadoUsuarioBadge = ({ estado }: { estado: UsuarioAdmin['estado'] }) => {
     const info = ESTADO_USUARIO[estado] ?? { texto: estado, color: 'muted' as const };
@@ -44,7 +108,7 @@ export const Aviso = ({ tipo = 'info', children }: { tipo?: 'info' | 'error' | '
 export const PaginaAdmin = ({ children }: { children: ReactNode }) => {
     const { esAdmin, cargando } = useEsAdmin();
     return (
-        <DashboardLayoutAdmin>
+        <DashboardLayout>
             <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full">
                 {cargando && !esAdmin ? (
                     <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />)}</div>
@@ -54,7 +118,7 @@ export const PaginaAdmin = ({ children }: { children: ReactNode }) => {
                     <EmptyState icon={ShieldAlert} title="Solo para administradores" description="Esta sección es para el administrador de AgroSoft." />
                 )}
             </div>
-        </DashboardLayoutAdmin>
+        </DashboardLayout>
     );
 };
 

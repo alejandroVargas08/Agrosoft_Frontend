@@ -109,6 +109,39 @@ const Inventario = () => {
                                                 <p className="font-bold text-foreground">{fmt(item.valorInventario, true)}</p>
                                             </div>
                                         </div>
+                                        {/* La vida util solo aplica a herramientas, y solo si la
+                                            ficha del insumo trae las horas. Sin eso no se inventa nada. */}
+                                        {item.tipoInsumo === 'herramienta' &&
+                                            item.vidaUtilHoras !== undefined &&
+                                            item.vidaUtilHoras > 0 && (() => {
+                                                const usadas = item.horasUsadas ?? 0;
+                                                const gastado = Math.min(100, Math.round((usadas / item.vidaUtilHoras!) * 100));
+                                                const restantes = Math.max(0, item.vidaUtilHoras! - usadas);
+                                                const porAgotarse = gastado >= 80;
+
+                                                return (
+                                                    <div className="mt-3">
+                                                        <div className="mb-1 flex items-center justify-between text-xs">
+                                                            <span className="text-muted-foreground">Vida útil</span>
+                                                            <span className={porAgotarse ? 'font-semibold text-red-600' : 'text-muted-foreground'}>
+                                                                {fmt(usadas)} de {fmt(item.vidaUtilHoras!)} h · quedan {fmt(restantes)} h
+                                                            </span>
+                                                        </div>
+                                                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                                            <div
+                                                                className={`h-2 rounded-full transition-all ${porAgotarse ? 'bg-red-500' : 'bg-primary'}`}
+                                                                style={{ width: gastado + '%' }}
+                                                            />
+                                                        </div>
+                                                        {item.depreciacionAcumulada !== undefined && (
+                                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                                Depreciación acumulada: {fmt(item.depreciacionAcumulada, true)}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
+
                                         {item.stockReservado > 0 && (
                                             <p className="text-xs text-muted-foreground mt-2">
                                                 Reservado: {fmt(item.stockReservado)} {item.unidadUso}

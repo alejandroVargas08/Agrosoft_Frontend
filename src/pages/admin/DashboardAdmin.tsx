@@ -1,132 +1,153 @@
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, DollarSign, GraduationCap, Settings, Shield, Sprout, UserCheck, Users } from 'lucide-react';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Card, StatCard } from '../../components/ui/AgroUI';
-import { PaginaAdmin } from '../../components/admin/ComponentesAdmin';
-import { insumosApi } from '../../api/inventario';
-import { useDatosAdmin } from '../../hooks/admin/useDatosAdmin';
-import { useInicio } from '../../hooks/Inicio/useInicio';
-import { useReportes } from '../../hooks/useReportes';
-import { ROL_APRENDIZ } from '../../types/admin/admin';
+import { AlertTriangle, BookMarked, Clock, GraduationCap, UserCheck, Users } from 'lucide-react';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import { Badge, Btn, Card, PageHeader, StatCard } from '../../components/ui/AgroUI';
+import { useDashboardAdmin } from '../../hooks/admin/useDashboardAdmin';
 
-const pesos = (valor: number, compacto = false) =>
-    new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        maximumFractionDigits: compacto ? 1 : 0,
-        notation: compacto ? 'compact' : 'standard',
-    }).format(valor);
-
-const ACCESOS = [
-    { ruta: '/admin/usuarios', icono: Users, texto: 'Gestión Usuarios' },
-    { ruta: '/admin/roles', icono: Shield, texto: 'Roles y Permisos' },
-    { ruta: '/admin/programas', icono: GraduationCap, texto: 'Programas SENA' },
-    { ruta: '/admin/configuracion', icono: Settings, texto: 'Config. Sistema' },
-];
+const fecha = (valor: string) =>
+    new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
 
 const DashboardAdmin = () => {
     const navigate = useNavigate();
-    const datos = useDatosAdmin();
-    const inicio = useInicio();
-    const { reporte } = useReportes();
-    const bajoStock = useQuery({
-        queryKey: ['insumos', 'bajo-stock'],
-        queryFn: async () => (await insumosApi.listarBajoStock()).data,
-    });
+    const { totales, porRol, pendientes, fichasSinInstructor, nombreRol, cargando, error } =
+        useDashboardAdmin();
 
-    const usuarios = datos.usuarios.data ?? [];
-    const hoy = new Date();
-    const nuevosMes = usuarios.filter((u) => {
-        const f = new Date(u.creadoEn);
-        return f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear();
-    }).length;
-    const pendientes = datos.solicitudes.data?.length ?? 0;
-    const fichasActivas = (datos.fichas.data ?? []).filter((f) => f.estado === 'activo');
-    const aprendices = datos.aprendices.filter((a) => a.estado === 'activo' && datos.esRol(a, ROL_APRENDIZ)).length;
-    const desconectados = inicio.sensoresTotal - inicio.sensoresEnLinea;
+    const maximo = Math.max(1, ...porRol.map((f) => f.total));
 
     return (
-        <PaginaAdmin>
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-foreground">Dashboard Administración</h1>
-                <p className="text-sm text-muted-foreground mt-1">Vista general del sistema AgroSoft</p>
-            </div>
+        <DashboardLayout>
+            <div className="max-w-7xl mx-auto p-4 sm:p-6">
+                <PageHeader title="Administración" subtitle="Usuarios, fichas y solicitudes" />
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-                <StatCard icon={Users} label="Usuarios" value={datos.usuarios.isLoading ? '…' : usuarios.length} sub={`${nuevosMes} nuevos este mes`} color="primary" />
-                <StatCard icon={Sprout} label="Unidades Activas" value={inicio.cargandoResumen ? '…' : inicio.unidadesActivas} color="emerald" />
-                <StatCard icon={DollarSign} label="Ingresos" value={inicio.cargandoResumen ? '…' : pesos(inicio.ventasDelMes, true)} sub="este mes" color="amber" />
-                <StatCard icon={AlertTriangle} label="Alertas Activas" value={inicio.cargandoResumen ? '…' : inicio.incidenciasAbiertas} color="red" />
-                <div onClick={() => navigate('/admin/solicitudes')} className="cursor-pointer">
-                    <StatCard icon={UserCheck} label="Solicitudes pendientes" value={datos.solicitudes.isLoading ? '…' : pendientes} color={pendientes > 0 ? 'amber' : 'emerald'} />
+                {error && (
+                    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        {error}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+                    <button type="button" onClick={() => navigate('/usuarios')} className="text-left cursor-pointer">
+                        <StatCard icon={Users} label="Usuarios" value={totales.usuarios} color="primary" />
+                    </button>
+                    <StatCard icon={UserCheck} label="Activos" value={totales.activos} color="emerald" />
+                    <button type="button" onClick={() => navigate('/solicitudes')} className="text-left cursor-pointer">
+                        <StatCard
+                            icon={Clock}
+                            label="Pendientes"
+                            value={totales.pendientes}
+                            color={totales.pendientes > 0 ? 'amber' : 'emerald'}
+                        />
+                    </button>
+                    <button type="button" onClick={() => navigate('/programas')} className="text-left cursor-pointer">
+                        <StatCard icon={BookMarked} label="Fichas activas" value={totales.fichasActivas} color="blue" />
+                    </button>
+                    <StatCard icon={GraduationCap} label="Aprendices" value={totales.aprendices} color="primary" />
                 </div>
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                <Card>
-                    <h3 className="font-semibold text-foreground mb-3">Ingresos vs Egresos</h3>
-                    {reporte.finanzas.length === 0 ? (
-                        <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">Aún no hay movimientos financieros</div>
-                    ) : (
-                        <ResponsiveContainer width="100%" height={200}>
-                            <AreaChart data={reporte.finanzas}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e8f0e6" />
-                                <XAxis dataKey="periodo" tick={{ fontSize: 12 }} />
-                                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${(Number(v) / 1000000).toFixed(1)}M`} />
-                                <Tooltip formatter={(v) => pesos(Number(v))} />
-                                <Area type="monotone" dataKey="ingresos" name="Ingresos" stroke="#2d7a3e" fill="#2d7a3e20" />
-                                <Area type="monotone" dataKey="egresos" name="Egresos" stroke="#dc2626" fill="#dc262620" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    )}
-                </Card>
-                <Card>
-                    <h3 className="font-semibold text-foreground mb-3">Accesos rápidos Admin</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                        {ACCESOS.map(({ ruta, icono: Icono, texto }) => (
-                            <button key={ruta} type="button" onClick={() => navigate(ruta)} className="flex items-center gap-2 p-3 bg-muted rounded-xl hover:bg-primary/10 transition text-left">
-                                <Icono size={18} className="text-primary shrink-0" />
-                                <span className="text-sm font-medium text-foreground">{texto}</span>
-                            </button>
-                        ))}
-                    </div>
-                </Card>
-            </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <Card>
+                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                            <Users size={16} className="text-primary" />
+                            Usuarios por rol
+                        </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <Card>
-                    <h3 className="font-semibold text-foreground mb-2 text-sm">Sensores</h3>
-                    <div className="flex items-center gap-3">
-                        <div className="text-2xl font-bold text-primary">{inicio.sensoresEnLinea}/{inicio.sensoresTotal}</div>
-                        <div>
-                            <p className="text-xs text-muted-foreground">En línea</p>
-                            <p className="text-xs text-red-500">{desconectados} desconectados</p>
+                        {cargando ? (
+                            <p className="py-6 text-center text-sm text-muted-foreground">Cargando...</p>
+                        ) : porRol.length === 0 ? (
+                            <p className="py-6 text-center text-sm text-muted-foreground">
+                                Todavía no hay usuarios registrados.
+                            </p>
+                        ) : (
+                            <div className="space-y-3">
+                                {porRol.map((fila) => (
+                                    <div key={fila.rol}>
+                                        <div className="flex items-center justify-between text-sm mb-1">
+                                            <span className="font-medium text-foreground">{fila.rol}</span>
+                                            <span className="text-muted-foreground">{fila.total}</span>
+                                        </div>
+                                        <div className="bg-muted rounded-full h-2">
+                                            <div
+                                                className="h-2 rounded-full bg-primary transition-all"
+                                                style={{ width: (fila.total / maximo) * 100 + '%' }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <div className="pt-2 border-t border-border flex flex-wrap gap-3 text-xs text-muted-foreground">
+                                    <span>Rechazados: {totales.rechazados}</span>
+                                    <span>Inactivos o suspendidos: {totales.inactivos}</span>
+                                </div>
+                            </div>
+                        )}
+                    </Card>
+
+                    <Card>
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="font-semibold text-foreground flex items-center gap-2">
+                                <Clock size={16} className="text-primary" />
+                                Solicitudes por resolver
+                            </h3>
+                            {totales.pendientes > pendientes.length && (
+                                <Btn variant="ghost" size="sm" onClick={() => navigate('/solicitudes')}>
+                                    Ver todas ({totales.pendientes})
+                                </Btn>
+                            )}
                         </div>
-                    </div>
-                </Card>
-                <Card>
-                    <h3 className="font-semibold text-foreground mb-2 text-sm">Programas Activos</h3>
-                    <div className="flex items-center gap-3">
-                        <div className="text-2xl font-bold text-primary">{fichasActivas.length}</div>
-                        <div>
-                            <p className="text-xs text-muted-foreground">Fichas activas</p>
-                            <p className="text-xs text-muted-foreground">{aprendices} aprendices</p>
+
+                        {cargando ? (
+                            <p className="py-6 text-center text-sm text-muted-foreground">Cargando...</p>
+                        ) : pendientes.length === 0 ? (
+                            <p className="py-6 text-center text-sm text-muted-foreground">
+                                No hay solicitudes esperando aprobación.
+                            </p>
+                        ) : (
+                            <div className="space-y-2">
+                                {pendientes.map((u) => (
+                                    <button
+                                        key={u.id}
+                                        type="button"
+                                        onClick={() => navigate('/solicitudes')}
+                                        className="w-full flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-xl text-left hover:shadow-sm transition"
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-foreground truncate">
+                                                {u.nombre} {u.apellido}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground truncate">
+                                                Pidió {u.solicitud?.rolSolicitado ?? nombreRol(u.rolId)}
+                                            </p>
+                                        </div>
+                                        <span className="text-xs text-muted-foreground shrink-0">{fecha(u.creadoEn)}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </Card>
+                </div>
+
+                {fichasSinInstructor.length > 0 && (
+                    <Card className="mt-4">
+                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                            <AlertTriangle size={16} className="text-[#F16C07]" />
+                            Fichas activas sin instructor
+                        </h3>
+                        <p className="text-xs text-muted-foreground mb-3">
+                            Sin instructor a cargo, nadie puede asignarles tareas ni revisar sus entregas.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {fichasSinInstructor.map((p) => (
+                                <button key={p.id} type="button" onClick={() => navigate('/programas')}>
+                                    <Badge color="warning">
+                                        {p.ficha} · {p.nombre}
+                                    </Badge>
+                                </button>
+                            ))}
                         </div>
-                    </div>
-                </Card>
-                <Card>
-                    <h3 className="font-semibold text-foreground mb-2 text-sm">Inventario crítico</h3>
-                    <div className="flex items-center gap-3">
-                        <div className="text-2xl font-bold text-red-500">{bajoStock.data?.length ?? 0}</div>
-                        <div>
-                            <p className="text-xs text-muted-foreground">Items bajo mínimo</p>
-                            <button type="button" onClick={() => navigate('/inventario')} className="text-xs text-primary hover:underline">Ver inventario</button>
-                        </div>
-                    </div>
-                </Card>
+                    </Card>
+                )}
             </div>
-        </PaginaAdmin>
+        </DashboardLayout>
     );
 };
 

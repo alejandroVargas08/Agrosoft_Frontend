@@ -3,7 +3,7 @@ export interface Actividad {
     nombre: string;
     tipo: string; 
     subtipo?: string; 
-    estado: 'pendiente' | 'en_progreso' | 'completada'; 
+    estado: 'Pendiente' | 'En_progreso' | 'Completada'; // el backend los envia asi
     fecha: string; 
     horasActividad: number; 
     precioHoraActividad: number;

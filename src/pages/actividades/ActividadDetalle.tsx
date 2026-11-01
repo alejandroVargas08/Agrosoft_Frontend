@@ -7,28 +7,49 @@ import { TabReservas } from '../../components/actividadDetalle/TabReservas';
 import { TabInsumos } from '../../components/actividadDetalle/TabInsumos';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { TabServicio } from '../../components/actividadDetalle/TabServicios';
+import { TabCostos } from '../../components/actividadDetalle/TabCostos';
+import { TabHistorial } from '../../components/actividadDetalle/TabHistorial';
+import { TabAprendices } from '../../components/actividadDetalle/TabAprendices';
+import { useQuery } from '@tanstack/react-query';
+import { actividadesApi } from '../../api/actividades/actividades';
+import { usePermisos } from '../../hooks/permisos/usePermisos';
 
 
 const PESTAÑAS = [
-    { id: 'costos', label: 'costos'}, 
+    { id: 'costos', label: 'Costos' },
     { id: 'insumos', label: 'Insumos' },
     { id: 'herramientas', label: 'Herramientas' },
-    { id: 'historial', label: 'historial'},
+    { id: 'aprendices', label: 'Aprendices' },
     { id: 'reservas', label: 'Reservas' },
     { id: 'usos', label: 'Usos' },
     { id: 'servicios', label: 'Servicios' },
     { id: 'evidencias', label: 'Evidencias' },
+    { id: 'historial', label: 'Historial' },
 ] as const;
 
 type PestañaId = (typeof PESTAÑAS)[number]['id'];
+
+const ASIGNAR_ACTIVIDADES = 'actividades.asignar';
 
 const ActividadDetalle = () => {
     const { actividadId } = useParams<{ actividadId: string }>();
     const actividadIdNum = actividadId ? Number(actividadId) : undefined;
     const navigate = useNavigate();
 
-    const location = useLocation(); 
-    const actividad = location.state?.actividad; 
+    const location = useLocation();
+    const { puede } = usePermisos();
+    const puedeAsignar = puede(ASIGNAR_ACTIVIDADES);
+
+    // Al recargar la página se pierde el state, así que se pide al backend
+    const actividadDelState = location.state?.actividad;
+    const actividadQuery = useQuery({
+        queryKey: ['actividad', actividadIdNum],
+        queryFn: async () => (await actividadesApi.obtenerPorId(actividadIdNum!)).data,
+        enabled: actividadIdNum !== undefined && !actividadDelState,
+    });
+    const actividad = actividadDelState ?? actividadQuery.data ?? null;
+
+    const pestañas = PESTAÑAS.filter((p) => p.id !== 'aprendices' || puedeAsignar);
 
     const [pestañaActiva, setPestañaActiva] = useState<PestañaId>('costos');
     const getEstadoBadge = (estado?: string) => {
@@ -81,7 +102,7 @@ const ActividadDetalle = () => {
             </div>
 
             <div className="flex gap-2 p-1.5 bg-[#f0f4f1] rounded-2xl mb-8 overflow-x-auto">
-                    {PESTAÑAS.map((p) => (
+                    {pestañas.map((p) => (
                         <button
                             key={p.id}
                             onClick={() => setPestañaActiva(p.id)}
@@ -97,6 +118,9 @@ const ActividadDetalle = () => {
             </div>
 
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100">
+                {pestañaActiva === 'costos' && <TabCostos actividadId={actividadIdNum} actividad={actividad} />}
+                {pestañaActiva === 'historial' && <TabHistorial actividadId={actividadIdNum} />}
+                {pestañaActiva === 'aprendices' && puedeAsignar && <TabAprendices actividadId={actividadIdNum} />}
                 {pestañaActiva === 'insumos' && <TabInsumos actividadId={actividadIdNum} />}
                 {pestañaActiva === 'reservas' && <TabReservas actividadId={actividadIdNum} />}
                 {pestañaActiva === 'usos' && <TabUsos actividadId={actividadIdNum} />}

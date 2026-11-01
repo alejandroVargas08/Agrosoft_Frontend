@@ -2,13 +2,17 @@ import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Register } from './pages/Register'
 import Login from './pages/Login'
-import Inicio from './pages/InicioPorRol'
+import InicioSegunRol from './pages/InicioSegunRol'
 import RecuperarPassword from './pages/RecuperarPassword'
 import VerificarCodigo from './pages/VerificarCodigo'
 import NuevaContrasena from './pages/NuevaContrasena'
 import Perfil from './pages/Perfil'
 import EditarPerfil from './pages/EditarPerfil'
 import Configuracion from './pages/Configuracion'
+import CentroAyuda from './pages/CentroAyuda'
+import Privacidad from './pages/Privacidad'
+import Fichas from './pages/admin/Fichas'
+import ConfiguracionSistema from './pages/admin/ConfiguracionSistema'
 import AgroBot from './pages/AgroBot'
 import LotesSublotes from './pages/LotesSublotes'
 import NuevoLote from './pages/NuevoLote'
@@ -22,10 +26,25 @@ import Tratamientos from './pages/Tratamientos'
 import Reportes from './pages/Reportes'
 import Ventas from './pages/Ventas'
 import Alertas from './pages/Alertas'
+import WikiEpa from './pages/WikiEpa'
+import SolicitudesAcceso from './pages/SolicitudesAcceso'
+import MisFichas from './pages/instructor/MisFichas'
+import Revision from './pages/instructor/Revision'
+import MisTareas from './pages/instructor/MisTareas'
+import InicioInstructor from './pages/instructor/InicioInstructor'
+import FichaDetalle from './pages/instructor/FichaDetalle'
+import AprendizDetalle from './pages/instructor/AprendizDetalle'
+import MisNovedades from './pages/novedades/MisNovedades'
+import NovedadesInstructor from './pages/novedades/NovedadesInstructor'
+import Programas from './pages/admin/Programas'
+import Usuarios from './pages/admin/Usuarios'
+import RolesPermisos from './pages/admin/RolesPermisos'
+import DashboardAdmin from './pages/admin/DashboardAdmin'
 import SensoresPage from './pages/SensorPage'
 import Actividades from './pages/actividades/actividades'
 import ActividadDetalle from './pages/actividades/ActividadDetalle'
 import Cultivos from './pages/cultivos/cultivos'
+import CultivoDetalle from './pages/cultivos/CultivoDetalle'
 import Notificaciones from './pages/notificaciones/Notificaciones'
 import LayoutConNotificaciones from './components/layout/LayoutConNotificaciones'
 import Historial from './pages/historial/historial'
@@ -33,11 +52,6 @@ import Drones from './pages/drones/Drones'
 import Vuelos from './pages/drones/Vuelos'
 import DetalleVuelo from './pages/drones/DetalleVuelo'
 import ResultadoAnalisis from './pages/drones/ResultadoAnalisis'
-import SolicitudesAcceso from './pages/admin/SolicitudesAcceso'
-import GestionUsuarios from './pages/admin/GestionUsuarios'
-import RolesPermisos from './pages/admin/RolesPermisos'
-import ProgramasFormacion from './pages/admin/ProgramasFormacion'
-import ConfiguracionSistema from './pages/admin/ConfiguracionSistema'
 
 function App() {
   return (
@@ -50,10 +64,14 @@ function App() {
 
       {/* Pongan las rutas del sidebar aquí */}
       <Route element={<LayoutConNotificaciones />}>
-        <Route path="/inicio" element={<Inicio />} />
+        <Route path="/inicio" element={<InicioSegunRol />} />
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/editar-perfil" element={<EditarPerfil />} />
         <Route path="/configuracion" element={<Configuracion />} />
+        <Route path="/ayuda" element={<CentroAyuda />} />
+        <Route path="/privacidad" element={<Privacidad />} />
+        <Route path="/fichas" element={<Fichas />} />
+        <Route path="/ajustes" element={<ConfiguracionSistema />} />
         <Route path="/agrobot" element={<AgroBot />} />
         <Route path="/actividades" element={<Actividades />} />
         <Route path="/actividades/:id" element={<ActividadDetalle />} />
@@ -62,7 +80,26 @@ function App() {
         <Route path="/reportes" element={<Reportes />} />
         <Route path="/ventas" element={<Ventas />} />
         <Route path="/alertas" element={<Alertas />} />
+        <Route path="/wiki-epa" element={<WikiEpa />} />
+        <Route path="/solicitudes" element={<SolicitudesAcceso />} />
+
+        {/* Instructor */}
+        <Route path="/panel-instructor" element={<InicioInstructor />} />
+        <Route path="/mis-fichas" element={<MisFichas />} />
+        <Route path="/mis-fichas/:id" element={<FichaDetalle />} />
+        <Route path="/aprendices/:id" element={<AprendizDetalle />} />
+
+        {/* Administración */}
+        <Route path="/administracion" element={<DashboardAdmin />} />
+        <Route path="/programas" element={<Programas />} />
+        <Route path="/usuarios" element={<Usuarios />} />
+        <Route path="/roles" element={<RolesPermisos />} />
+        <Route path="/por-revisar" element={<Revision />} />
+        <Route path="/mis-tareas" element={<MisTareas />} />
+        <Route path="/mis-novedades" element={<MisNovedades />} />
+        <Route path="/novedades" element={<NovedadesInstructor />} />
         <Route path="/cultivos" element={<Cultivos />} />
+        <Route path="/cultivos/:id" element={<CultivoDetalle />} />
         <Route path="/historial" element={<Historial />} />
         <Route path="/unidades-productivas" element={<UnidadesProductivas />} />
         <Route path="/unidades-productivas/nueva" element={<NuevaUnidadProductiva />} />
@@ -78,14 +115,6 @@ function App() {
         <Route path="/drones/vuelos" element={<Vuelos />} />
         <Route path="/drones/vuelos/:id" element={<DetalleVuelo />} />
         <Route path="/drones/analisis/:id" element={<ResultadoAnalisis />} />
-
-        {/*Administrador*/}
-        <Route path="/admin" element={<Navigate to="/inicio" replace />} />
-        <Route path="/admin/solicitudes" element={<SolicitudesAcceso />} />
-        <Route path="/admin/usuarios" element={<GestionUsuarios />} />
-        <Route path="/admin/roles" element={<RolesPermisos />} />
-        <Route path="/admin/programas" element={<ProgramasFormacion />} />
-        <Route path="/admin/configuracion" element={<ConfiguracionSistema />} />
 
         <Route path="/notificaciones" element={<Notificaciones />} />
       </Route>
@@ -105,3 +134,4 @@ function App() {
 }
 
 export default App
+

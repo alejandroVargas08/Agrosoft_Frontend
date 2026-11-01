@@ -16,6 +16,29 @@ const hace = (iso: string) => {
 
 const num = (n: number) => Number(n).toLocaleString('es-CO', { maximumFractionDigits: 2 });
 
+// Días entre hoy y la fecha de la tarea: negativo = ya venció
+const diasHasta = (iso: string) => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const fecha = new Date(iso);
+    fecha.setHours(0, 0, 0, 0);
+    return Math.round((fecha.getTime() - hoy.getTime()) / 86400000);
+};
+
+const textoPlazo = (dias: number) => {
+    if (dias < -1) return 'Venció hace ' + Math.abs(dias) + ' días';
+    if (dias === -1) return 'Venció ayer';
+    if (dias === 0) return 'Vence hoy';
+    if (dias === 1) return 'Vence mañana';
+    return 'Vence en ' + dias + ' días';
+};
+
+// Solo las que siguen abiertas entran como alerta
+const ABIERTAS = ['Pendiente', 'En_progreso'];
+
+// Cuántos días antes del vencimiento empieza a avisar
+const AVISO_DIAS = 3;
+
 export function useAlertas() {
     const queryClient = useQueryClient();
 
@@ -32,6 +55,11 @@ export function useAlertas() {
     const bajoStockQuery = useQuery({
         queryKey: ['insumos-bajo-stock'],
         queryFn: async () => (await alertasApi.insumosBajoStock()).data,
+    });
+
+    const actividadesQuery = useQuery({
+        queryKey: ['actividades-alertas'],
+        queryFn: async () => (await alertasApi.actividades()).data,
     });
 
     const sensores = sensoresQuery.data ?? [];
@@ -65,9 +93,24 @@ export function useAlertas() {
         fecha: '',
     }));
 
+    // Alertas de tareas: vencidas en rojo, las de los próximos días en naranja
+    const alertasTarea: Alerta[] = (actividadesQuery.data ?? [])
+        .filter((a) => ABIERTAS.includes(a.estado))
+        .map((a) => ({ actividad: a, dias: diasHasta(a.fecha) }))
+        .filter(({ dias }) => dias <= AVISO_DIAS)
+        .map(({ actividad, dias }) => ({
+            id: 'task-' + actividad.id,
+            idOriginal: actividad.id,
+            tipo: 'task' as const,
+            severidad: (dias < 0 ? 'high' : dias === 0 ? 'medium' : 'low') as SeveridadAlerta,
+            titulo: (dias < 0 ? 'Tarea vencida: ' : 'Tarea pendiente: ') + actividad.nombre,
+            descripcion: actividad.tipo + ' · Lote ' + actividad.loteId,
+            fecha: textoPlazo(dias),
+        }));
+
     // Las más graves primero
     const PESO: Record<SeveridadAlerta, number> = { high: 0, medium: 1, low: 2 };
-    const alertas = [...alertasSensor, ...alertasStock].sort(
+    const alertas = [...alertasSensor, ...alertasStock, ...alertasTarea].sort(
         (a, b) => PESO[a.severidad] - PESO[b.severidad],
     );
 
@@ -79,8 +122,8 @@ export function useAlertas() {
     return {
         alertas,
         total: alertas.length,
-        cargando: sensorAlertasQuery.isLoading || bajoStockQuery.isLoading,
-        error: sensorAlertasQuery.error || bajoStockQuery.error
+        cargando: sensorAlertasQuery.isLoading || bajoStockQuery.isLoading || actividadesQuery.isLoading,
+        error: sensorAlertasQuery.error || bajoStockQuery.error || actividadesQuery.error
             ? 'No se pudieron cargar las alertas.'
             : '',
         descartar: (id: number) => descartarMutation.mutate(id),

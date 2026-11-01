@@ -1,9 +1,7 @@
 import { apiGet } from "../api/client";
 import type { Sensor, TipoSensor } from "../types/sensor";
 
-const UMBRAL_DESCONEXION_MIN = 15;
-
-type Raw = Record<string, any>;
+type Raw = Record<string, unknown>;
 
 function detectarTipo(t: string): TipoSensor {
   const v = t.toLowerCase();
@@ -16,37 +14,60 @@ function detectarTipo(t: string): TipoSensor {
 const num = (v: unknown): number | null =>
   v === null || v === undefined || v === "" || isNaN(Number(v)) ? null : Number(v);
 
-function normalizar(s: Raw): Sensor {
-  const ultimaLectura: string | null =
-    s.ultima_lectura ?? s.ultimaLectura ?? s.last_reading_at ?? null;
-  const valor = num(s.ultimo_valor ?? s.valor ?? s.value);
-  const min = num(s.rango_min ?? s.min);
-  const max = num(s.rango_max ?? s.max);
+const texto = (v: unknown): string | null =>
+  typeof v === "string" ? v : typeof v === "number" ? String(v) : null;
 
-  let enLinea: boolean;
-  if (typeof s.en_linea === "boolean") enLinea = s.en_linea;
-  else if (typeof s.estado === "string")
-    enLinea = ["online", "en_linea", "activo"].includes(s.estado.toLowerCase());
-  else
-    enLinea =
-      !!ultimaLectura &&
-      Date.now() - new Date(ultimaLectura).getTime() < UMBRAL_DESCONEXION_MIN * 60_000;
+const primerTexto = (...valores: unknown[]): string | null => {
+  for (const v of valores) {
+    const t = texto(v);
+    if (t !== null && t !== "") return t;
+  }
+  return null;
+};
+
+/**
+ * GET /sensores devuelve la forma de SensorPublico del backend:
+ * nombreSensor, tipo, unidad, ultimoValor, ultimaMedicion, estadoConexion,
+ * valorMinimoSensor, valorMaximoSensor, loteId, subLoteId, cultivoId.
+ *
+ * Antes este normalizador buscaba nombre / ultimo_valor / rango_min, que no
+ * existen en ninguna respuesta: todos los sensores caian a nombre "Sensor",
+ * valor null y enLinea false, y el panel mostraba "Sensores activos 0/N".
+ */
+function normalizar(s: Raw): Sensor {
+  const ultimaLectura = primerTexto(s.ultimaMedicion, s.ultimaVistaEn);
+  const valor = num(s.ultimoValor);
+  const min = num(s.valorMinimoSensor);
+  const max = num(s.valorMaximoSensor);
+
+  const estadoConexion = primerTexto(s.estadoConexion)?.toLowerCase() ?? null;
+  const enLinea = estadoConexion === "conectado";
 
   const fuera = valor !== null && ((min !== null && valor < min) || (max !== null && valor > max));
 
   return {
-    id: s.id,
-    nombre: s.nombre ?? s.name ?? "Sensor",
-    tipo: detectarTipo(s.tipo ?? s.type ?? ""),
-    ubicacion: s.ubicacion ?? s.location ?? "",
-    unidad: s.unidad ?? s.unit ?? "",
-    valor, min, max, ultimaLectura, enLinea,
+    id: num(s.id) ?? 0,
+    nombre: primerTexto(s.nombreSensor) ?? "Sensor",
+    tipo: detectarTipo(primerTexto(s.tipo) ?? primerTexto(s.nombreSensor) ?? ""),
+    // El backend no manda el nombre del lote: la pantalla lo resuelve con loteId
+    ubicacion: "",
+    unidad: primerTexto(s.unidad) ?? "",
+    valor,
+    min,
+    max,
+    ultimaLectura,
+    enLinea,
     alerta: enLinea && fuera,
+    loteId: num(s.loteId),
+    subLoteId: num(s.subLoteId),
+    cultivoId: num(s.cultivoId),
   };
 }
 
 export async function getSensores(signal?: AbortSignal): Promise<Sensor[]> {
   const json = await apiGet<Raw[] | Raw>("/sensores", signal);
-  const lista: Raw[] = Array.isArray(json) ? json : json.sensores ?? json.data ?? [];
+  const comoArreglo = (v: unknown): Raw[] | null => (Array.isArray(v) ? (v as Raw[]) : null);
+  const lista: Raw[] =
+    comoArreglo(json) ?? comoArreglo((json as Raw).sensores) ?? comoArreglo((json as Raw).data) ?? [];
   return lista.map(normalizar);
 }

@@ -4,6 +4,7 @@ import { ArrowLeft, Camera } from 'lucide-react';
 import { usePerfil } from '../hooks/usePerfil';
 import { InicioUsuario } from '../hooks/useAuth';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import { mensajeError } from '../api/errores/errores';
 
 function inicial(nombre?: string) {
   const caracter = nombre?.trim()?.charAt(0)?.toUpperCase();
@@ -67,10 +68,8 @@ export default function EditarPerfil() {
     try {
       await actualizarPerfil({ nombre, apellido, telefono });
       navigate('/perfil');
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message || 'No se pudo guardar los cambios. Intenta de nuevo.'
-      );
+    } catch (err: unknown) {
+      setError(mensajeError(err, 'No se pudo guardar los cambios. Intenta de nuevo.'));
     } finally {
       setGuardando(false);
     }
@@ -78,7 +77,7 @@ export default function EditarPerfil() {
 
   if (cargando) {
     return (
-      <DashboardLayout unreadNotifications={2}>
+      <DashboardLayout>
         <div className="p-4 sm:p-8">
           <div className="animate-pulse space-y-4 max-w-xl mx-auto">
             <div className="h-8 w-40 bg-gray-200 rounded" />
@@ -90,7 +89,7 @@ export default function EditarPerfil() {
   }
 
   return (
-    <DashboardLayout unreadNotifications={2}>
+    <DashboardLayout>
       <div className="p-4 sm:p-8">
         <div className="max-w-xl mx-auto">
           <div className="flex items-center gap-3 mb-6">

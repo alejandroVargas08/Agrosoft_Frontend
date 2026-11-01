@@ -73,7 +73,7 @@ const UnidadesProductivas = () => {
                                     onClick={() => navigate(`/unidades-productivas/${u.id}`)}
                                 >
                                     <div className="flex items-start justify-between mb-2">
-                                        <div className="p-1.5 bg-primary/10 rounded-lg">
+                                        <div className="p-1.5 bg-icon-bg rounded-lg">
                                             <Sprout size={16} className="text-primary" />
                                         </div>
                                         <StatusBadge status={u.estado} />

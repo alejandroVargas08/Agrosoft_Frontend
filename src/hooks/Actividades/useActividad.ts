@@ -14,8 +14,12 @@ export function useActividades(cultivoId: number | null) {
         error,
     } = useQuery({
         queryKey: ['actividades', cultivoId],
-        queryFn: async () => (await actividadesApi.listarPorCultivo(cultivoId!)).data,
-        enabled: cultivoId !== null,
+        // Sin cultivo se listan todas las visibles, como en el diseño: antes la
+        // pantalla obligaba a elegir lote y cultivo antes de mostrar nada
+        queryFn: async () =>
+            cultivoId === null
+                ? (await actividadesApi.listar()).data
+                : (await actividadesApi.listarPorCultivo(cultivoId)).data,
         retry: (intentos, err) => !esSinPermiso(err) && intentos < 2,
     });
 

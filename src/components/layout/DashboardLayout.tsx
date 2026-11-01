@@ -17,6 +17,7 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { sinLeer } = useNotificacionesContext();
+  // El administrador tiene su propio menu
   const { esAdmin } = useEsAdmin();
   const Menu = esAdmin ? SidebarAdmin : Sidebar;
 

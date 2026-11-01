@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Pencil, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { usePerfil } from '../hooks/usePerfil';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import Notificaciones from './notificaciones/Notificaciones';
 
 function formatearFecha(fecha?: string) {
   if (!fecha) return 'No registrada';
@@ -56,7 +55,7 @@ export default function Perfil() {
     );
   }
 
-  const { nombre, email, telefono, ubicacion, rol, emailVerificado, programaFormacion } = perfil;
+  const { nombre, correo: email, telefono, ubicacion, rol, correoVerificado, programaFormacion } = perfil;
 
   return (
     <DashboardLayout>
@@ -87,7 +86,7 @@ export default function Perfil() {
               <span className="inline-block bg-green-50 text-green-700 text-xs font-semibold px-3 py-1 rounded-full mb-2">
                 {rol || 'Usuario'}
               </span>
-              {emailVerificado && (
+              {correoVerificado && (
                 <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
                   <CheckCircle2 size={14} />
                   Correo verificado

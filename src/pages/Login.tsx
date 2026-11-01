@@ -4,7 +4,7 @@ import { isAxiosError } from 'axios';
 import { api } from '../api/axios';
 import logoAgrosoft from '../assets/img/logo-agrosoft.png';
 import logoSena from '../assets/img/logo-sena-blanco.png';
-import { LuSprout, LuCpu, LuMail, LuLock, LuEye, LuEyeOff, LuAsterisk } from 'react-icons/lu';
+import { LuSprout, LuCpu, LuMail, LuLock, LuEye, LuEyeOff, LuAsterisk, LuClock } from 'react-icons/lu';
 import { FiBarChart2 } from 'react-icons/fi';
 
 function Login() {
@@ -13,11 +13,14 @@ function Login() {
     const [password, setPassword] = useState('');
     const [mostrarPassword, setMostrarPassword] = useState(false);
     const [error, setError] = useState('');
+    // Cuenta pendiente, rechazada, inactiva o suspendida: es un aviso, no un error de credenciales
+    const [avisoCuenta, setAvisoCuenta] = useState('');
     const [exito, setExito] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setAvisoCuenta('');
         setExito('');
 
         try {
@@ -33,9 +36,15 @@ function Login() {
 
             navigate('/inicio');
         } catch (err) {
-            const mensaje = isAxiosError(err) ? err.response?.data?.message : undefined;
-            setError(mensaje ?? 'Error al iniciar sesión');
+            const datos = isAxiosError(err) ? err.response?.data : undefined;
+            const mensaje = datos?.message ?? 'Error al iniciar sesión';
             setExito('');
+
+            if (datos?.estado) {
+                setAvisoCuenta(mensaje);
+            } else {
+                setError(mensaje);
+            }
         }
     };
 
@@ -151,6 +160,13 @@ function Login() {
 
                         {exito && <p className="text-sm font-medium text-green-700">{exito}</p>}
                         {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+
+                        {avisoCuenta && (
+                            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                                <LuClock size={18} className="mt-0.5 shrink-0 text-amber-600" />
+                                <p className="text-sm font-medium text-amber-800">{avisoCuenta}</p>
+                            </div>
+                        )}
 
                         <button
                             type="submit"

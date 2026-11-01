@@ -24,24 +24,24 @@ interface SidebarProps {
 
 const adminItems: MenuItem[] = [
     { icon: BarChart3, label: 'Dashboard Admin', path: '/inicio' },
-    { icon: UserCheck, label: 'Solicitudes de acceso', path: '/admin/solicitudes' },
+    { icon: UserCheck, label: 'Solicitudes de acceso', path: '/solicitudes' },
     { icon: Sprout, label: 'Unidades Productivas', path: '/unidades-productivas' },
     { icon: Leaf, label: 'Cultivos', path: '/cultivos' },
-    { icon: Users, label: 'Gestión de Usuarios', path: '/admin/usuarios' },
-    { icon: Shield, label: 'Roles y Permisos', path: '/admin/roles' },
-    { icon: GraduationCap, label: 'Programas SENA', path: '/admin/programas' },
+    { icon: Users, label: 'Gestión de Usuarios', path: '/usuarios' },
+    { icon: Shield, label: 'Roles y Permisos', path: '/roles' },
+    { icon: GraduationCap, label: 'Programas SENA', path: '/programas' },
     { icon: Radio, label: 'Sensores IoT', path: '/sensores-iot' },
     { icon: Plane, label: 'Drones', path: '/drones' },
     { icon: Package, label: 'Inventario', path: '/inventario' },
     { icon: BarChart3, label: 'Reportes', path: '/reportes' },
     { icon: Bot, label: 'Consultas', path: '/agrobot' },
-    { icon: Settings, label: 'Config. Sistema', path: '/admin/configuracion' },
+    { icon: Settings, label: 'Config. Sistema', path: '/ajustes' },
 ];
 
 function useItemsMenu(): MenuItem[] {
     const solicitudes = useSolicitudesPendientes();
     const total = solicitudes.data?.length ?? 0;
-    return adminItems.map((item) => (item.path === '/admin/solicitudes' ? { ...item, contador: total } : item));
+    return adminItems.map((item) => (item.path === '/solicitudes' ? { ...item, contador: total } : item));
 }
 
 const Contador = ({ valor, compacto = false }: { valor?: number; compacto?: boolean }) =>

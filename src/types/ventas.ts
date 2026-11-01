@@ -73,4 +73,10 @@ export interface LoteProduccion {
     costoUnitarioKg: number;
     costoTotal: number;
     precioSugeridoKg: number;
+    // Trazabilidad de la cosecha
+    destino?: string | null;
+    responsable?: string | null;
+    observaciones?: string | null;
+    /** Fecha de registro de la cosecha (created_at en la tabla) */
+    fechaCosecha?: string | null;
 }

@@ -1,347 +1,197 @@
-import { useState } from "react"
-import type { tipoFuenteHistorial } from "../../types/historial"
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import { useQuery } from "@tanstack/react-query";
-import { useActividadHistorial } from "../../hooks/Historial/useActividadHistorial";
-import { useHistorialPreciosLote } from "../../hooks/Historial/useHistorialPreciosLote";
-import { useHistorialCultivo } from "../../hooks/Historial/useHistorialCultivo";
-import { api } from "../../api/axios"; 
-import { actividadesApi } from "../../api/actividades/actividades";
-import { cultivosApi } from "../../api/cultivo/cultivos";
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ClipboardList, Coins, History as IconoHistorial, User } from 'lucide-react';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import { Badge, Card, EmptyState, PageHeader, SearchBar, Tab } from '../../components/ui/AgroUI';
+import { useHistorialGeneral, type EventoHistorial, type FuenteHistorial } from '../../hooks/Historial/useHistorialGeneral';
+
+// Tab recibe string[], asi que la etiqueta es la clave
+const TABS = ['Todo', 'Actividades', 'Precios'];
+const FUENTE_DE_TAB: Record<string, FuenteHistorial | null> = {
+    Todo: null,
+    Actividades: 'actividad',
+    Precios: 'precio',
+};
+
+const FUENTES: Record<FuenteHistorial, { etiqueta: string; icono: typeof ClipboardList; color: 'primary' | 'info' }> = {
+    actividad: { etiqueta: 'Actividad', icono: ClipboardList, color: 'primary' },
+    precio: { etiqueta: 'Precio', icono: Coins, color: 'info' },
+};
+
+const hoy = new Date().toDateString();
+const ayer = new Date(Date.now() - 86400_000).toDateString();
+
+function etiquetaDia(fecha: Date): string {
+    const dia = fecha.toDateString();
+    if (dia === hoy) return 'Hoy';
+    if (dia === ayer) return 'Ayer';
+    return fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+const hora = (fecha: Date) =>
+    fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+
+/** Los valores del JSON de cambios llegan como unknown */
+function texto(valor: unknown): string {
+    if (valor === null || valor === undefined || valor === '') return '—';
+    if (typeof valor === 'number') return valor.toLocaleString('es-CO');
+    if (typeof valor === 'boolean') return valor ? 'Sí' : 'No';
+    if (typeof valor === 'string') return valor;
+    return JSON.stringify(valor);
+}
 
 const Historial = () => {
-    const [fuente, setFuente] = useState<tipoFuenteHistorial>('actividades');
+    const navigate = useNavigate();
+    const { eventos, nombreUsuario, cargando, error } = useHistorialGeneral();
+    const [tab, setTab] = useState('Todo');
+    const [busqueda, setBusqueda] = useState('');
+
+    const visibles = useMemo(() => {
+        const termino = busqueda.trim().toLowerCase();
+        const fuente = FUENTE_DE_TAB[tab] ?? null;
+        return eventos.filter((e) => {
+            if (fuente !== null && e.fuente !== fuente) return false;
+            if (!termino) return true;
+            return (
+                e.titulo.toLowerCase().includes(termino) ||
+                e.motivo.toLowerCase().includes(termino) ||
+                nombreUsuario(e.usuarioId).toLowerCase().includes(termino)
+            );
+        });
+    }, [eventos, tab, busqueda, nombreUsuario]);
+
+    // Se agrupa por día para que la línea de tiempo se lea de un vistazo
+    const porDia = useMemo(() => {
+        const grupos = new Map<string, EventoHistorial[]>();
+        for (const e of visibles) {
+            const clave = etiquetaDia(e.fecha);
+            const lista = grupos.get(clave);
+            if (lista) lista.push(e);
+            else grupos.set(clave, [e]);
+        }
+        return [...grupos.entries()];
+    }, [visibles]);
 
     return (
         <DashboardLayout>
-            <div className="p-4 sm:p-8">
-                <div className="mb-6">
-                        <h1 className="text-3xl font-bold text-neutral-900">Historial y Auditoría</h1>
-                        <p className="text-neutral-500 text-base mt-1">Registro de cambios del sistema por actividad, cultivo o precio de lote</p>
+            <div className="mx-auto max-w-7xl p-4 sm:p-6">
+                <PageHeader
+                    title="Historial y auditoría"
+                    subtitle="Quién cambió qué y cuándo, en todo lo que puedes ver"
+                />
+
+                {error && (
+                    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        {error}
+                    </div>
+                )}
+
+                <div className="mb-4 space-y-3">
+                    <Tab tabs={TABS} active={tab} onChange={setTab} />
+                    <SearchBar
+                        value={busqueda}
+                        onChange={setBusqueda}
+                        placeholder="Buscar por actividad, motivo o persona..."
+                    />
                 </div>
 
-                <div className="flex gap-2 mb-8 border-b border-neutral-200 pb-4">
-                    {[
-                    { id: 'actividades' as tipoFuenteHistorial, label: 'Actividad' },
-                    { id: 'cultivos' as tipoFuenteHistorial, label: 'Cultivos' },
-                    { id: 'precio_lotes' as tipoFuenteHistorial, label: 'Precios de Lotes' },
-                    ].map((f) => (
-                    <button
-                        key={f.id}
-                        onClick={() => setFuente(f.id)}
-                        className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-                        fuente === f.id
-                            ? 'bg-[#2d7a3e] text-white shadow-sm'
-                            : 'bg-[#edf2ee] text-neutral-600 hover:bg-[#e2ebd7]'
-                        }`}
-                    >
-                        {f.label}
-                    </button>
-                    ))}
-                </div>
+                {cargando ? (
+                    <p className="py-10 text-center text-sm text-muted-foreground">Cargando historial…</p>
+                ) : visibles.length === 0 ? (
+                    <EmptyState
+                        icon={IconoHistorial}
+                        title={busqueda ? 'Sin resultados' : 'Todavía no hay cambios registrados'}
+                        description={
+                            busqueda
+                                ? `Nada coincide con “${busqueda}”.`
+                                : 'Cuando alguien modifique una actividad o el precio de un lote, el cambio aparecerá aquí.'
+                        }
+                    />
+                ) : (
+                    <div className="space-y-6">
+                        {porDia.map(([dia, lista]) => (
+                            <section key={dia}>
+                                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                    {dia}
+                                </h2>
 
-            {fuente === 'actividades' && <HistorialActividades/>}
-            {fuente === 'cultivos' && <HistorialCultivos/>}
-            {fuente === 'precio_lotes' && <HistorialPreciosLote />}
+                                <div className="space-y-2">
+                                    {lista.map((e) => {
+                                        const fuente = FUENTES[e.fuente];
+                                        const Icono = fuente.icono;
+                                        const campos = Object.entries(e.cambios ?? {});
 
+                                        return (
+                                            <Card
+                                                key={e.clave}
+                                                className={e.actividadId ? 'cursor-pointer' : ''}
+                                                onClick={
+                                                    e.actividadId
+                                                        ? () => navigate('/actividades/' + e.actividadId)
+                                                        : undefined
+                                                }
+                                            >
+                                                <div className="flex gap-3">
+                                                    <div className="mt-0.5 h-9 w-9 shrink-0 rounded-xl bg-icon-bg grid place-items-center">
+                                                        <Icono size={16} className="text-primary" />
+                                                    </div>
+
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <p className="font-semibold text-foreground">{e.titulo}</p>
+                                                            <Badge color={fuente.color}>{fuente.etiqueta}</Badge>
+                                                            <span className="ml-auto text-xs text-muted-foreground">
+                                                                {hora(e.fecha)}
+                                                            </span>
+                                                        </div>
+
+                                                        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                            <User size={12} />
+                                                            {nombreUsuario(e.usuarioId)}
+                                                        </p>
+
+                                                        <p className="mt-1.5 text-sm text-foreground">{e.motivo}</p>
+
+                                                        {campos.length > 0 && (
+                                                            <div className="mt-2 space-y-1">
+                                                                {campos.map(([campo, valor]) => (
+                                                                    <div
+                                                                        key={campo}
+                                                                        className="flex flex-wrap items-center gap-2 rounded-lg bg-muted px-2.5 py-1.5 text-xs"
+                                                                    >
+                                                                        <span className="font-semibold text-foreground">
+                                                                            {campo}
+                                                                        </span>
+                                                                        <span className="text-red-600 line-through">
+                                                                            {texto(valor?.anterior)}
+                                                                        </span>
+                                                                        <span className="text-muted-foreground">→</span>
+                                                                        <span className="font-medium text-emerald-700">
+                                                                            {texto(valor?.nuevo)}
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        ))}
+
+                        <p className="pt-2 text-center text-xs text-muted-foreground">
+                            {visibles.length} cambio{visibles.length === 1 ? '' : 's'}.
+                            {' '}El historial de cultivo no entra aquí: el backend solo lo expone por cultivo,
+                            y se ve en el detalle de cada uno.
+                        </p>
+                    </div>
+                )}
             </div>
         </DashboardLayout>
     );
 };
-
-function HistorialActividades() {
-    const [loteId, setLoteId] = useState<string>('');
-    const [cultivoSeleccionadoId, setCultivoSeleccionadoId] = useState<string>('');
-    const [actividadId, setActividadId] = useState<string>('');
-
-    const loteIdNum = loteId ? Number(loteId) : undefined;
-    const cultivoIdNum = cultivoSeleccionadoId ? Number(cultivoSeleccionadoId) : undefined;
-    const actividadIdNum = actividadId ? Number(actividadId) : undefined;
-
-    const { data: lotes = []} = useQuery({
-        queryKey: ['lotes-select'],
-        queryFn: async() => {
-            const response = await api.get('/territorio/lotes');
-            console.log("Respuesta de lotes recibida:", response.data);
-            return Array.isArray(response.data) ? response.data : (response.data?.data || []);
-        } 
-    });
-
-    const { data: cultivos = []} = useQuery({
-        queryKey: ['cultivos-por-lote', loteIdNum],
-        queryFn: async() => {
-            const response = await cultivosApi.listarPorLote(loteIdNum!);
-            return response.data || response;
-        },
-        enabled: !!loteIdNum,
-    });
-
-    const { data: actividades = []} = useQuery({
-        queryKey: ['actividades-por-cultivo', cultivoIdNum],
-        queryFn: async() => {
-            const response = await actividadesApi.listarPorCultivo(cultivoIdNum!);
-            return response.data || response;
-        },
-        enabled: !!cultivoIdNum,
-    });
-
-    const { historial, loading, error} = useActividadHistorial(actividadIdNum);
-
-    return (
-
-        <div>
-
-            <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-                <label className="block text-sm font-medium text-neutral-700 mb-1"> 1. Selecciona un Lote: </label>
-                <select 
-                value={loteId}
-                onChange={(e) => {
-                        setLoteId(e.target.value);
-                        setCultivoSeleccionadoId('');
-                        setActividadId('');
-                    }}
-                className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                >
-                    <option value="">-- Elige un lote --</option>
-                    {Array.isArray(lotes) && lotes.map((l: {id: number; nombre?: string; nombreLote?: string }) => (
-                        <option key={l.id} value={l.id}>{l.nombre || l.nombreLote || `Lote #${l.id}`}</option>
-                    )) }
-                </select>
-            </div>
-
-            {loteIdNum && (
-                <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-                    <label className="block text-sm font-medium text-neutral-700 mb-1"> 2. Seleccionar Cultivo: </label>
-                    <select 
-                    value={cultivoSeleccionadoId}
-                    onChange={(e) => {
-                            setCultivoSeleccionadoId(e.target.value);
-                            setActividadId('');
-                        }}
-                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                    >
-                        <option value="">Elige un cultivo</option>
-                        {cultivos.map((c: { id: number; nombreCultivo?: string; tipoCultivo?: string }) => (
-                            <option key={c.id} value={c.id}>{c.nombreCultivo || c.tipoCultivo || `Cultivo #${c.id}`}</option>
-                        ))}
-                    </select>
-                </div>
-            )}
-
-            { cultivoIdNum && (
-                <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">3. Seleccionar Actividad: </label>
-                    <select 
-                    value={actividadId}
-                    onChange={(e) => setActividadId(e.target.value)}
-                    className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                    >
-                        <option value="">-- Elige una actividad --</option>
-                        {actividades.map((a: { id: number; tipo?: string }) => (
-                            <option key={a.id} value={a.id}>{a.tipo ? `${a.tipo} (ID: ${a.id})` : `Actividad #${a.id}`}</option>
-                        ))}
-                    </select>
-                </div>
-            )}
-
-            {loteIdNum && <p className="text-neutral-400 italic text-sm">Primero selecciona un lote para ver sus cultivos.</p> }
-            { loteIdNum && !cultivoIdNum && <p className="text-neutral-400 italic text-sm">Selecciona un cultivo para ver sus actividades.</p> }
-            {cultivoIdNum && !actividadIdNum && <p className="text-neutral-400 italic text-sm">Selecciona una actividad para consultar su historial.</p>}
-
-        { actividadIdNum && (
-            <TimelineContainer loading={loading} error={error} isEmpty={historial.length === 0}>
-            {historial.map((h) => (
-                <TimelineCard
-                key={h.id}
-                usuarioId={h.usuarioId}
-                tipoLabel="Actividad"
-                fecha={h.fechaCreacion}
-                motivo={h.motivo}
-                cambios={h.cambios}
-                />
-            ))}
-            </TimelineContainer>
-        )}
-        </div>
-    );
-}
-
-function HistorialCultivos() {
-    const [loteId, setLoteId] = useState<string>('');
-    const [cultivoId, setCultivoId] = useState<string>('');
-
-    const loteIdNum = loteId ? Number(loteId): undefined;
-    const cultivoIdNum = cultivoId ? Number(cultivoId) : undefined;
-
-    const { data: lotes = []} = useQuery({
-        queryKey: ['lotes-select-cultivos-tab'],
-        queryFn: async () => (await api.get('/territorio/lotes')).data,
-    });
-
-    const { data: cultivos = []} = useQuery({
-        queryKey: ['cultivos-por-lote-tab', loteIdNum],
-        queryFn: async() => {
-            const response = await cultivosApi.listarPorLote(loteIdNum!);
-            return response.data || response;
-        },
-        enabled: !!loteIdNum,
-    }); 
-
-    const { historial, loading, error } = useHistorialCultivo(cultivoIdNum);
-
-    return (
-    <div>
-
-        <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-            <label className="block text-sm font-medium text-neutral-700 mb-1"> Seleccionar Lote: </label>
-            <select 
-            value={loteId} 
-            onChange={(e) => {
-                        setLoteId(e.target.value);
-                        setCultivoId('');
-                    }}
-            className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-            >
-                <option value="">-- Elige un lote --</option>
-                {lotes.map((l: { id: number; nombre?: string }) => (
-                        <option key={l.id} value={l.id}>{l.nombre || `Lote #${l.id}`}</option>
-                    ))}
-            </select>
-        </div>
-
-        { loteIdNum && (
-            <div className="mb-6 max-w-sm bg-white p-4 rounded-2xl shadow-sm border border-neutral-100">
-                <label className="block text-sm font-medium text-neutral-700 mb-1"> 2. Seleccionar Cultivo: </label>
-                <select 
-                value={cultivoId}
-                onChange={(e) => setCultivoId(e.target.value)}
-                className="w-full rounded-xl border border-neutral-200 py-2.5 px-4 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-700"
-                >
-                    <option value="">Elige un cultivo</option>
-                    {cultivos.map((c: { id: number; nombreCultivo?: string; tipoCultivo?: string }) => (
-                            <option key={c.id} value={c.id}>{c.nombreCultivo || c.tipoCultivo || `Cultivo #${c.id}`}</option>
-                        ))}
-                </select>
-            </div>
-        )}
-
-        { !loteIdNum && <p className="text-neutral-400 italic text-sm">Primero selecciona un lote para ver sus cultivos.</p> }
-        {loteIdNum && !cultivoIdNum && <p className="text-neutral-400 italic text-sm">Selecciona un cultivo para ver su historial.</p>}
-
-        {cultivoIdNum && (
-            <TimelineContainer loading={loading} error={error} isEmpty={historial.length === 0}>
-                {historial.map((h) => (
-                <TimelineCard
-                    key={h.id}
-                    usuarioId={h.usuarioId}
-                    tipoLabel="Cultivo"
-                    fecha={new Date().toISOString()} 
-                    motivo={h.motivo}
-                    cambios={h.cambios}
-                />
-            ))}
-        </TimelineContainer>
-        )}
-    </div>
-    );
-}
-
-function HistorialPreciosLote() {
-    const {registros , loading, error} = useHistorialPreciosLote();
-
-    return (
-    <div>
-        <TimelineContainer loading={loading} error={error} isEmpty={registros.length === 0}>
-        {registros.map((r) => (
-            <TimelineCard
-                key={r.id}
-                usuarioId={r.usuarioId}
-                tipoLabel="Precio Lote"
-                fecha={r.fecha}
-                motivo={r.razon}
-                cambios={{
-                precio: { anterior: r.precioAnterior, nuevo: r.precioNuevo }
-            }}
-            />
-            ))}
-        </TimelineContainer>
-    </div>
-    );
-}
-
-interface TimelineContainerProps {
-    loading: boolean;
-    error: string | null;
-    isEmpty: boolean;
-    children: React.ReactNode;
-}
-
-function TimelineContainer({ loading, error, isEmpty, children }: TimelineContainerProps) {
-    if (loading) return <p className="text-sm text-neutral-500 text-center py-6">Cargando registros...</p>;
-    if (error) return <p className="text-sm text-red-600 bg-red-50 p-4 rounded-xl text-center">{error}</p>;
-    if (isEmpty) return <p className="text-sm text-neutral-400 italic">No hay registros de cambios disponibles.</p>;
-
-    return (
-        <div className="relative border-l-2 border-emerald-200 ml-4 space-y-6">
-            {children}
-        </div>
-    );
-}
-
-interface TimelineCardProps {
-    usuarioId: number;
-    tipoLabel: string;
-    fecha: string | Date;
-    motivo?: string | null;
-    cambios?: Record<string, unknown>;
-}
-
-function TimelineCard({ usuarioId, tipoLabel, fecha, motivo, cambios }: TimelineCardProps) {
-  return (
-    <div className="relative pl-6">
-      <div className="absolute top-0 w-8 h-8 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-xs shadow-sm">
-        👤
-      </div>
-
-      <div className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-sm">
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-neutral-900 text-sm">Usuario #{usuarioId}</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#e2f4ed] text-[#0d5433] font-medium capitalize">
-              {tipoLabel}
-            </span>
-          </div>
-          <span className="text-xs text-neutral-400">
-            {fecha ? new Date(fecha).toLocaleString() : ''}
-          </span>
-        </div>
-
-        <p className="text-sm text-neutral-600 mb-3 font-medium">Actualización registrada</p>
-
-        {cambios && (
-            <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 mb-3 text-sm font-mono space-y-1">
-                {Object.entries(cambios).map(([campo, val]) => {
-                const valorCambio = val as { anterior?: unknown; nuevo?: unknown };
-                return (
-                    <div key={campo} className="flex items-center gap-2 flex-wrap">
-                        <span className="text-neutral-700 font-semibold">{campo}:</span>
-                        <span className="text-red-500 line-through">{String(valorCambio?.anterior ?? 'N/D')}</span>
-                        <span className="text-neutral-400">→</span>
-                        <span className="text-[#0d5433] font-bold">{String(valorCambio?.nuevo ?? 'N/D')}</span>
-                    </div>
-                );
-                })}
-            </div>
-            )}
-
-            {motivo && (
-                <p className="text-xs text-neutral-500 italic">
-                Motivo: "{motivo}"
-                </p>
-            )}
-            </div>
-        </div>
-    );
-}
 
 export default Historial;

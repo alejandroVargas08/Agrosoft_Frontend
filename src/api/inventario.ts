@@ -1,10 +1,17 @@
 import { api } from './axios';
 import type {
-    Almacen, CrearAlmacenPayload,
-    Categoria, CrearCategoriaPayload,
-    Proveedor, CrearProveedorPayload,
-    Insumo, CrearInsumoPayload,
-    Movimiento, RegistrarMovimientoPayload,
+    Almacen,
+    CrearAlmacenPayload,
+    Categoria,
+    CrearCategoriaPayload,
+    Proveedor,
+    CrearProveedorPayload,
+    Insumo,
+    CrearInsumoPayload,
+    Movimiento,
+    RegistrarMovimientoPayload,
+    Reserva,
+    CrearReservaPayload,
 } from '../types/inventario';
 
 export const almacenesApi = {
@@ -32,4 +39,10 @@ export const movimientosApi = {
     listar: () => api.get<Movimiento[]>('/inventario/movimientos'),
     registrar: (data: RegistrarMovimientoPayload) =>
     api.post<Movimiento>('/inventario/movimientos', data),
+};
+
+export const reservasApi = {
+    crear: (data: CrearReservaPayload) => api.post<Reserva>('/inventario/reservas', data),
+    confirmar: (id: number) => api.patch<Reserva>(`/inventario/reservas/${id}/confirmar`),
+    cancelar: (id: number) => api.patch<Reserva>(`/inventario/reservas/${id}/cancelar`),
 };

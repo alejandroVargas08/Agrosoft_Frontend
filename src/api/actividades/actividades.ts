@@ -3,6 +3,8 @@ import type { Cultivo } from "../../types/cultivos";
 import { api } from "../axios";
 
 export const actividadesApi = {
+    /** Todas las que el usuario puede ver, filtradas por su alcance */
+    listar: () => api.get<Actividad[]>('/actividades'),
     listarPorCultivo: (cultivoId: number) => api.get<Actividad[]>(`/actividades/cultivo/${cultivoId}`),
     obtenerPorId: (id: number) => api.get<Actividad>(`/actividades/${id}`),
     crear: (data: CrearActividadPayLoad) => api.post<Actividad>('/actividades', data),
@@ -19,6 +21,15 @@ export const cultivosApi = {
     listarPorLote: (loteId: number) => api.get<Cultivo[]>(`/cultivos?loteId=${loteId}`),
 };
 
+/** Un producto agrícola vendible. unidadBase suele ser 'kg'. */
+export interface ProductoAgro {
+    id: number;
+    nombre: string;
+    unidadBase: string;
+    descripcion?: string | null;
+    imagen?: string | null;
+}
+
 export const productosAgroApi = {
-    listar: () => api.get('/productos-agro'),
+    listar: () => api.get<ProductoAgro[]>('/productos-agro'),
 };

@@ -28,6 +28,16 @@ export interface InsumoBajoStock {
     stockMinimo: number;
 }
 
+export interface ActividadPendiente {
+    id: number;
+    nombre: string;
+    tipo: string;
+    estado: string;
+    fecha: string;
+    loteId: number;
+    cultivoId: number;
+}
+
 // Lo que consume la pantalla, ya normalizado
 export interface Alerta {
     id: string;

@@ -1,281 +1,384 @@
-import { useMemo, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { Check, GraduationCap, KeyRound, Power, RefreshCw, ShieldCheck, Trash2, UserPlus, Users, X } from 'lucide-react';
-import { Btn, EmptyState, Input, Modal, PageHeader, SearchBar, Select } from '../../components/ui/AgroUI';
-import { Aviso, Avatar, EstadoUsuarioBadge, MenuAcciones, ModalAprobar, ModalCambiarRol, ModalConfirmar, ModalContrasena, ModalFichaAprendiz, ModalFichasInstructor, ModalRechazo, PaginaAdmin, RolBadge } from '../../components/admin/ComponentesAdmin';
-import { usuariosAdminApi } from '../../api/admin/admin';
-import { mensajeError } from '../../api/errores/errores';
-import { useDatosAdmin, useEsAdmin, useRefrescarAdmin, type DatosAdmin } from '../../hooks/admin/useDatosAdmin';
-import { ROL_APRENDIZ, ROL_INSTRUCTOR, type UsuarioAdmin } from '../../types/admin/admin';
-import { coincide, generarContrasena, haceCuanto, nombreCompleto } from '../../utils/admin/admin';
+import { useState } from 'react';
+import { Check, Clock, GraduationCap, Key, Shield, ToggleLeft, Trash2, Users, X } from 'lucide-react';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import { Badge, Btn, Card, EmptyState, Modal, PageHeader, SearchBar, Select, StatusBadge, Textarea } from '../../components/ui/AgroUI';
+import { useFichasACargo, useUsuarios } from '../../hooks/admin/useUsuarios';
+import type { Usuario } from '../../api/usuarios/usuarios';
+import type { ProgramaFormacion } from '../../api/programa_formacion/programasFormacion';
 
-type Dialogo = 'rol' | 'ficha' | 'fichas' | 'contrasena' | 'estado' | 'eliminar' | 'aprobar' | 'rechazar';
+type Accion = 'rol' | 'fichas' | 'estado' | 'contrasena' | 'rechazar' | 'eliminar';
 
 const ESTADOS = [
     { value: '', label: 'Todos los estados' },
-    { value: 'activo', label: 'Activos' },
-    { value: 'pendiente', label: 'Pendientes' },
-    { value: 'inactivo', label: 'Inactivos' },
-    { value: 'rechazado', label: 'Rechazados' },
+    { value: 'activo', label: 'Activo' },
+    { value: 'inactivo', label: 'Inactivo' },
+    { value: 'suspendido', label: 'Suspendido' },
+    { value: 'pendiente', label: 'Pendiente' },
+    { value: 'rechazado', label: 'Rechazado' },
 ];
 
-const Usuarios = () => {
-    const datos = useDatosAdmin();
-    const { miId } = useEsAdmin();
-    const refrescar = useRefrescarAdmin();
-    const [busqueda, setBusqueda] = useState('');
-    const [rol, setRol] = useState('');
-    const [ficha, setFicha] = useState('');
-    const [estado, setEstado] = useState('');
-    const [nuevo, setNuevo] = useState(false);
-    const [seleccion, setSeleccion] = useState<{ usuario: UsuarioAdmin; dialogo: Dialogo } | null>(null);
-    const [mensaje, setMensaje] = useState<string | null>(null);
+const fecha = (valor: string | null) =>
+    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Nunca';
 
-    const cerrar = () => setSeleccion(null);
-    const abrir = (usuario: UsuarioAdmin, dialogo: Dialogo) => setSeleccion({ usuario, dialogo });
-    const elegido = (dialogo: Dialogo) => (seleccion?.dialogo === dialogo ? seleccion.usuario : null);
+/** El panel para asignar o quitar fichas a cargo de un instructor.
+ *  Recibe todo por props: llamar a useUsuarios() aquí crearía una segunda
+ *  instancia del hook, con su propio estado de carga. */
+const FichasACargo = ({ usuario, programas, cambiarFicha, procesando }: {
+    usuario: Usuario;
+    programas: ProgramaFormacion[];
+    cambiarFicha: (usuarioId: number, programaId: number, quitar: boolean) => void;
+    procesando: boolean;
+}) => {
+    const { fichas, cargando } = useFichasACargo(usuario.id);
 
-    const cambiarEstado = useMutation({
-        mutationFn: (u: UsuarioAdmin) => usuariosAdminApi.cambiarEstado(u.id, u.estado === 'activo' ? 'inactivo' : 'activo'),
-        onSuccess: () => { refrescar(); cerrar(); },
-    });
-    const eliminar = useMutation({
-        mutationFn: (u: UsuarioAdmin) => usuariosAdminApi.eliminar(u.id),
-        onSuccess: () => { refrescar(); cerrar(); },
-    });
+    if (cargando) return <p className="py-6 text-center text-sm text-muted-foreground">Cargando...</p>;
 
-    const usuarios = useMemo(() => {
-        return (datos.usuarios.data ?? [])
-            .filter((u) => coincide(busqueda, u.nombre, u.apellido, nombreCompleto(u), u.correo, u.identificacion))
-            .filter((u) => !rol || String(u.rolId) === rol)
-            .filter((u) => !estado || u.estado === estado)
-            .filter((u) => !ficha || String(u.programaFormacionId) === ficha)
-            .sort((a, b) => nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
-    }, [datos.usuarios.data, busqueda, rol, estado, ficha]);
+    const activos = programas.filter((p) => p.estado === 'activo');
 
-    const opcionesRol = [{ value: '', label: 'Todos los roles' }, ...(datos.roles.data ?? []).map((r) => ({ value: String(r.id), label: r.nombre }))];
-    const opcionesFicha = [{ value: '', label: 'Todas las fichas' }, ...(datos.fichas.data ?? []).map((f) => ({ value: String(f.id), label: `${f.ficha} · ${f.nombre}` }))];
-
-    const textoFicha = (u: UsuarioAdmin) => {
-        if (datos.esRol(u, ROL_INSTRUCTOR)) {
-            const total = (datos.fichas.data ?? []).filter((f) => f.instructores.some((i) => i.id === u.id)).length;
-            return total === 0 ? 'Sin fichas' : `${total} ficha${total === 1 ? '' : 's'} a cargo`;
-        }
-        const f = u.programaFormacionId ? datos.fichaPorId.get(u.programaFormacionId) : null;
-        return f ? f.ficha : u.idFicha ?? '—';
-    };
-
-    const acciones = (u: UsuarioAdmin) => {
-        const pendiente = u.estado === 'pendiente';
-        const esYo = u.id === miId;
-        return [
-            { label: 'Aprobar', icon: Check, onClick: () => abrir(u, 'aprobar'), oculta: !pendiente },
-            { label: 'Rechazar', icon: X, onClick: () => abrir(u, 'rechazar'), oculta: !pendiente, peligro: true },
-            { label: 'Cambiar rol', icon: ShieldCheck, onClick: () => abrir(u, 'rol'), oculta: pendiente || esYo },
-            { label: 'Fichas a cargo', icon: GraduationCap, onClick: () => abrir(u, 'fichas'), oculta: pendiente || !datos.esRol(u, ROL_INSTRUCTOR) },
-            { label: 'Cambiar ficha', icon: GraduationCap, onClick: () => abrir(u, 'ficha'), oculta: !datos.esRol(u, ROL_APRENDIZ) },
-            { label: 'Restablecer contraseña', icon: KeyRound, onClick: () => abrir(u, 'contrasena'), oculta: pendiente },
-            { label: u.estado === 'activo' ? 'Desactivar' : 'Activar', icon: Power, onClick: () => abrir(u, 'estado'), oculta: pendiente || u.estado === 'rechazado' || esYo, peligro: u.estado === 'activo' },
-            { label: 'Eliminar', icon: Trash2, onClick: () => abrir(u, 'eliminar'), oculta: esYo, peligro: true },
-        ];
-    };
-
-    const usuarioEstado = elegido('estado');
-    const usuarioEliminar = elegido('eliminar');
+    if (activos.length === 0) {
+        return <p className="text-sm text-muted-foreground">No hay fichas activas para asignar.</p>;
+    }
 
     return (
-        <PaginaAdmin>
-            <PageHeader
-                title="Usuarios"
-                subtitle={`${datos.usuarios.data?.length ?? 0} usuarios registrados`}
-                action={<Btn onClick={() => setNuevo(true)}><UserPlus size={16} />Nuevo usuario</Btn>}
-            />
-
-            {mensaje && <div className="mb-4"><Aviso tipo="exito">{mensaje}</Aviso></div>}
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
-                <div className="md:col-span-4 lg:col-span-1"><SearchBar value={busqueda} onChange={setBusqueda} placeholder="Nombre, correo o documento" /></div>
-                <Select value={rol} onChange={setRol} options={opcionesRol} />
-                <Select value={ficha} onChange={setFicha} options={opcionesFicha} />
-                <Select value={estado} onChange={setEstado} options={ESTADOS} />
-            </div>
-
-            {datos.error && <div className="mb-4"><Aviso tipo="error">{mensajeError(datos.error, 'No se pudieron cargar los usuarios')}</Aviso></div>}
-
-            {datos.cargando && <div className="space-y-2">{[1, 2, 3, 4].map((i) => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)}</div>}
-
-            {!datos.cargando && !datos.error && usuarios.length === 0 && (
-                <EmptyState icon={Users} title="No hay usuarios" description="Ningún usuario coincide con los filtros." />
-            )}
-
-            {!datos.cargando && usuarios.length > 0 && (
-                <div className="bg-card rounded-xl border border-border shadow-sm overflow-x-auto">
-                    <table className="w-full text-sm min-w-[860px]">
-                        <thead>
-                            <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                                <th className="p-3 font-semibold">Usuario</th>
-                                <th className="p-3 font-semibold">Documento</th>
-                                <th className="p-3 font-semibold">Rol</th>
-                                <th className="p-3 font-semibold">Ficha</th>
-                                <th className="p-3 font-semibold">Estado</th>
-                                <th className="p-3 font-semibold">Último ingreso</th>
-                                <th className="p-3" />
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                            {usuarios.map((u) => (
-                                <tr key={u.id} className="hover:bg-muted/40">
-                                    <td className="p-3">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <Avatar persona={u} tamano="sm" />
-                                            <div className="min-w-0">
-                                                <p className="font-semibold text-foreground truncate">{nombreCompleto(u)}{u.id === miId && <span className="ml-1.5 text-xs text-muted-foreground font-normal">(tú)</span>}</p>
-                                                <p className="text-xs text-muted-foreground truncate">{u.correo}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="p-3 text-muted-foreground">{u.identificacion}</td>
-                                    <td className="p-3"><RolBadge nombre={datos.rolDe(u)} /></td>
-                                    <td className="p-3 text-muted-foreground">{textoFicha(u)}</td>
-                                    <td className="p-3"><EstadoUsuarioBadge estado={u.estado} /></td>
-                                    <td className="p-3 text-muted-foreground whitespace-nowrap">{haceCuanto(u.ultimoIngreso)}</td>
-                                    <td className="p-3 text-right"><MenuAcciones acciones={acciones(u)} /></td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            <ModalNuevoUsuario abierto={nuevo} datos={datos} onClose={() => setNuevo(false)} onCreado={(texto) => { setMensaje(texto); refrescar(); }} />
-            <ModalCambiarRol usuario={elegido('rol')} datos={datos} onClose={cerrar} />
-            <ModalFichaAprendiz usuario={elegido('ficha')} datos={datos} onClose={cerrar} />
-            <ModalFichasInstructor usuario={elegido('fichas')} datos={datos} onClose={cerrar} />
-            <ModalContrasena usuario={elegido('contrasena')} onClose={cerrar} />
-            <ModalAprobar usuario={elegido('aprobar')} fichaPorId={datos.fichaPorId} onClose={cerrar} />
-            <ModalRechazo usuario={elegido('rechazar')} onClose={cerrar} />
-
-            <ModalConfirmar
-                open={!!usuarioEstado}
-                titulo={usuarioEstado?.estado === 'activo' ? 'Desactivar usuario' : 'Activar usuario'}
-                mensaje={usuarioEstado?.estado === 'activo'
-                    ? <>¿Desactivar a <b>{nombreCompleto(usuarioEstado)}</b>? No podrá iniciar sesión hasta que lo vuelvas a activar.</>
-                    : <>¿Activar a <b>{nombreCompleto(usuarioEstado)}</b>? Podrá volver a iniciar sesión.</>}
-                textoConfirmar={usuarioEstado?.estado === 'activo' ? 'Desactivar' : 'Activar'}
-                peligro={usuarioEstado?.estado === 'activo'}
-                cargando={cambiarEstado.isPending}
-                error={cambiarEstado.error ? mensajeError(cambiarEstado.error, 'No se pudo cambiar el estado') : null}
-                onConfirmar={() => usuarioEstado && cambiarEstado.mutate(usuarioEstado)}
-                onClose={() => { cambiarEstado.reset(); cerrar(); }}
-            />
-            <ModalConfirmar
-                open={!!usuarioEliminar}
-                titulo="Eliminar usuario"
-                mensaje={<>¿Eliminar a <b>{nombreCompleto(usuarioEliminar)}</b>? Ya no aparecerá en AgroSoft, pero su historial se conserva.</>}
-                textoConfirmar="Eliminar"
-                peligro
-                cargando={eliminar.isPending}
-                error={eliminar.error ? mensajeError(eliminar.error, 'No se pudo eliminar el usuario') : null}
-                onConfirmar={() => usuarioEliminar && eliminar.mutate(usuarioEliminar)}
-                onClose={() => { eliminar.reset(); cerrar(); }}
-            />
-        </PaginaAdmin>
+        <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+                Un instructor solo ve los datos de las fichas que tiene a cargo.
+            </p>
+            {activos.map((p) => {
+                const tiene = fichas.includes(p.id);
+                return (
+                    <button
+                        key={p.id}
+                        type="button"
+                        disabled={procesando}
+                        onClick={() => cambiarFicha(usuario.id, p.id, tiene)}
+                        className={
+                            'w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors ' +
+                            (tiene ? 'bg-primary/10 border border-primary/30' : 'bg-muted hover:bg-primary/5 border border-transparent')
+                        }
+                    >
+                        <span
+                            className={
+                                'w-5 h-5 rounded flex items-center justify-center shrink-0 ' +
+                                (tiene ? 'bg-primary text-white' : 'bg-white border border-border')
+                            }
+                        >
+                            {tiene && <Check size={12} />}
+                        </span>
+                        <span className="min-w-0">
+                            <span className="block text-sm font-medium font-mono">{p.ficha}</span>
+                            <span className="block text-xs text-muted-foreground truncate">{p.nombre}</span>
+                        </span>
+                    </button>
+                );
+            })}
+        </div>
     );
 };
 
-const FORM_VACIO = { nombre: '', apellido: '', identificacion: '', telefono: '', email: '', password: '', rolId: '', fichaId: '' };
+const Usuarios = () => {
+    const {
+        usuarios, total, roles, programas, filtros, ponerFiltro,
+        nombreRol, fichaDe, nombrePrograma,
+        cargando, error, errorAccion, procesando,
+        cambiarEstado, cambiarRol, aprobar, rechazar, eliminar, cambiarFicha,
+        restablecerContrasena, contrasenaGenerada, limpiarContrasena,
+    } = useUsuarios();
 
-const ModalNuevoUsuario = ({ abierto, datos, onClose, onCreado }: { abierto: boolean; datos: DatosAdmin; onClose: () => void; onCreado: (texto: string) => void }) => {
-    const [form, setForm] = useState(FORM_VACIO);
-    const [fichasInstructor, setFichasInstructor] = useState<number[]>([]);
-    const campo = (clave: keyof typeof FORM_VACIO) => (valor: string) => setForm((f) => ({ ...f, [clave]: valor }));
+    const [abierto, setAbierto] = useState<{ usuario: Usuario; accion: Accion } | null>(null);
+    const [rolElegido, setRolElegido] = useState('');
+    const [motivo, setMotivo] = useState('');
 
-    const rolAprendiz = datos.rolPorNombre(ROL_APRENDIZ);
-    const rolId = form.rolId || (rolAprendiz ? String(rolAprendiz.id) : '');
-    const nombreRol = datos.rolPorId.get(Number(rolId))?.nombre ?? '';
-    const esAprendiz = nombreRol === ROL_APRENDIZ;
-    const esInstructor = nombreRol === ROL_INSTRUCTOR;
-    const fichas = (datos.fichas.data ?? []).filter((f) => f.estado !== 'finalizado');
+    const cerrar = () => {
+        setAbierto(null);
+        setMotivo('');
+        limpiarContrasena();
+    };
 
-    const cerrar = () => { setForm(FORM_VACIO); setFichasInstructor([]); crear.reset(); onClose(); };
+    const abrir = (usuario: Usuario, accion: Accion) => {
+        setAbierto({ usuario, accion });
+        setRolElegido(String(usuario.rolId));
+        setMotivo('');
+        limpiarContrasena();
+        if (accion === 'contrasena') restablecerContrasena(usuario.id);
+    };
 
-    const crear = useMutation({
-        mutationFn: async () => {
-            const ficha = esAprendiz && form.fichaId ? datos.fichaPorId.get(Number(form.fichaId)) : null;
-            const { data: usuario } = await usuariosAdminApi.crear({
-                nombre: form.nombre.trim(),
-                apellido: form.apellido.trim(),
-                identificacion: form.identificacion.trim(),
-                telefono: form.telefono.trim(),
-                email: form.email.trim(),
-                password: form.password,
-                idFicha: ficha?.ficha,
-            });
-            if (rolAprendiz && Number(rolId) !== rolAprendiz.id) await usuariosAdminApi.cambiarRol(usuario.id, Number(rolId));
-            if (esInstructor) for (const id of fichasInstructor) await usuariosAdminApi.asignarFicha(usuario.id, id);
-            return usuario;
-        },
-        onSuccess: (usuario) => {
-            onCreado(`Se creó a ${nombreCompleto(usuario)} como ${nombreRol}. Contraseña inicial: ${form.password}`);
-            cerrar();
-        },
-    });
-
-    const completo = form.nombre.trim() && form.apellido.trim() && form.identificacion.trim() && form.telefono.trim() && form.email.trim() && form.password.length >= 6 && rolId;
+    const TITULOS: Record<Accion, string> = {
+        rol: 'Cambiar rol',
+        fichas: 'Fichas a cargo',
+        estado: 'Cambiar estado',
+        contrasena: 'Restablecer contraseña',
+        rechazar: 'Rechazar usuario',
+        eliminar: 'Eliminar usuario',
+    };
 
     return (
-        <Modal open={abierto} onClose={cerrar} title="Nuevo usuario">
-            <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                    <Input label="Nombre" value={form.nombre} onChange={campo('nombre')} required />
-                    <Input label="Apellido" value={form.apellido} onChange={campo('apellido')} required />
-                    <Input label="Documento" value={form.identificacion} onChange={campo('identificacion')} required />
-                    <Input label="Teléfono" value={form.telefono} onChange={campo('telefono')} required />
-                </div>
-                <Input label="Correo" type="email" value={form.email} onChange={campo('email')} required />
-                <div className="flex items-end gap-2">
-                    <Input label="Contraseña inicial" value={form.password} onChange={campo('password')} required className="flex-1" placeholder="Mínimo 6 caracteres" />
-                    <Btn variant="outline" onClick={() => campo('password')(generarContrasena())}><RefreshCw size={15} />Generar</Btn>
-                </div>
-                <Select label="Rol" value={rolId} onChange={campo('rolId')} options={(datos.roles.data ?? []).map((r) => ({ value: String(r.id), label: r.nombre }))} />
+        <DashboardLayout>
+            <div className="max-w-7xl mx-auto p-4 sm:p-6">
+                <PageHeader
+                    title="Usuarios"
+                    subtitle={total === 1 ? '1 usuario registrado' : total + ' usuarios registrados'}
+                />
 
-                {esAprendiz && (
-                    <Select
-                        label="Ficha"
-                        value={form.fichaId}
-                        onChange={campo('fichaId')}
-                        options={[{ value: '', label: 'Sin ficha' }, ...fichas.map((f) => ({ value: String(f.id), label: `${f.ficha} · ${f.nombre}` }))]}
-                    />
-                )}
-
-                {esInstructor && (
-                    <div>
-                        <p className="text-sm font-semibold text-foreground mb-1">Fichas a cargo</p>
-                        <div className="max-h-40 overflow-y-auto divide-y divide-border rounded-xl border border-border">
-                            {fichas.length === 0 && <p className="p-3 text-sm text-muted-foreground">No hay fichas activas</p>}
-                            {fichas.map((f) => (
-                                <label key={f.id} className="flex items-center gap-3 p-2.5 cursor-pointer hover:bg-muted/50">
-                                    <input
-                                        type="checkbox"
-                                        checked={fichasInstructor.includes(f.id)}
-                                        onChange={() => setFichasInstructor((s) => (s.includes(f.id) ? s.filter((x) => x !== f.id) : [...s, f.id]))}
-                                        className="w-4 h-4 accent-[#2d7a3e]"
-                                    />
-                                    <span className="text-sm text-foreground">{f.ficha} · <span className="text-muted-foreground">{f.nombre}</span></span>
-                                </label>
-                            ))}
-                        </div>
+                {(error || errorAccion) && (
+                    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        {error || errorAccion}
                     </div>
                 )}
 
-                <p className="text-xs text-muted-foreground">El usuario queda activo y puede entrar de una vez con la contraseña inicial.</p>
-                {crear.error && <Aviso tipo="error">{mensajeError(crear.error, 'No se pudo crear el usuario')}</Aviso>}
-                <div className="flex justify-end gap-2 pt-1">
-                    <Btn variant="outline" onClick={cerrar}>Cancelar</Btn>
-                    <Btn onClick={() => crear.mutate()} disabled={!completo || crear.isPending}>{crear.isPending ? 'Creando...' : 'Crear usuario'}</Btn>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+                    <SearchBar
+                        value={filtros.texto}
+                        onChange={(v) => ponerFiltro('texto', v)}
+                        placeholder="Nombre, correo o documento..."
+                    />
+                    <Select
+                        value={filtros.rolId}
+                        onChange={(v) => ponerFiltro('rolId', v)}
+                        options={[
+                            { value: '', label: 'Todos los roles' },
+                            ...roles.map((r) => ({ value: String(r.id), label: r.nombre })),
+                        ]}
+                    />
+                    <Select
+                        value={filtros.programaId}
+                        onChange={(v) => ponerFiltro('programaId', v)}
+                        options={[
+                            { value: '', label: 'Todas las fichas' },
+                            ...programas.map((p) => ({ value: String(p.id), label: 'Ficha ' + p.ficha })),
+                        ]}
+                    />
+                    <Select value={filtros.estado} onChange={(v) => ponerFiltro('estado', v)} options={ESTADOS} />
                 </div>
+
+                {cargando ? (
+                    <p className="py-16 text-center text-sm text-muted-foreground">Cargando usuarios...</p>
+                ) : usuarios.length === 0 ? (
+                    <EmptyState
+                        icon={Users}
+                        title="Sin resultados"
+                        description="Ningún usuario coincide con los filtros."
+                    />
+                ) : (
+                    <div className="space-y-2">
+                        {usuarios.map((u) => {
+                            const ficha = fichaDe(u.programaFormacionId);
+                            const programa = nombrePrograma(u.programaFormacionId);
+                            const rol = nombreRol(u.rolId);
+                            return (
+                                <Card key={u.id}>
+                                    <div className="flex items-start gap-3 flex-wrap sm:flex-nowrap">
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
+                                            {u.nombre.charAt(0)}
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <p className="font-semibold text-foreground">{u.nombre} {u.apellido}</p>
+                                                <Badge color="primary">{rol}</Badge>
+                                                <StatusBadge status={u.estado} />
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">{u.correo}</p>
+                                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                                                {ficha && (
+                                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                        <GraduationCap size={10} />Ficha {ficha}
+                                                    </span>
+                                                )}
+                                                {programa && (
+                                                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                                        {programa}
+                                                    </span>
+                                                )}
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <Clock size={10} />Último ingreso: {fecha(u.ultimoIngreso)}
+                                                </span>
+                                            </div>
+                                            {u.solicitud && (
+                                                <p className="text-xs text-[#E65100] mt-1">
+                                                    Pidió acceso como {u.solicitud.rolSolicitado}
+                                                    {u.solicitud.cargo ? ' · ' + u.solicitud.cargo : ''}
+                                                    {u.solicitud.motivoRechazo ? ' · Rechazado: ' + u.solicitud.motivoRechazo : ''}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="flex gap-1 flex-wrap shrink-0">
+                                            {u.estado === 'pendiente' && (
+                                                <>
+                                                    <Btn size="sm" disabled={procesando} onClick={() => aprobar(u.id)}>
+                                                        <Check size={12} />Aprobar
+                                                    </Btn>
+                                                    <Btn size="sm" variant="danger" onClick={() => abrir(u, 'rechazar')}>
+                                                        <X size={12} />Rechazar
+                                                    </Btn>
+                                                </>
+                                            )}
+                                            <Btn size="sm" variant="outline" onClick={() => abrir(u, 'rol')}>
+                                                <Shield size={12} />Rol
+                                            </Btn>
+                                            {rol === 'Instructor' && (
+                                                <Btn size="sm" variant="outline" onClick={() => abrir(u, 'fichas')}>
+                                                    <GraduationCap size={12} />Fichas
+                                                </Btn>
+                                            )}
+                                            {['activo', 'inactivo'].includes(u.estado) && (
+                                                <Btn size="sm" variant="outline" onClick={() => abrir(u, 'estado')}>
+                                                    <ToggleLeft size={12} />
+                                                    {u.estado === 'activo' ? 'Desactivar' : 'Activar'}
+                                                </Btn>
+                                            )}
+                                            <Btn size="sm" variant="outline" onClick={() => abrir(u, 'contrasena')}>
+                                                <Key size={12} />Contraseña
+                                            </Btn>
+                                            <Btn size="sm" variant="ghost" onClick={() => abrir(u, 'eliminar')}>
+                                                <Trash2 size={12} />
+                                            </Btn>
+                                        </div>
+                                    </div>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                )}
+
+                <Modal
+                    open={!!abierto}
+                    onClose={cerrar}
+                    title={abierto ? TITULOS[abierto.accion] : ''}
+                >
+                    {abierto && (
+                        <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground">
+                                <strong className="text-foreground">
+                                    {abierto.usuario.nombre} {abierto.usuario.apellido}
+                                </strong>{' '}
+                                · {abierto.usuario.correo}
+                            </p>
+
+                            {abierto.accion === 'rol' && (
+                                <>
+                                    <Select
+                                        label="Nuevo rol"
+                                        value={rolElegido}
+                                        onChange={setRolElegido}
+                                        options={roles.map((r) => ({ value: String(r.id), label: r.nombre }))}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Los permisos del rol nuevo se aplican cuando el usuario vuelva a iniciar sesión.
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <Btn
+                                            disabled={procesando || Number(rolElegido) === abierto.usuario.rolId}
+                                            onClick={() => cambiarRol(abierto.usuario.id, Number(rolElegido), cerrar)}
+                                            className="flex-1 justify-center"
+                                        >
+                                            {procesando ? 'Guardando...' : 'Guardar'}
+                                        </Btn>
+                                        <Btn variant="outline" onClick={cerrar} className="flex-1 justify-center">Cancelar</Btn>
+                                    </div>
+                                </>
+                            )}
+
+                            {abierto.accion === 'fichas' && (
+                                <FichasACargo
+                                    usuario={abierto.usuario}
+                                    programas={programas}
+                                    cambiarFicha={cambiarFicha}
+                                    procesando={procesando}
+                                />
+                            )}
+
+                            {abierto.accion === 'estado' && (
+                                <>
+                                    <p className="text-sm text-muted-foreground">
+                                        {abierto.usuario.estado === 'activo'
+                                            ? 'Al desactivarla, la cuenta no podrá iniciar sesión. Los datos no se borran.'
+                                            : 'Al activarla, la cuenta vuelve a poder iniciar sesión.'}
+                                    </p>
+                                    <div className="flex gap-3">
+                                        <Btn
+                                            disabled={procesando}
+                                            onClick={() => cambiarEstado(abierto.usuario, cerrar)}
+                                            className="flex-1 justify-center"
+                                        >
+                                            {procesando ? 'Guardando...' : abierto.usuario.estado === 'activo' ? 'Desactivar' : 'Activar'}
+                                        </Btn>
+                                        <Btn variant="outline" onClick={cerrar} className="flex-1 justify-center">Cancelar</Btn>
+                                    </div>
+                                </>
+                            )}
+
+                            {abierto.accion === 'contrasena' && (
+                                contrasenaGenerada ? (
+                                    <>
+                                        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center">
+                                            <p className="text-2xl font-bold font-mono text-primary tracking-wider break-all">
+                                                {contrasenaGenerada}
+                                            </p>
+                                        </div>
+                                        <p className="text-xs text-[#E65100]">
+                                            Cópiala ahora: no se vuelve a mostrar. El usuario debería cambiarla al entrar.
+                                        </p>
+                                        <Btn onClick={cerrar} className="w-full justify-center">Listo</Btn>
+                                    </>
+                                ) : (
+                                    <p className="py-6 text-center text-sm text-muted-foreground">
+                                        {procesando ? 'Generando contraseña...' : 'No se pudo generar la contraseña.'}
+                                    </p>
+                                )
+                            )}
+
+                            {abierto.accion === 'rechazar' && (
+                                <>
+                                    <Textarea
+                                        label="Motivo del rechazo"
+                                        rows={3}
+                                        value={motivo}
+                                        onChange={setMotivo}
+                                        required
+                                        placeholder="Se lo mostraremos cuando intente iniciar sesión"
+                                    />
+                                    <div className="flex gap-3">
+                                        <Btn
+                                            variant="danger"
+                                            disabled={procesando || motivo.trim().length === 0}
+                                            onClick={() => rechazar(abierto.usuario.id, motivo.trim(), cerrar)}
+                                            className="flex-1 justify-center"
+                                        >
+                                            {procesando ? 'Guardando...' : 'Rechazar'}
+                                        </Btn>
+                                        <Btn variant="outline" onClick={cerrar} className="flex-1 justify-center">Cancelar</Btn>
+                                    </div>
+                                </>
+                            )}
+
+                            {abierto.accion === 'eliminar' && (
+                                <>
+                                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                                        <p className="text-sm text-red-700">
+                                            La cuenta queda eliminada y no podrá iniciar sesión. Es un borrado lógico:
+                                            lo que haya creado se conserva.
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <Btn
+                                            variant="danger"
+                                            disabled={procesando}
+                                            onClick={() => eliminar(abierto.usuario.id, cerrar)}
+                                            className="flex-1 justify-center"
+                                        >
+                                            {procesando ? 'Eliminando...' : 'Eliminar'}
+                                        </Btn>
+                                        <Btn variant="outline" onClick={cerrar} className="flex-1 justify-center">Cancelar</Btn>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </Modal>
             </div>
-        </Modal>
+        </DashboardLayout>
     );
 };
 
