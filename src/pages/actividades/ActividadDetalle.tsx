@@ -16,15 +16,17 @@ import { usePermisos } from '../../hooks/permisos/usePermisos';
 
 
 const PESTAÑAS = [
+    // El orden es el del Figma. Reservas y Servicios no existen allá, así que
+    // van al final para no romper la secuencia que el diseño muestra.
     { id: 'costos', label: 'Costos' },
     { id: 'insumos', label: 'Insumos' },
     { id: 'herramientas', label: 'Herramientas' },
     { id: 'aprendices', label: 'Aprendices' },
-    { id: 'reservas', label: 'Reservas' },
-    { id: 'usos', label: 'Usos' },
-    { id: 'servicios', label: 'Servicios' },
     { id: 'evidencias', label: 'Evidencias' },
+    { id: 'usos', label: 'Insumos usados' },
     { id: 'historial', label: 'Historial' },
+    { id: 'reservas', label: 'Reservas' },
+    { id: 'servicios', label: 'Servicios' },
 ] as const;
 
 type PestañaId = (typeof PESTAÑAS)[number]['id'];
