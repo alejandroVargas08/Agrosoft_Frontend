@@ -86,7 +86,7 @@ const Ventas = () => {
                                 {ventas.map((v) => (
                                     <Card key={v.id} className="p-3">
                                         <div className="flex items-start justify-between mb-2">
-                                            <div className="p-1.5 bg-primary/10 rounded-lg">
+                                            <div className="p-1.5 bg-icon-bg rounded-lg">
                                                 <ShoppingCart size={14} className="text-primary" />
                                             </div>
                                             <StatusBadge status={ESTADO_BADGE[v.estado] ?? v.estado} />
@@ -240,7 +240,7 @@ const Ventas = () => {
                                 </div>
                             )}
                             {impuestos > 0 && (
-                                <div className="flex justify-between text-amber-600">
+                                <div className="flex justify-between text-[#F16C07]">
                                     <span>IVA</span><span>+{fmtPesos(impuestos)}</span>
                                 </div>
                             )}

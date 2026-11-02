@@ -15,7 +15,7 @@ const ICONO: Record<TipoEpa, typeof Bug> = {
 const COLOR_ICONO: Record<TipoEpa, string> = {
     ENFERMEDAD: 'bg-red-100 text-red-700',
     PLAGA: 'bg-[#FFF3E0] text-[#F16C07]',
-    ARVENSE: 'bg-primary/10 text-primary',
+    ARVENSE: 'bg-chip-bg text-chip-fg',
 };
 
 const COLOR_BADGE: Record<TipoEpa, 'danger' | 'warning' | 'success'> = {
