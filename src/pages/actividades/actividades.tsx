@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Package, Plus } from 'lucide-react';
+import { ClipboardList, Package, Plus, UserCheck } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, EmptyState, Input, Modal, PageHeader, Select, Textarea } from '../../components/ui/AgroUI';
 import { useActividades } from '../../hooks/Actividades/useActividad';
@@ -11,11 +11,21 @@ import { useMisTareas } from '../../hooks/instructor/useMisTareas';
 
 const FILTROS = ['Todas', 'Pendiente', 'En progreso', 'Finalizada'];
 
-// El chip del estado, con los colores del sistema
+// El chip del estado, con los colores del sistema.
+// El backend guarda "Completada"; se deja "Finalizada" por si llega así.
 const ESTILO_ESTADO: Record<string, string> = {
+    Completada: 'bg-chip-bg text-chip-fg',
     Finalizada: 'bg-chip-bg text-chip-fg',
     En_progreso: 'bg-[#FFF3E0] text-[#F16C07]',
     Pendiente: 'bg-red-100 text-red-700',
+};
+
+// El diseño muestra "Finalizada" donde el backend dice "Completada"
+const ETIQUETA_ESTADO: Record<string, string> = {
+    Completada: 'Finalizada',
+    Finalizada: 'Finalizada',
+    En_progreso: 'En progreso',
+    Pendiente: 'Pendiente',
 };
 
 // Los avatares rotan de color, como en el diseño
@@ -48,9 +58,12 @@ const Actividades = () => {
     const [seleccionados, setSeleccionados] = useState<number[]>([]);
     const [fechaLimite, setFechaLimite] = useState('');
 
-    // El aviso que el Figma le muestra al aprendiz
+    // El aviso que el Figma le muestra al aprendiz.
+    // El texto se arma aquí: en el JSX, un salto de línea mete un espacio suelto.
     const { conteos } = useMisTareas();
     const pendientes = esAprendiz ? conteos.Pendientes : 0;
+    const plural = pendientes === 1 ? '' : 's';
+    const textoPendientes = `${pendientes} tarea${plural} pendiente${plural}`;
 
     const cerrarAsignar = () => {
         asignacion.cerrar();
@@ -92,9 +105,7 @@ const Actividades = () => {
                             <ClipboardList size={16} className="text-primary" />
                         </div>
                         <div className="flex-1">
-                            <p className="text-sm font-semibold text-foreground">
-                                {pendientes} tarea{pendientes === 1 ? '' : 's'} pendiente{pendientes === 1 ? '' : 's'}
-                            </p>
+                            <p className="text-sm font-semibold text-foreground">{textoPendientes}</p>
                             <p className="text-xs text-muted-foreground">
                                 Tienes actividades asignadas por tu instructor
                             </p>
@@ -165,7 +176,7 @@ const Actividades = () => {
                                                 ESTILO_ESTADO[estado] ?? 'bg-muted text-muted-foreground'
                                             } ${puedeGestionar ? 'cursor-pointer hover:opacity-80' : ''}`}
                                         >
-                                            {estado.replace('_', ' ')}
+                                            {ETIQUETA_ESTADO[estado] ?? estado.replace('_', ' ')}
                                         </span>
                                     </div>
 
@@ -206,15 +217,25 @@ const Actividades = () => {
 
                                     <div className="flex items-center justify-between border-t border-border pt-2">
                                         <p className="text-xs text-muted-foreground">{actividad.fecha}</p>
-                                        {asignacion.puedeAsignar && (
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); asignacion.abrir(actividad.id); }}
-                                                className="text-xs font-semibold text-primary transition-colors hover:text-primary/70"
-                                            >
-                                                Asignar
-                                            </button>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {asignacion.puedeAsignar ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); asignacion.abrir(actividad.id); }}
+                                                    className="flex items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-primary/70"
+                                                >
+                                                    <UserCheck size={11} />Asignar
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); navigate('/inventario'); }}
+                                                    className="flex items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-primary/70"
+                                                >
+                                                    <Package size={11} />Productos
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );

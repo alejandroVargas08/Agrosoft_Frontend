@@ -214,7 +214,7 @@ export const PageHeader = ({ title, subtitle, onBack, action }: PageHeaderProps)
     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
         <div className="flex items-start gap-3">
             {onBack && (
-                <button onClick={onBack} className="mt-0.5 p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors">
+                <button onClick={onBack} className="mt-0.5 p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors shrink-0">
                     <ChevronLeft size={20} />
                 </button>
             )}

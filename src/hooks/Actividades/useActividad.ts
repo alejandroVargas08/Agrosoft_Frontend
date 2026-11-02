@@ -51,7 +51,13 @@ export function useActividades(cultivoId: number | null) {
         cambiarEstadoMutation.mutate({ id, estado: estados[siguienteIndex] });
     };
 
-    const normalizar = (valor: string) => valor.replace('_', ' ').toLowerCase();
+    // El boton del diseño dice "Finalizada" pero el backend guarda "Completada":
+    // sin esta equivalencia ese filtro siempre devuelve vacio.
+    const SINONIMOS: Record<string, string> = { finalizada: 'completada' };
+    const normalizar = (valor: string) => {
+        const base = valor.replace('_', ' ').toLowerCase();
+        return SINONIMOS[base] ?? base;
+    };
     const actividadesFiltradas = actividades.filter((a) => {
         if (filtroEstado === 'Todas') return true;
         const estadoActividad = a.estado ? normalizar(a.estado) : '';
