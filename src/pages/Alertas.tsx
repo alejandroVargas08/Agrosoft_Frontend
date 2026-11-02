@@ -1,27 +1,26 @@
-import { Clock, Cpu, Package, X } from 'lucide-react';
+import { CheckCircle, Clock, Cpu, Package, X } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { EmptyState, PageHeader } from '../components/ui/AgroUI';
 import { useAlertas } from '../hooks/useAlertas';
 import type { SeveridadAlerta, TipoAlerta } from '../types/alertas';
 
-const COLOR_TARJETA: Record<SeveridadAlerta, string> = {
-    high: 'bg-red-100 border-red-200',
-    medium: 'bg-[#FFF3E0] border-[#F16C07]/30',
-    low: 'bg-blue-50 border-blue-200',
+// La fila completa: borde y fondo según la gravedad
+const COLOR_BORDE: Record<SeveridadAlerta, string> = {
+    high: 'border-red-200',
+    medium: 'border-[#F16C07]/30',
+    low: 'border-blue-200',
 };
 
-const COLOR_BADGE: Record<SeveridadAlerta, string> = {
-    high: 'bg-red-200 text-red-700',
-    medium: 'bg-[#FFF3E0] text-[#F16C07]',
-    low: 'bg-blue-100 text-blue-700',
+const COLOR_FONDO: Record<SeveridadAlerta, string> = {
+    high: 'bg-red-50',
+    medium: 'bg-[#FFF3E0]/50',
+    low: 'bg-blue-50/50',
 };
 
-const TEXTO_SEVERIDAD: Record<SeveridadAlerta, string> = {
-    high: 'Alta', medium: 'Media', low: 'Baja',
-};
-
-const TEXTO_TIPO: Record<TipoAlerta, string> = {
-    sensor: 'Sensor', stock: 'Stock', task: 'Tarea',
+const COLOR_ICONO: Record<TipoAlerta, string> = {
+    sensor: 'text-[#F16C07]',
+    stock: 'text-red-500',
+    task: 'text-blue-500',
 };
 
 const ICONO: Record<TipoAlerta, typeof Cpu> = {
@@ -44,46 +43,63 @@ const Alertas = () => {
 
                 {!cargando && !error && alertas.length === 0 ? (
                     <EmptyState
-                        icon={Clock}
+                        icon={CheckCircle}
                         title="Sin alertas activas"
-                        description="Todo está dentro de los rangos normales"
+                        description="Todo está dentro de los rangos normales."
                     />
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    <div className="space-y-3">
                         {alertas.map((a) => {
                             const Icono = ICONO[a.tipo];
-                            const esAlta = a.severidad === 'high';
                             return (
-                                <div key={a.id} className={'p-3 rounded-xl border ' + COLOR_TARJETA[a.severidad]}>
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className={'p-1.5 rounded-lg ' + (esAlta ? 'bg-red-200' : 'bg-[#FFF3E0]')}>
-                                            <Icono size={14} className={esAlta ? 'text-red-700' : 'text-[#F16C07]'} />
+                                <div
+                                    key={a.id}
+                                    className={`p-4 rounded-xl border ${COLOR_BORDE[a.severidad]} ${COLOR_FONDO[a.severidad]}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white/80 rounded-lg shrink-0">
+                                            <Icono size={14} className={COLOR_ICONO[a.tipo]} />
                                         </div>
+
+                                        <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Origen</p>
+                                                <p className="font-semibold text-foreground text-xs truncate" title={a.origen}>{a.origen}</p>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Medición</p>
+                                                <p className="font-semibold text-foreground text-xs truncate">{a.medicion}</p>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                                    {a.umbral ? 'Valor vs Umbral' : 'Valor'}
+                                                </p>
+                                                <p className="font-semibold text-xs text-red-700 truncate">
+                                                    {a.umbral ? `${a.valor} · umbral ${a.umbral}` : a.valor}
+                                                </p>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Fecha</p>
+                                                <p className="text-xs text-muted-foreground truncate">{a.fecha || '—'}</p>
+                                            </div>
+                                        </div>
+
+                                        <span className="shrink-0 text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">
+                                            Activa
+                                        </span>
+
+                                        {/* Solo las de sensor se pueden descartar: el backend las borra */}
                                         {a.tipo === 'sensor' && (
                                             <button
                                                 type="button"
                                                 title="Descartar alerta"
                                                 onClick={() => descartar(a.idOriginal)}
-                                                className="text-muted-foreground hover:text-foreground p-0.5"
+                                                className="shrink-0 text-muted-foreground hover:text-foreground p-0.5"
                                             >
-                                                <X size={12} />
+                                                <X size={14} />
                                             </button>
                                         )}
                                     </div>
-
-                                    <p className="font-semibold text-foreground text-[14px] leading-tight mb-1.5">{a.titulo}</p>
-
-                                    <div className="flex gap-1 mb-1.5">
-                                        <span className={'text-[11px] font-semibold px-2 py-0.5 rounded-full ' + COLOR_BADGE[a.severidad]}>
-                                            {TEXTO_SEVERIDAD[a.severidad]}
-                                        </span>
-                                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/70 text-muted-foreground">
-                                            {TEXTO_TIPO[a.tipo]}
-                                        </span>
-                                    </div>
-
-                                    <p className="text-[12px] text-muted-foreground">{a.descripcion}</p>
-                                    {a.fecha && <p className="text-[11px] text-muted-foreground mt-1">{a.fecha}</p>}
                                 </div>
                             );
                         })}

@@ -38,9 +38,9 @@ export default function SensorPage() {
 
                 <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <StatCard icon={Wifi} label="En línea" value={resumen.enLinea} color="emerald" />
-                    <StatCard icon={WifiOff} label="Desconectados" value={resumen.desconectados} color="red" />
+                    <StatCard icon={WifiOff} label="Desconectados" value={resumen.desconectados} color={resumen.desconectados > 0 ? 'red' : 'emerald'} />
                     <StatCard icon={Cpu} label="Total sensores" value={resumen.total} color="primary" />
-                    <StatCard icon={Bell} label="Alertas activas" value={resumen.alertas} color="amber" />
+                    <StatCard icon={Bell} label="Alertas activas" value={resumen.alertas} color={resumen.alertas > 0 ? 'red' : 'emerald'} />
                 </section>
 
                 {cargando ? (

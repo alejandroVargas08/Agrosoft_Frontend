@@ -16,16 +16,17 @@ interface EstiloTipo {
 }
 
 const TIPOS: Record<string, EstiloTipo> = {
-    tarea: { icono: CalendarDays, color: 'text-blue-600', fondo: 'bg-blue-50', etiqueta: 'Tarea', ruta: '/mis-tareas' },
-    tarea_proxima: { icono: CalendarDays, color: 'text-blue-600', fondo: 'bg-blue-50', etiqueta: 'Tarea', ruta: '/mis-tareas' },
-    alerta_sensor: { icono: Cpu, color: 'text-red-500', fondo: 'bg-red-50', etiqueta: 'Sensor', ruta: '/alertas' },
+    tarea: { icono: CalendarDays, color: 'text-blue-500', fondo: 'bg-blue-100', etiqueta: 'Tarea', ruta: '/mis-tareas' },
+    tarea_proxima: { icono: CalendarDays, color: 'text-blue-500', fondo: 'bg-blue-100', etiqueta: 'Tarea', ruta: '/mis-tareas' },
+    alerta_sensor: { icono: Cpu, color: 'text-red-500', fondo: 'bg-red-100', etiqueta: 'Sensor', ruta: '/alertas' },
     stock_bajo: { icono: Package, color: 'text-[#F16C07]', fondo: 'bg-[#FFF3E0]', etiqueta: 'Stock', ruta: '/inventario' },
-    novedad: { icono: AlertCircle, color: 'text-amber-600', fondo: 'bg-amber-50', etiqueta: 'Novedad', ruta: '/novedades' },
-    solicitud: { icono: UserCheck, color: 'text-purple-600', fondo: 'bg-purple-50', etiqueta: 'Solicitud', ruta: '/solicitudes' },
-    diagnostico_completado: { icono: Bug, color: 'text-teal-600', fondo: 'bg-teal-50', etiqueta: 'Diagnóstico', ruta: '/wiki-epa' },
+    novedad: { icono: AlertCircle, color: 'text-amber-600', fondo: 'bg-amber-100', etiqueta: 'Novedad', ruta: '/novedades' },
+    diagnostico_completado: { icono: Bug, color: 'text-purple-500', fondo: 'bg-purple-100', etiqueta: 'Diagnóstico', ruta: '/wiki-epa' },
+    // Solicitud no existe en el diseño: se le deja el cian que allá usan los drones
+    solicitud: { icono: UserCheck, color: 'text-cyan-600', fondo: 'bg-cyan-100', etiqueta: 'Solicitud', ruta: '/solicitudes' },
 };
 
-const POR_DEFECTO: EstiloTipo = { icono: Bell, color: 'text-gray-500', fondo: 'bg-gray-100', etiqueta: 'Sistema' };
+const POR_DEFECTO: EstiloTipo = { icono: Bell, color: 'text-primary', fondo: 'bg-icon-bg', etiqueta: 'Sistema' };
 
 const estiloDe = (tipo: string) => TIPOS[tipo] ?? POR_DEFECTO;
 

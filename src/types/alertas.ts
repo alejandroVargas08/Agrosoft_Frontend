@@ -47,4 +47,10 @@ export interface Alerta {
     fecha: string;
     severidad: SeveridadAlerta;
     idOriginal: number;
+    // Las cuatro columnas de la fila del diseño
+    origen: string;
+    medicion: string;
+    valor: string;
+    /** Vacío cuando la alerta no se compara contra un umbral */
+    umbral: string;
 }
