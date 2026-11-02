@@ -162,9 +162,9 @@ function Login() {
                         {error && <p className="text-sm font-medium text-red-600">{error}</p>}
 
                         {avisoCuenta && (
-                            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                                <LuClock size={18} className="mt-0.5 shrink-0 text-amber-600" />
-                                <p className="text-sm font-medium text-amber-800">{avisoCuenta}</p>
+                            <div className="flex items-start gap-2 rounded-xl border border-[#F16C07]/30 bg-[#FFF3E0] px-4 py-3">
+                                <LuClock size={18} className="mt-0.5 shrink-0 text-[#F16C07]" />
+                                <p className="text-sm font-medium text-[#E65100]">{avisoCuenta}</p>
                             </div>
                         )}
 

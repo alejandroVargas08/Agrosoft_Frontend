@@ -69,7 +69,7 @@ export function TabHerramientas ({actividadId} : {actividadId: number | undefine
                     const nuevas = Number(prompt('Nuevas horas estimadas:', String(h.horasEstimadas)));
                     if (nuevas > 0) reestimar(h.id, nuevas);
                     }}
-                    className="text-sm text-amber-700 underline"
+                    className="text-sm text-[#F16C07] underline"
                 >
                     Re-estimar
                 </button>
