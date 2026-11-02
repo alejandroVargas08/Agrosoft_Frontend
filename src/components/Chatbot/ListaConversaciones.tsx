@@ -60,11 +60,11 @@ export function ListaConversaciones({
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-neutral-50 border-r border-neutral-200">
-      <div className="p-3 border-b border-neutral-200">
+    <div className="w-full h-full flex flex-col bg-muted/30 border-r border-border">
+      <div className="p-3 border-b border-border">
         <button
           onClick={onNuevaConversacion}
-          className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium rounded-lg px-4 py-2.5 transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg px-4 py-2.5 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Nueva conversación
@@ -73,11 +73,11 @@ export function ListaConversaciones({
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {cargando && (
-          <p className="text-xs text-neutral-400 text-center py-4">Cargando conversaciones...</p>
+          <p className="text-xs text-muted-foreground text-center py-4">Cargando conversaciones...</p>
         )}
         {error && <p className="text-xs text-red-600 text-center py-4">{error}</p>}
         {!cargando && !error && conversaciones.length === 0 && (
-          <p className="text-xs text-neutral-400 text-center py-4">Aún no tienes conversaciones.</p>
+          <p className="text-xs text-muted-foreground text-center py-4">Aún no tienes conversaciones.</p>
         )}
         {Array.isArray(conversaciones) &&
           conversaciones.map((c) => (
@@ -86,8 +86,8 @@ export function ListaConversaciones({
               onClick={() => onSeleccionar(c.id)}
               className={`w-full flex items-center gap-2 text-left px-3 py-2.5 rounded-lg text-sm transition-colors group ${
                 conversacionActivaId === c.id
-                  ? 'bg-emerald-50 text-emerald-700 font-medium'
-                  : 'text-neutral-600 hover:bg-neutral-100'
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-muted-foreground hover:bg-muted'
               }`}
             >
               <MessageSquare className="w-4 h-4 shrink-0" />
@@ -95,7 +95,7 @@ export function ListaConversaciones({
               <span
                 role="button"
                 onClick={(e) => handleEliminar(e, c.id)}
-                className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 transition-opacity"
+                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition-opacity"
                 aria-label="Eliminar conversación"
               >
                 <Trash2 className="w-3.5 h-3.5" />

@@ -115,18 +115,22 @@ export const Btn = ({
 
 // ─── Card ───────────────────────────────────────────────────────────────────
 export const Card = ({ children, className = '', onClick }: { children: ReactNode; className?: string; onClick?: () => void }) => {
-    // Sin tailwind-merge el `p-4` por defecto le gana a un `p-0` del className
-    // (manda el orden del CSS, no el del atributo), asi que solo se pone si
-    // quien usa la Card no trajo su propio padding.
+    // Sin tailwind-merge, las clases por defecto le ganan a las del className
+    // (manda el orden del CSS, no el del atributo). Asi que cada default solo
+    // se pone si quien usa la Card no trajo el suyo.
     const traePadding = /(^|\s)p-[\w.[\]/-]+/.test(className);
-    return (
-        <div
-            onClick={onClick}
-            className={`bg-card rounded-xl border border-border shadow-sm ${traePadding ? '' : 'p-4'} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${className}`}
-        >
-            {children}
-        </div>
-    );
+    const traeFondo = /(^|\s)bg-/.test(className);
+    const traeBorde = /(^|\s)border-(?!0|2|4|8|t|r|b|l|x|y)/.test(className);
+    const base = [
+        traeFondo ? '' : 'bg-card',
+        'rounded-xl border',
+        traeBorde ? '' : 'border-border',
+        'shadow-sm',
+        traePadding ? '' : 'p-4',
+        onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : '',
+        className,
+    ].filter(Boolean).join(' ');
+    return <div onClick={onClick} className={base}>{children}</div>;
 };
 
 // ─── StatCard (tarjeta de resumen con ícono) ───────────────────────────────────
