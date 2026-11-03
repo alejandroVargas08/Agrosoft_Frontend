@@ -1,4 +1,5 @@
-export type SeveridadAlerta = 'high' | 'medium' | 'low';
+// El diseño solo distingue dos: roja y naranja.
+export type SeveridadAlerta = 'high' | 'medium';
 export type TipoAlerta = 'sensor' | 'stock' | 'task';
 
 // Lo que devuelve el backend
@@ -16,6 +17,8 @@ export interface SensorAlerta {
 export interface Sensor {
     id: number;
     nombreSensor: string;
+    /** Nombre del tipo de sensor; de ahi sale la medicion que se muestra. */
+    tipo?: string | null;
     unidad?: string;
     estadoConexion?: string;
 }
