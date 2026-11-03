@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Map, ClipboardList, AlertTriangle, FlaskConical, Package, BookOpen, Radio, BarChart3, Bell, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, Plane, GraduationCap, CheckSquare, ListTodo, MessageSquare, Inbox } from "lucide-react";
+import { Home, Map, ClipboardList, AlertTriangle, AlertCircle, Activity, FlaskConical, Package, BookOpen, Radio, BarChart3, Bell, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, Plane, GraduationCap, CheckSquare, Inbox } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 import { CerrarSesionModal } from "../ui/CerrarSesionModal";
@@ -27,11 +27,11 @@ const PERMISO_EJECUTAR_ACTIVIDADES = 'actividades.ejecutar';
 
 const itemsAprendiz: MenuItem[] = [
     { icon: Home, label: 'Inicio', path: '/inicio' },
-    { icon: ListTodo, label: 'Mis Tareas', path: '/mis-tareas' },
-    { icon: MessageSquare, label: 'Mis Novedades', path: '/mis-novedades' },
+    { icon: ClipboardList, label: 'Mis Tareas', path: '/mis-tareas' },
+    { icon: AlertCircle, label: 'Mis Novedades', path: '/mis-novedades' },
     { icon: Leaf, label: 'Cultivos', path: '/cultivos' },
     { icon: Map, label: 'Lotes y Sublotes', path: '/territorio' },
-    { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
+    { icon: Activity, label: 'Actividades', path: '/actividades' },
     { icon: AlertTriangle, label: 'Incidencias', path: '/incidencias' },
     { icon: Package, label: 'Inventario', path: '/inventario' },
     { icon: BookOpen, label: 'Wiki EPA', path: '/wiki-epa' },
