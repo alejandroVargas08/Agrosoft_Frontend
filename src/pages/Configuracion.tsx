@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, HelpCircle, ShieldCheck, LogOut, ChevronRight, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
+import { MessageCircle, HelpCircle, Shield, LogOut, ChevronRight, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Badge, Btn, Card, Modal, PageHeader } from '../components/ui/AgroUI';
 import { useTelegram } from '../hooks/useTelegram';
 
 const BOT = 'AgroSoftSenaBot';
 
-// Estas solo valen en este navegador: no hay tabla de preferencias todavia
+// Las del diseño. Solo valen en este navegador: no hay tabla de preferencias
+// todavia, y nada en la app las consulta para decidir si avisa o no.
 const NOTIFICACIONES = [
-    { clave: 'notifTareas', label: 'Tareas asignadas y devueltas' },
-    { clave: 'notifSolicitudes', label: 'Solicitudes de acceso' },
+    { clave: 'notifSensores', label: 'Alertas de sensores' },
+    { clave: 'notifStock', label: 'Stock bajo' },
+    { clave: 'notifActividades', label: 'Actividades vencidas' },
+    { clave: 'notifIncidencias', label: 'Nuevas incidencias' },
 ] as const;
 
 function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -93,64 +96,59 @@ export default function Configuracion() {
     return (
         <DashboardLayout>
             <div className="p-4 sm:p-6">
-                <div className="mx-auto max-w-3xl space-y-6">
+                {/* Centrado: el titulo y las tarjetas comparten el mismo ancho
+                    para que queden alineados entre si. */}
+                <div className="mx-auto w-full max-w-2xl space-y-4">
                     <PageHeader title="Configuración" />
 
                     <Card>
-                        <h2 className="mb-1 font-semibold text-foreground">Telegram</h2>
-                        <p className="mb-4 text-sm text-muted-foreground">
-                            Vincula tu cuenta para registrar incidencias y pedir reportes desde el chat.
-                        </p>
+                        <h3 className="mb-3 font-semibold text-foreground">Privacidad y Seguridad</h3>
+                        <div className="space-y-3">
+                            {/* El diseño tiene aqui tambien "Verificacion en dos pasos".
+                                No se pone porque el backend no la tiene: seria un
+                                interruptor que no activa nada. */}
+                            <div className="flex items-center justify-between gap-3 py-2">
+                                <div>
+                                    <p className="text-sm font-medium text-foreground">Vincular con Telegram</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {cargandoEstado
+                                            ? 'Consultando…'
+                                            : !disponible
+                                              ? 'El bot no está activo en este servidor'
+                                              : vinculado
+                                                ? 'Cuenta vinculada'
+                                                : 'Recibe notificaciones en Telegram'}
+                                    </p>
+                                </div>
 
-                        <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-sm font-semibold text-foreground">
-                                    Estado de la vinculación
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {cargandoEstado
-                                        ? 'Consultando…'
-                                        : !disponible
-                                          ? 'El bot no está activo en este servidor'
-                                          : vinculado
-                                            ? 'Tu cuenta está vinculada al bot'
-                                            : 'Sin vincular'}
-                                </p>
-                            </div>
-
-                            {cargandoEstado ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            ) : !disponible ? (
-                                <Badge color="muted">No disponible</Badge>
-                            ) : vinculado ? (
-                                <div className="flex items-center gap-3">
-                                    <Badge color="success">Vinculada</Badge>
+                                {cargandoEstado ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                ) : !disponible ? (
+                                    <Badge color="muted">No disponible</Badge>
+                                ) : vinculado ? (
                                     <Btn
                                         variant="outline"
                                         size="sm"
                                         disabled={desvincular.isPending}
                                         onClick={() => desvincular.mutate()}
                                     >
+                                        <MessageCircle size={14} />
                                         {desvincular.isPending ? 'Desconectando…' : 'Desconectar'}
                                     </Btn>
-                                </div>
-                            ) : (
-                                <Btn variant="outline" size="sm" onClick={abrirModal}>
-                                    <Send size={14} />
-                                    Vincular
-                                </Btn>
-                            )}
+                                ) : (
+                                    <Btn variant="outline" size="sm" onClick={abrirModal}>
+                                        <MessageCircle size={14} />Vincular
+                                    </Btn>
+                                )}
+                            </div>
                         </div>
                     </Card>
 
                     <Card>
-                        <h2 className="mb-1 font-semibold text-foreground">Notificaciones</h2>
-                        <p className="mb-4 text-sm text-muted-foreground">
-                            Qué avisos quieres ver en la campana. Hoy se guardan solo en este navegador.
-                        </p>
-                        <div className="space-y-3 border-t border-border pt-4">
+                        <h3 className="mb-3 font-semibold text-foreground">Notificaciones</h3>
+                        <div className="space-y-3">
                             {NOTIFICACIONES.map((n) => (
-                                <div key={n.clave} className="flex items-center justify-between gap-4">
+                                <div key={n.clave} className="flex items-center justify-between gap-4 py-1">
                                     <span className="text-sm text-foreground">{n.label}</span>
                                     <Switch
                                         checked={preferencias[n.clave] ?? true}
@@ -162,40 +160,36 @@ export default function Configuracion() {
                     </Card>
 
                     <Card>
-                        <h2 className="mb-3 font-semibold text-foreground">Cuenta</h2>
-                        <div className="divide-y divide-border">
+                        <h3 className="mb-3 font-semibold text-foreground">Cuenta</h3>
+                        <div className="space-y-2">
                             {[
                                 { icono: HelpCircle, label: 'Centro de ayuda', ruta: '/ayuda' },
-                                { icono: ShieldCheck, label: 'Política de privacidad', ruta: '/privacidad' },
+                                { icono: Shield, label: 'Política de privacidad', ruta: '/privacidad' },
                             ].map(({ icono: Icono, label, ruta }) => (
                                 <button
                                     key={ruta}
                                     type="button"
                                     onClick={() => navigate(ruta)}
-                                    className="group -mx-2 flex w-full items-center justify-between rounded-lg px-2 py-3.5 text-left transition-colors hover:bg-muted"
+                                    className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted"
                                 >
-                                    <span className="flex items-center gap-3">
-                                        <Icono size={18} className="text-muted-foreground" />
-                                        <span className="text-sm font-medium text-foreground">{label}</span>
-                                    </span>
-                                    <ChevronRight size={16} className="text-muted-foreground" />
+                                    <Icono size={16} className="text-muted-foreground" />
+                                    <span className="text-sm text-foreground">{label}</span>
+                                    <ChevronRight size={14} className="ml-auto text-muted-foreground" />
                                 </button>
                             ))}
 
-                            <div className="pt-3">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        localStorage.clear();
-                                        sessionStorage.clear();
-                                        navigate('/login');
-                                    }}
-                                    className="-mx-2 inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-                                >
-                                    <LogOut size={16} />
-                                    Cerrar sesión
-                                </button>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    localStorage.clear();
+                                    sessionStorage.clear();
+                                    navigate('/login');
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg p-2 text-left text-red-600 transition-colors hover:bg-red-50"
+                            >
+                                <LogOut size={16} />
+                                <span className="text-sm font-medium">Cerrar sesión</span>
+                            </button>
                         </div>
                     </Card>
                 </div>
