@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getSensores } from "../../services/sensorService";
-import type { ResumenSensores, Sensor } from "../../types/sensor";
+import type { Sensor } from "../../types/sensor";
 
 export function useSensores(intervaloMs = 10_000) {
   const [sensores, setSensores] = useState<Sensor[]>([]);
@@ -34,12 +34,6 @@ export function useSensores(intervaloMs = 10_000) {
     };
   }, [recargar, intervaloMs]);
 
-  const resumen: ResumenSensores = useMemo(() => ({
-    enLinea: sensores.filter((s) => s.enLinea).length,
-    desconectados: sensores.filter((s) => !s.enLinea).length,
-    total: sensores.length,
-    alertas: sensores.filter((s) => s.alerta).length,
-  }), [sensores]);
-
-  return { sensores, resumen, cargando, error, recargar };
+  // El resumen ahora se calcula por estacion, en useSensoresPorLote.
+  return { sensores, cargando, error, recargar };
 }

@@ -1,47 +1,185 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Bell, Cpu, MapPin, Wifi, WifiOff } from 'lucide-react';
+import { AlertTriangle, Cpu, Edit2, Sun, Wifi, WifiOff } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { Badge, Card, EmptyState, Modal, PageHeader, StatCard } from '../components/ui/AgroUI';
-import SensorCard from '../components/sensores/SensorCard';
+import { Btn, Card, EmptyState, Modal, PageHeader, StatCard, StatusBadge, Tab } from '../components/ui/AgroUI';
+import EstacionCard from '../components/sensores/EstacionCard';
 import HistorialSensor from '../components/sensores/HistorialSensor';
 import EditarRangoSensor from '../components/sensores/EditarRangoSensor';
-import { useSensoresPorLote } from '../hooks/sensores/useSensoresPorLote';
+import { useSensoresPorLote, type EstacionLote } from '../hooks/sensores/useSensoresPorLote';
+import {
+    COLOR_MEDIDA, ETIQUETA_MEDIDA, ICONO_MEDIDA, ORDEN_MEDIDAS, nivelUV, textoValor,
+} from '../components/sensores/medidas';
 import type { Sensor } from '../types/sensor';
+
+const ESTADO_BADGE = {
+    conectada: 'connected',
+    alerta: 'alert',
+    desconectada: 'disconnected',
+} as const;
 
 export default function SensorPage() {
     const { estaciones, resumen, cargando, error, recargar } = useSensoresPorLote();
-    const [seleccionado, setSeleccionado] = useState<Sensor | null>(null);
+    const [seleccionadaId, setSeleccionadaId] = useState<number | null | undefined>(undefined);
+    const [medidaActiva, setMedidaActiva] = useState<string>(ETIQUETA_MEDIDA.temperatura);
+    const [editarRangos, setEditarRangos] = useState(false);
     const queryClient = useQueryClient();
 
-    const cerrar = () => setSeleccionado(null);
+    // Se guarda el id y no la estacion, para que el refresco cada 10s no deje
+    // la pantalla de detalle mirando datos viejos.
+    const seleccionada: EstacionLote | undefined =
+        seleccionadaId === undefined ? undefined : estaciones.find((e) => e.loteId === seleccionadaId);
 
+    const abrir = (estacion: EstacionLote) => {
+        const primera = ORDEN_MEDIDAS.map((t) => estacion.medida(t)).find((s) => s !== undefined);
+        if (primera) setMedidaActiva(ETIQUETA_MEDIDA[primera.tipo]);
+        setSeleccionadaId(estacion.loteId);
+    };
+
+    const volver = () => setSeleccionadaId(undefined);
+
+    const avisoError = error && (
+        <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-xl bg-red-50 px-5 py-4 text-red-700 sm:flex-row sm:items-center sm:justify-between"
+        >
+            <span>No se pudieron cargar los sensores ({error}).</span>
+            <button
+                onClick={recargar}
+                className="self-start rounded-lg border border-red-300 px-3 py-1 text-sm font-semibold hover:bg-red-100 sm:self-auto"
+            >
+                Reintentar
+            </button>
+        </div>
+    );
+
+    // ─── Detalle de una estacion ────────────────────────────────────────────
+    if (seleccionada) {
+        const presentes: Sensor[] = ORDEN_MEDIDAS
+            .map((t) => seleccionada.medida(t))
+            .filter((s): s is Sensor => s !== undefined);
+
+        const sensorActivo = presentes.find((s) => ETIQUETA_MEDIDA[s.tipo] === medidaActiva) ?? presentes[0];
+        const uvSensor = seleccionada.medida('uv');
+        const alertaUV = uvSensor?.valor !== null && uvSensor?.valor !== undefined && uvSensor.valor >= 8;
+
+        return (
+            <DashboardLayout>
+                <div className="space-y-4 p-4 sm:p-6">
+                    <PageHeader
+                        title={seleccionada.nombreLote}
+                        subtitle={seleccionada.sensores.length + ' sensores en la estación'}
+                        onBack={volver}
+                        action={<StatusBadge status={ESTADO_BADGE[seleccionada.estado]} />}
+                    />
+
+                    <Btn variant="outline" size="sm" onClick={() => setEditarRangos(true)}>
+                        <Edit2 size={14} />Editar rangos
+                    </Btn>
+
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {presentes.map((s) => {
+                            const Icono = ICONO_MEDIDA[s.tipo];
+                            const color = s.tipo === 'uv' ? nivelUV(s.valor ?? 0).color : COLOR_MEDIDA[s.tipo];
+                            return (
+                                <div key={s.id} className="rounded-xl border border-border bg-card p-3 text-center">
+                                    <Icono size={18} className={`mx-auto mb-1 ${color}`} />
+                                    <p className={`text-xl font-bold ${s.tipo === 'uv' ? color : 'text-foreground'}`}>
+                                        {textoValor(s)}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">{ETIQUETA_MEDIDA[s.tipo]}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {alertaUV && (
+                        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3">
+                            <AlertTriangle size={14} className="mt-0.5 shrink-0 text-red-600" />
+                            <p className="text-xs text-red-700">
+                                Radiación UV muy alta: usa protección solar y evita labores al sol
+                            </p>
+                        </div>
+                    )}
+
+                    {presentes.length > 0 && (
+                        <Tab
+                            tabs={presentes.map((s) => ETIQUETA_MEDIDA[s.tipo])}
+                            active={medidaActiva}
+                            onChange={setMedidaActiva}
+                        />
+                    )}
+
+                    <Card>
+                        {sensorActivo ? (
+                            <>
+                                <h3 className="mb-4 font-semibold text-foreground">{sensorActivo.nombre}</h3>
+                                <HistorialSensor sensor={sensorActivo} />
+                            </>
+                        ) : (
+                            <p className="py-6 text-center text-sm text-muted-foreground">
+                                Esta estación todavía no tiene sensores con lecturas.
+                            </p>
+                        )}
+                    </Card>
+
+                    {/* Como se conecta cada sensor de la estacion. El backend ya
+                        manda protocolo, mqttTopic y endpointUrl. */}
+                    <div className="space-y-1 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
+                        {seleccionada.sensores.map((s) => (
+                            <p key={s.id}>
+                                <strong className="text-foreground">{s.nombre}</strong>
+                                {' — '}{ETIQUETA_MEDIDA[s.tipo]}{s.unidad ? ' (' + s.unidad + ')' : ''}
+                                {s.mqttTopic && <span className="font-mono"> · Topic MQTT: {s.mqttTopic}</span>}
+                                {!s.mqttTopic && s.endpointUrl && <span className="font-mono"> · {s.endpointUrl}</span>}
+                            </p>
+                        ))}
+                    </div>
+
+                    <Modal open={editarRangos} onClose={() => setEditarRangos(false)} title="Editar rangos de la estación">
+                        {sensorActivo ? (
+                            <div className="space-y-3">
+                                <p className="text-sm text-muted-foreground">
+                                    Rango de <strong className="text-foreground">{sensorActivo.nombre}</strong>. El
+                                    rango decide cuándo la estación entra en alerta.
+                                </p>
+                                <EditarRangoSensor
+                                    sensor={sensorActivo}
+                                    onGuardado={() => {
+                                        queryClient.invalidateQueries({ queryKey: ['sensor-lecturas'] });
+                                        recargar();
+                                        setEditarRangos(false);
+                                    }}
+                                />
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">No hay sensores a los que ajustarles el rango.</p>
+                        )}
+                    </Modal>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    // ─── Lista de estaciones ────────────────────────────────────────────────
     return (
         <DashboardLayout>
-            <div className="p-4 sm:p-6 space-y-6">
-                <PageHeader title="Sensores IoT" subtitle="Monitoreo en tiempo real por lote" />
+            <div className="space-y-4 p-4 sm:p-6">
+                <PageHeader title="Sensores IoT" subtitle="Estaciones de monitoreo por lote" />
 
-                {error && (
-                    <div
-                        role="alert"
-                        className="flex flex-col gap-3 rounded-xl bg-red-50 px-5 py-4 text-red-700 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <span>No se pudieron cargar los sensores ({error}).</span>
-                        <button
-                            onClick={recargar}
-                            className="self-start rounded-lg border border-red-300 px-3 py-1 text-sm font-semibold hover:bg-red-100 sm:self-auto"
-                        >
-                            Reintentar
-                        </button>
-                    </div>
-                )}
+                {avisoError}
 
-                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <StatCard icon={Wifi} label="En línea" value={resumen.enLinea} color="emerald" />
-                    <StatCard icon={WifiOff} label="Desconectados" value={resumen.desconectados} color={resumen.desconectados > 0 ? 'red' : 'emerald'} />
-                    <StatCard icon={Cpu} label="Total sensores" value={resumen.total} color="primary" />
-                    <StatCard icon={Bell} label="Alertas activas" value={resumen.alertas} color={resumen.alertas > 0 ? 'red' : 'emerald'} />
-                </section>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <StatCard icon={Wifi} label="Conectadas" value={resumen.conectadas} color="emerald" />
+                    <StatCard icon={AlertTriangle} label="Con alerta" value={resumen.conAlerta} color={resumen.conAlerta > 0 ? 'red' : 'emerald'} />
+                    <StatCard icon={WifiOff} label="Desconectadas" value={resumen.desconectadas} color={resumen.desconectadas > 0 ? 'red' : 'emerald'} />
+                    <StatCard
+                        icon={Sun}
+                        label="UV promedio"
+                        value={resumen.uvPromedio === null ? '—' : 'UV ' + resumen.uvPromedio.toFixed(1)}
+                        color={resumen.uvPromedio !== null && resumen.uvPromedio >= 6 ? 'amber' : 'primary'}
+                    />
+                </div>
 
                 {cargando ? (
                     <p className="text-sm text-muted-foreground">Cargando sensores…</p>
@@ -52,67 +190,16 @@ export default function SensorPage() {
                         description="Cuando se registre un sensor y quede asociado a un lote, aparecerá aquí agrupado por estación."
                     />
                 ) : (
-                    <div className="space-y-6">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {estaciones.map((estacion) => (
-                            <Card key={estacion.loteId ?? 'sin-lote'} className="p-0 overflow-hidden">
-                                <header className="flex flex-col gap-2 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="grid h-9 w-9 place-items-center rounded-xl bg-icon-bg">
-                                            <MapPin className="h-4 w-4 text-primary" />
-                                        </div>
-                                        <div>
-                                            <h2 className="font-semibold text-foreground">{estacion.nombreLote}</h2>
-                                            <p className="text-xs text-muted-foreground">
-                                                {estacion.sensores.length} sensor
-                                                {estacion.sensores.length === 1 ? '' : 'es'} ·{' '}
-                                                {estacion.enLinea} en línea
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {estacion.alertas > 0 && (
-                                        <Badge color="danger">
-                                            {estacion.alertas} fuera de rango
-                                        </Badge>
-                                    )}
-                                </header>
-
-                                <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-                                    {estacion.sensores.map((s) => (
-                                        <button
-                                            key={s.id}
-                                            onClick={() => setSeleccionado(s)}
-                                            className="text-left transition-transform hover:-translate-y-0.5"
-                                        >
-                                            <SensorCard sensor={{ ...s, ubicacion: estacion.nombreLote }} />
-                                        </button>
-                                    ))}
-                                </div>
-                            </Card>
+                            <EstacionCard
+                                key={estacion.loteId ?? 'sin-lote'}
+                                estacion={estacion}
+                                onClick={() => abrir(estacion)}
+                            />
                         ))}
                     </div>
                 )}
-
-                <Modal open={seleccionado !== null} onClose={cerrar} title={seleccionado?.nombre ?? ''}>
-                    {seleccionado && (
-                        <div className="space-y-6">
-                            <HistorialSensor sensor={seleccionado} />
-
-                            <div className="border-t border-border pt-4">
-                                <h3 className="mb-3 text-sm font-semibold text-foreground">
-                                    Rango operativo
-                                </h3>
-                                <EditarRangoSensor
-                                    sensor={seleccionado}
-                                    onGuardado={() => {
-                                        queryClient.invalidateQueries({ queryKey: ['sensor-lecturas'] });
-                                        recargar();
-                                        cerrar();
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    )}
-                </Modal>
             </div>
         </DashboardLayout>
     );

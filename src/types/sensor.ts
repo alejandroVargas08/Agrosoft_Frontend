@@ -1,4 +1,5 @@
-export type TipoSensor = "temperatura" | "humedad" | "ph" | "otro";
+// Las cuatro medidas del diseño. Lo que no encaje cae en "otro".
+export type TipoSensor = "temperatura" | "humedad" | "ph" | "uv" | "luminosidad" | "otro";
 
 export interface Sensor {
   id: string | number;
@@ -16,11 +17,16 @@ export interface Sensor {
   loteId: number | null;
   subLoteId: number | null;
   cultivoId: number | null;
+  // Como se comunica el sensor. El diseño los muestra al pie del detalle.
+  protocolo: string | null;
+  mqttTopic: string | null;
+  endpointUrl: string | null;
 }
 
-export interface ResumenSensores {
-  enLinea: number;
-  desconectados: number;
-  total: number;
-  alertas: number;
+/** El diseño cuenta estaciones, no sensores sueltos. */
+export interface ResumenEstaciones {
+  conectadas: number;
+  conAlerta: number;
+  desconectadas: number;
+  uvPromedio: number | null;
 }

@@ -13,7 +13,10 @@ export function useInicio() {
     const { incidencias, cargando: cargandoIncidencias } = useIncidencias();
     const { ventas, cargando: cargandoVentas } = useVentas();
     const { reporte, cargando: cargandoReporte } = useReportes();
-    const { resumen: resumenSensores, cargando: cargandoSensores } = useSensores();
+    const { sensores, cargando: cargandoSensores } = useSensores();
+
+    // Inicio cuenta sensores sueltos; la pantalla de IoT cuenta estaciones.
+    const sensoresEnLinea = sensores.filter((s) => s.enLinea).length;
 
     const unidadesActivas = unidades.filter((u) => u.estado === 'activo');
 
@@ -54,8 +57,8 @@ export function useInicio() {
         unidadesActivas: unidadesActivas.length,
         incidenciasAbiertas,
         ventasDelMes,
-        sensoresEnLinea: resumenSensores.enLinea,
-        sensoresTotal: resumenSensores.total,
+        sensoresEnLinea,
+        sensoresTotal: sensores.length,
         actividadesRecientes,
         produccion,
         cultivos,

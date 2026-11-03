@@ -2,14 +2,19 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { lotesApi } from "../../api/territorio";
 import { useSensores } from "./useSensores";
-import type { Sensor } from "../../types/sensor";
+import type { ResumenEstaciones, Sensor, TipoSensor } from "../../types/sensor";
+
+export type EstadoEstacion = "conectada" | "alerta" | "desconectada";
 
 export interface EstacionLote {
     loteId: number | null;
     nombreLote: string;
     sensores: Sensor[];
+    estado: EstadoEstacion;
     enLinea: number;
     alertas: number;
+    /** El sensor de esa medida en el lote, si existe. */
+    medida: (tipo: TipoSensor) => Sensor | undefined;
 }
 
 /**
@@ -18,7 +23,7 @@ export interface EstacionLote {
  * loteId, asi que el agrupamiento se hace aqui con los datos que ya existen.
  */
 export function useSensoresPorLote(intervaloMs = 10_000) {
-    const { sensores, resumen, cargando, error, recargar } = useSensores(intervaloMs);
+    const { sensores, cargando, error, recargar } = useSensores(intervaloMs);
 
     const lotesQuery = useQuery({
         queryKey: ["lotes"],
@@ -31,23 +36,34 @@ export function useSensoresPorLote(intervaloMs = 10_000) {
         const grupos = new Map<number | null, Sensor[]>();
 
         for (const s of sensores) {
-            const clave = s.loteId;
-            const lista = grupos.get(clave);
+            const lista = grupos.get(s.loteId);
             if (lista) lista.push(s);
-            else grupos.set(clave, [s]);
+            else grupos.set(s.loteId, [s]);
         }
 
         return [...grupos.entries()]
-            .map(([loteId, lista]) => ({
-                loteId,
-                nombreLote:
-                    loteId === null
-                        ? "Sin lote asignado"
-                        : nombrePorLote.get(loteId) ?? `Lote ${loteId}`,
-                sensores: [...lista].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
-                enLinea: lista.filter((s) => s.enLinea).length,
-                alertas: lista.filter((s) => s.alerta).length,
-            }))
+            .map(([loteId, lista]) => {
+                const ordenados = [...lista].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+                const enLinea = lista.filter((s) => s.enLinea).length;
+                const alertas = lista.filter((s) => s.alerta).length;
+
+                // Una estacion esta caida cuando ninguno de sus sensores reporta.
+                const estado: EstadoEstacion =
+                    enLinea === 0 ? "desconectada" : alertas > 0 ? "alerta" : "conectada";
+
+                return {
+                    loteId,
+                    nombreLote:
+                        loteId === null
+                            ? "Sin lote asignado"
+                            : nombrePorLote.get(loteId) ?? `Lote ${loteId}`,
+                    sensores: ordenados,
+                    estado,
+                    enLinea,
+                    alertas,
+                    medida: (tipo: TipoSensor) => ordenados.find((s) => s.tipo === tipo),
+                };
+            })
             .sort((a, b) => {
                 // Los sensores sin lote van al final
                 if (a.loteId === null) return 1;
@@ -55,6 +71,21 @@ export function useSensoresPorLote(intervaloMs = 10_000) {
                 return a.nombreLote.localeCompare(b.nombreLote, "es");
             });
     }, [sensores, lotesQuery.data]);
+
+    const resumen: ResumenEstaciones = useMemo(() => {
+        // El UV promedio solo mira las estaciones que estan reportando.
+        const uv = estaciones
+            .filter((e) => e.estado !== "desconectada")
+            .map((e) => e.medida("uv")?.valor)
+            .filter((v): v is number => typeof v === "number");
+
+        return {
+            conectadas: estaciones.filter((e) => e.estado === "conectada").length,
+            conAlerta: estaciones.filter((e) => e.estado === "alerta").length,
+            desconectadas: estaciones.filter((e) => e.estado === "desconectada").length,
+            uvPromedio: uv.length > 0 ? uv.reduce((a, b) => a + b, 0) / uv.length : null,
+        };
+    }, [estaciones]);
 
     return {
         estaciones,
