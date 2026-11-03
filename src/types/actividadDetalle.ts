@@ -86,3 +86,20 @@ export interface CrearActividadServicioPayload {
     horas: number;
     precioHora: number;
 }
+
+
+export interface ActividadResponsable {
+    id: number | null;
+    actividadId: number;
+    usuarioId: number;
+    horas: number;
+    precioHora: number;
+    costo: number;
+    // El backend resuelve el nombre; viene null si el usuario ya no existe.
+    usuario: { id: number; nombre: string; apellido: string } | null;
+}
+export interface CrearActividadResponsablePayload {
+    usuarioId: number;
+    horas: number;
+    precioHora: number;
+}

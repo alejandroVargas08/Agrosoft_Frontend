@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '../ui/AgroUI';
 import { actividadInsumosApi } from '../../api/actividades/actividadInsumos';
-import { actividadInsumoUsoApi } from '../../api/actividades/actividadInsumoUso';
-import { actividadServiciosApi } from '../../api/actividades/actividadServicios';
 import { actividadHerramientasApi } from '../../api/actividades/actividadHerramientas';
 import { insumosApi } from '../../api/inventario';
+import { useActividadResponsables } from '../../hooks/Actividades/useActividadResponsables';
 import type { Actividad } from '../../types/actividades';
 
 const pesos = (valor: number) =>
@@ -26,21 +25,13 @@ export function TabCostos({ actividadId, actividad }: Props) {
         queryFn: async () => (await actividadInsumosApi.listar(actividadId!)).data,
         enabled: habilitado,
     });
-    const usos = useQuery({
-        queryKey: ['actividad-insumo-uso', actividadId],
-        queryFn: async () => (await actividadInsumoUsoApi.listar(actividadId!)).data,
-        enabled: habilitado,
-    });
-    const servicios = useQuery({
-        queryKey: ['actividad-servicios', actividadId],
-        queryFn: async () => (await actividadServiciosApi.listar(actividadId!)).data,
-        enabled: habilitado,
-    });
     const herramientas = useQuery({
         queryKey: ['actividad-herramientas', actividadId],
         queryFn: async () => (await actividadHerramientasApi.listar(actividadId!)).data,
         enabled: habilitado,
     });
+
+    const { responsables } = useActividadResponsables(actividadId);
 
     // La ficha del insumo trae el costo de adquisicion, el valor residual y la
     // vida util: con eso se calcula la depreciacion por hora de cada herramienta
@@ -55,8 +46,6 @@ export function TabCostos({ actividadId, actividad }: Props) {
     const manoDeObra = horas * precioHora;
 
     const costoInsumos = (insumos.data ?? []).reduce((s, i) => s + (i.costoTotal || 0), 0);
-    const costoUsos = (usos.data ?? []).reduce((s, u) => s + (u.costoTotal || 0), 0);
-    const costoServicios = (servicios.data ?? []).reduce((s, x) => s + (x.costo || 0), 0);
 
     // Depreciacion lineal: (costo - valor residual) / vida util, por hora de uso.
     // Solo cuenta la herramienta cuya ficha tenga los tres datos.
@@ -77,15 +66,14 @@ export function TabCostos({ actividadId, actividad }: Props) {
         costoHerramientas += (depreciable / vidaUtil) * (h.horasEstimadas || 0);
     }
 
-    const total = manoDeObra + costoInsumos + costoUsos + costoServicios + costoHerramientas;
+    // Los tres rubros del diseño. Insumos usados y servicios no se muestran.
+    const total = manoDeObra + costoInsumos + costoHerramientas;
 
-    const cargando = insumos.isLoading || usos.isLoading || servicios.isLoading || catalogoInsumos.isLoading;
+    const cargando = insumos.isLoading || herramientas.isLoading || catalogoInsumos.isLoading;
 
     const RUBROS = [
         { titulo: 'Mano de obra', detalle: horas + 'h × ' + pesos(precioHora) + '/h', valor: manoDeObra },
         { titulo: 'Insumos', detalle: (insumos.data ?? []).length + ' items', valor: costoInsumos },
-        { titulo: 'Insumos usados', detalle: (usos.data ?? []).length + ' registros', valor: costoUsos },
-        { titulo: 'Servicios', detalle: (servicios.data ?? []).length + ' contratados', valor: costoServicios },
         { titulo: 'Herramientas', detalle: 'Depreciación', valor: costoHerramientas },
     ];
 
@@ -127,6 +115,32 @@ export function TabCostos({ actividadId, actividad }: Props) {
                     <p className="pt-2 text-xs text-muted-foreground">
                         Esta actividad no tiene horas registradas, así que la mano de obra queda en cero.
                     </p>
+                )}
+            </Card>
+
+            <Card>
+                <h3 className="mb-3 font-semibold text-foreground">Responsables</h3>
+
+                {responsables.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                        Todavía no hay responsables registrados en esta actividad.
+                    </p>
+                ) : (
+                    <div className="space-y-2">
+                        {responsables.map((r) => {
+                            const nombre = r.usuario
+                                ? r.usuario.nombre + ' ' + r.usuario.apellido
+                                : 'Usuario #' + r.usuarioId;
+                            return (
+                                <div key={r.id ?? r.usuarioId} className="flex items-center gap-2 rounded-lg bg-muted p-2">
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                        {nombre.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="truncate text-sm font-medium text-foreground">{nombre}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
             </Card>
         </div>
