@@ -28,7 +28,7 @@ export const COLOR_MEDIDA: Record<TipoSensor, string> = {
     humedad: 'text-blue-500',
     ph: 'text-primary',
     uv: 'text-[#F59E0B]',
-    luminosidad: 'text-[#F59E0B]',
+    luminosidad: 'text-[#F16C07]',
     otro: 'text-primary',
 };
 
@@ -49,6 +49,14 @@ export function nivelUV(indice: number): { label: string; color: string; bg: str
     if (indice <= 5) return { label: 'Moderado', color: 'text-[#F59E0B]', bg: 'bg-[#FFF3E0]' };
     if (indice <= 7) return { label: 'Alto', color: 'text-[#F16C07]', bg: 'bg-[#FFF3E0]' };
     return { label: 'Muy alto', color: 'text-red-600', bg: 'bg-red-100' };
+}
+
+/** La lectura de luz por tramos, tal cual el luxInfo del diseño. */
+export function nivelLuz(v: number): { label: string; color: string; bg: string } {
+    if (v <= 1000) return { label: 'Oscuro', color: 'text-gray-500', bg: 'bg-gray-100' };
+    if (v <= 10000) return { label: 'Nublado', color: 'text-[#F59E0B]', bg: 'bg-[#FFF3E0]' };
+    if (v <= 50000) return { label: 'Luz media', color: 'text-[#3A9C50]', bg: 'bg-[#EBF3ED]' };
+    return { label: 'Pleno sol', color: 'text-[#F16C07]', bg: 'bg-[#FFF3E0]' };
 }
 
 /** 1500 -> "1,5 klx". Tal cual el fmtLux del diseño. */

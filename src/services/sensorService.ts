@@ -3,7 +3,8 @@ import type { Sensor, TipoSensor } from "../types/sensor";
 
 type Raw = Record<string, unknown>;
 
-function detectarTipo(t: string): TipoSensor {
+/** Deduce la medida a partir del nombre del tipo de sensor. */
+export function detectarTipo(t: string): TipoSensor {
   const v = t.toLowerCase();
   if (v.includes("temp")) return "temperatura";
   if (v.includes("hum")) return "humedad";

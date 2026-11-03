@@ -3,7 +3,7 @@ import { Badge, Card, StatusBadge } from '../ui/AgroUI';
 import type { EstacionLote } from '../../hooks/sensores/useSensoresPorLote';
 import type { Sensor } from '../../types/sensor';
 import {
-    COLOR_MEDIDA, ICONO_MEDIDA, ORDEN_MEDIDAS, fmtNumero, fueraDeRango, nivelUV, textoValor,
+    COLOR_MEDIDA, ICONO_MEDIDA, ORDEN_MEDIDAS, fmtNumero, fueraDeRango, nivelLuz, nivelUV, textoValor,
 } from './medidas';
 
 /** La barrita de rango del diseño: se pone roja cuando el valor se sale. */
@@ -42,6 +42,20 @@ const Medida = ({ sensor }: { sensor: Sensor }) => {
                         {textoValor(sensor)} · {uv.label}
                     </span>
                     {fuera && <AlertTriangle size={12} className="text-red-500" />}
+                </div>
+            </div>
+        );
+    }
+
+    // La luz se lee por tramo (Oscuro / Nublado / Luz media / Pleno sol).
+    if (sensor.tipo === 'luminosidad') {
+        const luz = nivelLuz(sensor.valor ?? 0);
+        return (
+            <div className="flex items-center gap-2">
+                <Icono size={14} className={fuera ? 'text-[#F16C07]' : luz.color} />
+                <div className="flex flex-1 items-center justify-between text-xs">
+                    <span className={`font-semibold ${luz.color}`}>{textoValor(sensor)}</span>
+                    <span className="text-muted-foreground">{luz.label}</span>
                 </div>
             </div>
         );

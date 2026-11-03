@@ -7,8 +7,10 @@ import EstacionCard from '../components/sensores/EstacionCard';
 import HistorialSensor from '../components/sensores/HistorialSensor';
 import EditarRangoSensor from '../components/sensores/EditarRangoSensor';
 import { useSensoresPorLote, type EstacionLote } from '../hooks/sensores/useSensoresPorLote';
+import { usePermisos } from '../hooks/permisos/usePermisos';
 import {
     COLOR_MEDIDA, ETIQUETA_MEDIDA, ICONO_MEDIDA, ORDEN_MEDIDAS, nivelUV, textoValor,
+    nivelLuz,
 } from '../components/sensores/medidas';
 import type { Sensor } from '../types/sensor';
 
@@ -24,6 +26,12 @@ export default function SensorPage() {
     const [medidaActiva, setMedidaActiva] = useState<string>(ETIQUETA_MEDIDA.temperatura);
     const [editarRangos, setEditarRangos] = useState(false);
     const queryClient = useQueryClient();
+    const { puede } = usePermisos();
+
+    // El diseño solo le deja editar rangos al instructor y al admin. No hay
+    // permiso de sensores en el backend, asi que se usa el de actividades,
+    // que es justo el que separa al instructor del aprendiz.
+    const puedeEditarRangos = puede('actividades.gestionar');
 
     // Se guarda el id y no la estacion, para que el refresco cada 10s no deje
     // la pantalla de detalle mirando datos viejos.
@@ -67,24 +75,30 @@ export default function SensorPage() {
             <DashboardLayout>
                 <div className="space-y-4 p-4 sm:p-6">
                     <PageHeader
-                        title={seleccionada.nombreLote}
-                        subtitle={seleccionada.sensores.length + ' sensores en la estación'}
+                        title={'Estación ' + seleccionada.nombreLote}
+                        subtitle={seleccionada.sensores.length + ' sensores'}
                         onBack={volver}
                         action={<StatusBadge status={ESTADO_BADGE[seleccionada.estado]} />}
                     />
 
-                    <Btn variant="outline" size="sm" onClick={() => setEditarRangos(true)}>
-                        <Edit2 size={14} />Editar rangos
-                    </Btn>
+                    {puedeEditarRangos && (
+                        <Btn variant="outline" size="sm" onClick={() => setEditarRangos(true)}>
+                            <Edit2 size={14} />Editar rangos
+                        </Btn>
+                    )}
 
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {presentes.map((s) => {
                             const Icono = ICONO_MEDIDA[s.tipo];
-                            const color = s.tipo === 'uv' ? nivelUV(s.valor ?? 0).color : COLOR_MEDIDA[s.tipo];
+                            const color =
+                                s.tipo === 'uv' ? nivelUV(s.valor ?? 0).color
+                                    : s.tipo === 'luminosidad' ? nivelLuz(s.valor ?? 0).color
+                                        : COLOR_MEDIDA[s.tipo];
+                            const coloreado = s.tipo === 'uv' || s.tipo === 'luminosidad';
                             return (
                                 <div key={s.id} className="rounded-xl border border-border bg-card p-3 text-center">
                                     <Icono size={18} className={`mx-auto mb-1 ${color}`} />
-                                    <p className={`text-xl font-bold ${s.tipo === 'uv' ? color : 'text-foreground'}`}>
+                                    <p className={`text-xl font-bold ${coloreado ? color : 'text-foreground'}`}>
                                         {textoValor(s)}
                                     </p>
                                     <p className="text-xs text-muted-foreground">{ETIQUETA_MEDIDA[s.tipo]}</p>
@@ -112,10 +126,7 @@ export default function SensorPage() {
 
                     <Card>
                         {sensorActivo ? (
-                            <>
-                                <h3 className="mb-4 font-semibold text-foreground">{sensorActivo.nombre}</h3>
-                                <HistorialSensor sensor={sensorActivo} />
-                            </>
+                            <HistorialSensor sensor={sensorActivo} titulo={ETIQUETA_MEDIDA[sensorActivo.tipo]} />
                         ) : (
                             <p className="py-6 text-center text-sm text-muted-foreground">
                                 Esta estación todavía no tiene sensores con lecturas.
@@ -123,20 +134,22 @@ export default function SensorPage() {
                         )}
                     </Card>
 
-                    {/* Como se conecta cada sensor de la estacion. El backend ya
-                        manda protocolo, mqttTopic y endpointUrl. */}
+                    {/* El hardware de la estacion, como en el diseño, y debajo
+                        como se conecta cada sensor: eso si sale del backend. */}
                     <div className="space-y-1 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
-                        {seleccionada.sensores.map((s) => (
-                            <p key={s.id}>
-                                <strong className="text-foreground">{s.nombre}</strong>
-                                {' — '}{ETIQUETA_MEDIDA[s.tipo]}{s.unidad ? ' (' + s.unidad + ')' : ''}
-                                {s.mqttTopic && <span className="font-mono"> · Topic MQTT: {s.mqttTopic}</span>}
-                                {!s.mqttTopic && s.endpointUrl && <span className="font-mono"> · {s.endpointUrl}</span>}
-                            </p>
-                        ))}
+                        <p><strong className="text-foreground">DHT22</strong> — Temperatura (°C) + Humedad relativa (%)</p>
+                        <p><strong className="text-foreground">UVM-30A</strong> — Índice UV (0–11+, sin unidad)</p>
+                        <p><strong className="text-foreground">Fotorresistor / BH1750</strong> — Luminosidad (lx)</p>
+                        {seleccionada.sensores.map((s) =>
+                            s.mqttTopic ? (
+                                <p key={s.id} className="font-mono">Topic MQTT: {s.mqttTopic}</p>
+                            ) : s.endpointUrl ? (
+                                <p key={s.id} className="font-mono">{s.endpointUrl}</p>
+                            ) : null,
+                        )}
                     </div>
 
-                    <Modal open={editarRangos} onClose={() => setEditarRangos(false)} title="Editar rangos de la estación">
+                    <Modal open={editarRangos && puedeEditarRangos} onClose={() => setEditarRangos(false)} title="Editar rangos de la estación">
                         {sensorActivo ? (
                             <div className="space-y-3">
                                 <p className="text-sm text-muted-foreground">
