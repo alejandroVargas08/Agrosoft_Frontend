@@ -86,7 +86,7 @@ export function TabServicio ({ actividadId} : {actividadId: number | undefined})
                     const nuevas = Number(prompt('Nuevas horas:', String(s.horas)));
                     if (nuevas > 0) actualizarHoras(s.id, nuevas);
                     }}
-                    className="text-sm text-amber-700 underline"
+                    className="text-sm text-[#F16C07] underline"
                 >
                     Editar horas
                 </button>

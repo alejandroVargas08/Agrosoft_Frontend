@@ -123,7 +123,8 @@ const MisTareas = () => {
                                         </div>
                                     )}
 
-                                    <div className="flex gap-2">
+                                    {/* mt-auto: el diseño alinea los botones al fondo de la tarjeta */}
+                                    <div className="flex gap-2 mt-auto">
                                         {/* El Figma pone "Ver actividad" en todas las tarjetas */}
                                         {asignacion.actividad && (
                                             <Btn
@@ -193,7 +194,7 @@ const MisTareas = () => {
                             <div className="p-3 bg-[#FFF3E0] border border-[#F16C07]/30 rounded-xl flex items-start gap-2">
                                 <AlertCircle size={14} className="text-[#F16C07] shrink-0 mt-0.5" />
                                 <p className="text-xs text-[#E65100]">
-                                    Tu instructor puede devolverte la tarea si falta evidencia de lo que hiciste.
+                                    Tu instructor podría devolverte la tarea si no subes fotos como evidencia.
                                 </p>
                             </div>
 

@@ -85,7 +85,7 @@ const LotesSublotes = () => {
 
     return (
         <DashboardLayout>
-            <div className="p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8">
+            <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <PageHeader title="Lotes y Sublotes" subtitle="Georreferenciación de la finca" action={accionNuevo} />
 
                 {loading && <p className="text-sm text-muted-foreground">Cargando lotes...</p>}

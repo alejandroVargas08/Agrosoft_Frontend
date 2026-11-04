@@ -6,6 +6,7 @@ import { mensajeError } from '../../api/errores/errores';
 import { usePermisos } from '../permisos/usePermisos';
 
 const ASIGNAR_ACTIVIDADES = 'actividades.asignar';
+const VER_ACTIVIDADES = 'actividades.ver';
 
 export interface ProgresoActividad {
     total: number;
@@ -26,6 +27,9 @@ export function useAsignarAprendices(actividadIds: number[]) {
     const queryClient = useQueryClient();
     const { puede } = usePermisos();
     const puedeAsignar = puede(ASIGNAR_ACTIVIDADES);
+    // GET /actividades/:id/asignaciones pide 'actividades.ver', que el aprendiz
+    // tiene: por eso el avance y los avatares se le muestran igual que al instructor.
+    const puedeVerAsignaciones = puede(VER_ACTIVIDADES);
 
     const [actividadId, setActividadId] = useState<number | null>(null);
 
@@ -41,7 +45,7 @@ export function useAsignarAprendices(actividadIds: number[]) {
         queries: actividadIds.map((id) => ({
             queryKey: ['asignaciones-actividad', id],
             queryFn: async () => (await asignacionesApi.listarPorActividad(id)).data,
-            enabled: puedeAsignar,
+            enabled: puedeVerAsignaciones,
             staleTime: 1000 * 60,
         })),
     });

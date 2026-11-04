@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    Plus, AlertCircle, FlaskConical, Tractor, Warehouse, MapPin,
+    Plus, AlertCircle, FlaskConical, Wrench, Warehouse, MapPin,
     ArrowUp, ArrowDown, Minus, Truck,
 } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -23,7 +23,7 @@ const fmtFecha = (iso?: string) =>
 const MOVIMIENTO_UI = {
     entrada: { icono: ArrowUp, clase: 'bg-emerald-100 text-emerald-700', label: 'Entrada' },
     salida: { icono: ArrowDown, clase: 'bg-red-100 text-red-700', label: 'Salida' },
-    ajuste: { icono: Minus, clase: 'bg-amber-100 text-amber-700', label: 'Ajuste' },
+    ajuste: { icono: Minus, clase: 'bg-[#FFF3E0] text-[#F16C07]', label: 'Ajuste' },
     traslado: { icono: Truck, clase: 'bg-blue-100 text-blue-700', label: 'Traslado' },
 };
 
@@ -81,9 +81,9 @@ const Inventario = () => {
                                     <Card key={item.id} className={esBajo ? 'border-red-200 bg-red-50/30' : ''}>
                                         <div className="flex items-start justify-between mb-2">
                                             <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-lg ${item.tipoInsumo === 'herramienta' ? 'bg-amber-100' : 'bg-primary/10'}`}>
+                                                <div className={`p-2 rounded-lg ${item.tipoInsumo === 'herramienta' ? 'bg-[#FFF3E0]' : 'bg-icon-bg'}`}>
                                                     {item.tipoInsumo === 'herramienta'
-                                                        ? <Tractor size={18} className="text-amber-700" />
+                                                        ? <Wrench size={18} className="text-[#F16C07]" />
                                                         : <FlaskConical size={18} className="text-primary" />}
                                                 </div>
                                                 <div>
@@ -129,7 +129,7 @@ const Inventario = () => {
                                                         </div>
                                                         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                                                             <div
-                                                                className={`h-2 rounded-full transition-all ${porAgotarse ? 'bg-red-500' : 'bg-primary'}`}
+                                                                className={`h-2 rounded-full transition-all ${porAgotarse ? 'bg-red-500' : 'bg-[#F16C07]'}`}
                                                                 style={{ width: gastado + '%' }}
                                                             />
                                                         </div>
@@ -169,7 +169,7 @@ const Inventario = () => {
                         {almacenes.map((w) => (
                             <Card key={w.id}>
                                 <div className="flex items-center gap-3 mb-3">
-                                    <div className="p-2 bg-amber-100 rounded-lg"><Warehouse size={18} className="text-amber-700" /></div>
+                                    <div className="p-2 bg-icon-bg rounded-lg"><Warehouse size={18} className="text-primary" /></div>
                                     <div>
                                         <p className="font-semibold text-foreground">{w.nombre}</p>
                                         {w.ubicacion && (

@@ -73,7 +73,7 @@ const NuevoLote = () => {
                             label="Vértices del polígono" value={form.verticesTexto} onChange={set('verticesTexto')} required rows={4}
                             placeholder={'1.8500,-76.0500\n1.8510,-76.0500\n1.8510,-76.0490'} className="font-mono"
                         />
-                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 flex gap-2">
+                        <div className="p-3 bg-[#FFF3E0] border border-[#F16C07]/30 rounded-lg text-xs text-[#E65100] flex gap-2">
                             <Info size={14} className="shrink-0 mt-0.5" />
                             <span>Escribe un vértice por línea en formato lat,lng (mínimo 3). El centroide se calcula automáticamente.</span>
                         </div>

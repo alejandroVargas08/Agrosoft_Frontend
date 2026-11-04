@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AlertTriangle, Box, Leaf, MessageSquare, Plus, Wrench } from 'lucide-react';
+import { AlertCircle, Leaf, Package, Plus, Wrench } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Modal, PageHeader, Select, StatusBadge, Textarea } from '../../components/ui/AgroUI';
 import { useMisNovedades } from '../../hooks/novedades/useMisNovedades';
 import type { TipoNovedad, UrgenciaNovedad } from '../../types/novedades';
 
-const TIPOS: { valor: TipoNovedad; etiqueta: string; icono: typeof Box }[] = [
-    { valor: 'insumo_bajo', etiqueta: 'Insumo por acabarse', icono: Box },
-    { valor: 'herramienta_danada', etiqueta: 'Herramienta dañada', icono: Wrench },
-    { valor: 'problema_cultivo', etiqueta: 'Problema en el cultivo', icono: Leaf },
-    { valor: 'otro', etiqueta: 'Otro', icono: AlertTriangle },
+// El diseño muestra cada tipo con una descripción secundaria debajo
+const TIPOS: { valor: TipoNovedad; etiqueta: string; descripcion: string; icono: typeof Package }[] = [
+    { valor: 'insumo_bajo', etiqueta: 'Insumo por acabarse', descripcion: 'Producto próximo a agotarse', icono: Package },
+    { valor: 'herramienta_danada', etiqueta: 'Herramienta dañada', descripcion: 'Equipo dañado o perdido', icono: Wrench },
+    { valor: 'problema_cultivo', etiqueta: 'Problema en el cultivo', descripcion: 'Enfermedad, plaga u otro', icono: Leaf },
+    { valor: 'otro', etiqueta: 'Otro', descripcion: 'Cualquier otra novedad', icono: AlertCircle },
 ];
 
 const URGENCIAS: { valor: UrgenciaNovedad; etiqueta: string }[] = [
@@ -19,8 +20,17 @@ const URGENCIAS: { valor: UrgenciaNovedad; etiqueta: string }[] = [
     { valor: 'high', etiqueta: 'Alta' },
 ];
 
-const fecha = (valor: string) =>
-    new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+/** El diseño muestra el tiempo relativo, no la fecha */
+const hace = (iso: string) => {
+    const ms = Date.now() - new Date(iso).getTime();
+    const minutos = Math.floor(ms / 60_000);
+    if (minutos < 1) return 'Hace un momento';
+    if (minutos < 60) return 'Hace ' + minutos + ' min';
+    const horas = Math.floor(minutos / 60);
+    if (horas < 24) return 'Hace ' + horas + 'h';
+    const dias = Math.floor(horas / 24);
+    return 'Hace ' + dias + (dias === 1 ? ' día' : ' días');
+};
 
 const MisNovedades = () => {
     const {
@@ -38,7 +48,8 @@ const MisNovedades = () => {
         setSearchParams({}, { replace: true });
     }, [pedirReporte, abrir, setSearchParams]);
 
-    const [tipo, setTipo] = useState<TipoNovedad>('insumo_bajo');
+    // El diseño arranca sin tipo elegido
+    const [tipo, setTipo] = useState<TipoNovedad | ''>('');
     const [urgencia, setUrgencia] = useState<UrgenciaNovedad>('medium');
     const [descripcion, setDescripcion] = useState('');
     const [insumoId, setInsumoId] = useState('');
@@ -47,7 +58,7 @@ const MisNovedades = () => {
 
     const cerrarModal = () => {
         cerrar();
-        setTipo('insumo_bajo');
+        setTipo('');
         setUrgencia('medium');
         setDescripcion('');
         setInsumoId('');
@@ -57,13 +68,17 @@ const MisNovedades = () => {
 
     // El backend exige el insumo cuando es "insumo_bajo" y el nombre cuando es "herramienta_danada"
     const nombreHerramienta = herramientas.find((h) => String(h.id) === herramientaId)?.nombre ?? '';
+
+    const faltaInsumo = tipo === 'insumo_bajo' && insumoId === '';
+    const faltaHerramienta = tipo === 'herramienta_danada' && nombreHerramienta === '';
     const completo =
+        tipo !== '' &&
         descripcion.trim().length >= 10 &&
-        (tipo !== 'insumo_bajo' || insumoId !== '') &&
-        (tipo !== 'herramienta_danada' || nombreHerramienta !== '');
+        !faltaInsumo &&
+        !faltaHerramienta;
 
     const enviar = () => {
-        if (!completo) return;
+        if (tipo === '' || !completo) return;
         reportar({
             tipo,
             urgencia,
@@ -74,22 +89,17 @@ const MisNovedades = () => {
         }, cerrarModal);
     };
 
-    const detalle = (tipoNovedad: TipoNovedad, idInsumo: number | null, herramienta: string | null) => {
-        if (tipoNovedad === 'insumo_bajo') {
-            const insumo = consumibles.find((i) => i.id === idInsumo);
-            return insumo ? insumo.nombre : idInsumo !== null ? 'Insumo #' + idInsumo : '';
-        }
-        if (tipoNovedad === 'herramienta_danada') return herramienta ?? '';
-        return '';
-    };
+    const botonReportar = (
+        <Btn onClick={abrir}><Plus size={16} />Reportar novedad</Btn>
+    );
 
     return (
         <DashboardLayout>
-            <div className="max-w-4xl mx-auto p-4 sm:p-6">
+            <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <PageHeader
                     title="Mis novedades"
-                    subtitle="Reporta lo que encuentres mientras trabajas"
-                    action={<Btn onClick={abrir}><Plus className="w-4 h-4" /> Reportar</Btn>}
+                    subtitle="Novedades que has reportado"
+                    action={botonReportar}
                 />
 
                 {(error || errorEnvio) && (
@@ -99,46 +109,47 @@ const MisNovedades = () => {
                 )}
 
                 {cargando ? (
-                    <Card className="p-6 text-sm text-muted-foreground">Cargando tus novedades...</Card>
+                    <p className="text-sm text-muted-foreground">Cargando tus novedades...</p>
                 ) : novedades.length === 0 ? (
                     <EmptyState
-                        icon={MessageSquare}
-                        title="No has reportado novedades"
-                        description="Si se acaba un insumo, se daña una herramienta o algo pasa en el cultivo, repórtalo aquí y tu instructor lo verá."
-                        action={<Btn onClick={abrir}><Plus className="w-4 h-4" /> Reportar novedad</Btn>}
+                        icon={AlertCircle}
+                        title="Sin novedades reportadas"
+                        description="Aquí aparecerán las novedades que reportes a tu instructor."
+                        action={<Btn onClick={abrir}><Plus size={14} />Reportar novedad</Btn>}
                     />
                 ) : (
                     <div className="space-y-3">
                         {novedades.map((n) => {
                             const meta = TIPOS.find((t) => t.valor === n.tipo) ?? TIPOS[3];
                             const Icono = meta.icono;
-                            const extra = detalle(n.tipo, n.insumoId, n.nombreHerramienta);
                             return (
-                                <Card key={n.id} className="p-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="shrink-0 w-10 h-10 rounded-xl bg-primary/10 grid place-items-center">
-                                            <Icono className="w-5 h-5 text-primary" />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <p className="font-bold text-foreground">{meta.etiqueta}</p>
-                                                {extra && <span className="text-sm text-muted-foreground">· {extra}</span>}
-                                                <StatusBadge status={n.urgencia} />
-                                                <StatusBadge status={n.estado} />
+                                <Card key={n.id}>
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-2 bg-icon-bg rounded-lg">
+                                                <Icono size={16} className="text-primary" />
                                             </div>
-                                            <p className="mt-1 text-sm text-foreground/90">{n.descripcion}</p>
-                                            <p className="mt-1 text-xs text-muted-foreground">Reportada el {fecha(n.creadoEn)}</p>
-
-                                            {n.respuestaInstructor && (
-                                                <div className="mt-3 rounded-xl border border-border bg-muted/40 p-3">
-                                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                                                        Respuesta del instructor
-                                                    </p>
-                                                    <p className="mt-1 text-sm text-foreground/90">{n.respuestaInstructor}</p>
-                                                </div>
-                                            )}
+                                            <div>
+                                                <p className="text-sm font-semibold text-foreground">{meta.etiqueta}</p>
+                                                <p className="text-xs text-muted-foreground">{hace(n.creadoEn)}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <StatusBadge status={n.estado} />
+                                            <StatusBadge status={n.urgencia} />
                                         </div>
                                     </div>
+
+                                    <p className="text-sm text-muted-foreground mb-2">{n.descripcion}</p>
+
+                                    {n.respuestaInstructor && (
+                                        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                            <p className="text-xs font-semibold text-emerald-700 mb-0.5">
+                                                Respuesta del instructor:
+                                            </p>
+                                            <p className="text-xs text-emerald-600">{n.respuestaInstructor}</p>
+                                        </div>
+                                    )}
                                 </Card>
                             );
                         })}
@@ -149,7 +160,7 @@ const MisNovedades = () => {
             <Modal open={abierto} onClose={cerrarModal} title="Reportar novedad">
                 <div className="space-y-4">
                     <div>
-                        <p className="text-sm font-semibold text-foreground mb-2">¿Qué pasó?</p>
+                        <label className="text-sm font-semibold text-foreground mb-2 block">Tipo de novedad</label>
                         <div className="grid grid-cols-2 gap-2">
                             {TIPOS.map((t) => {
                                 const Icono = t.icono;
@@ -159,14 +170,15 @@ const MisNovedades = () => {
                                         key={t.valor}
                                         type="button"
                                         onClick={() => setTipo(t.valor)}
-                                        className={`flex items-center gap-2 rounded-xl border p-3 text-left text-sm font-semibold transition-all ${
-                                            activo
-                                                ? 'border-primary bg-primary/10 text-primary'
-                                                : 'border-border text-foreground hover:border-primary/40'
+                                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-center transition-all ${
+                                            activo ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'
                                         }`}
                                     >
-                                        <Icono className="w-4 h-4 shrink-0" />
-                                        {t.etiqueta}
+                                        <Icono size={18} className={activo ? 'text-primary' : 'text-muted-foreground'} />
+                                        <div>
+                                            <p className="text-xs font-semibold text-foreground">{t.etiqueta}</p>
+                                            <p className="text-[10px] text-muted-foreground">{t.descripcion}</p>
+                                        </div>
                                     </button>
                                 );
                             })}
@@ -175,14 +187,14 @@ const MisNovedades = () => {
 
                     {tipo === 'insumo_bajo' && (
                         <Select
-                            label="¿Cuál insumo?"
+                            label="Insumo"
                             value={insumoId}
                             onChange={setInsumoId}
                             options={[
-                                { value: '', label: 'Selecciona el insumo' },
+                                { value: '', label: 'Seleccionar insumo...' },
                                 ...consumibles.map((i) => ({
                                     value: String(i.id),
-                                    label: i.nombre + ' — quedan ' + i.stockDisponible + ' ' + i.unidadUso,
+                                    label: i.nombre + ' · ' + i.stockDisponible + ' ' + i.unidadUso + ' disponibles',
                                 })),
                             ]}
                         />
@@ -190,37 +202,36 @@ const MisNovedades = () => {
 
                     {tipo === 'herramienta_danada' && (
                         <Select
-                            label="¿Cuál herramienta?"
+                            label="Herramienta"
                             value={herramientaId}
                             onChange={setHerramientaId}
                             options={[
-                                { value: '', label: 'Selecciona la herramienta' },
+                                { value: '', label: 'Seleccionar herramienta...' },
                                 ...herramientas.map((h) => ({ value: String(h.id), label: h.nombre })),
                             ]}
                         />
                     )}
 
                     <Textarea
-                        label="Cuéntale al instructor"
+                        label="Descripción"
                         value={descripcion}
                         onChange={setDescripcion}
-                        placeholder="Describe lo que viste, dónde y desde cuándo (mínimo 10 caracteres)"
-                        rows={4}
-                        required
+                        placeholder="Describe la novedad con el mayor detalle posible..."
+                        rows={3}
                     />
 
                     <div>
-                        <p className="text-sm font-semibold text-foreground mb-2">¿Qué tan urgente es?</p>
-                        <div className="grid grid-cols-3 gap-2">
+                        <label className="text-sm font-semibold text-foreground mb-2 block">Urgencia</label>
+                        <div className="flex gap-2">
                             {URGENCIAS.map((u) => (
                                 <button
                                     key={u.valor}
                                     type="button"
                                     onClick={() => setUrgencia(u.valor)}
-                                    className={`rounded-xl border p-2.5 text-sm font-semibold transition-all ${
+                                    className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all border ${
                                         urgencia === u.valor
-                                            ? 'border-primary bg-primary/10 text-primary'
-                                            : 'border-border text-foreground hover:border-primary/40'
+                                            ? 'bg-primary text-white border-primary'
+                                            : 'border-border bg-white text-foreground hover:bg-muted'
                                     }`}
                                 >
                                     {u.etiqueta}
@@ -231,22 +242,19 @@ const MisNovedades = () => {
 
                     {tareas.length > 0 && (
                         <Select
-                            label="¿Pasó en alguna de tus tareas? (opcional)"
+                            label="Tarea relacionada (opcional)"
                             value={tareaId}
                             onChange={setTareaId}
                             options={[
-                                { value: '', label: 'No está relacionada con una tarea' },
+                                { value: '', label: 'Ninguna' },
                                 ...tareas.map((t) => ({ value: String(t.id), label: t.nombre })),
                             ]}
                         />
                     )}
 
-                    <div className="flex justify-end gap-2 pt-2">
-                        <Btn variant="ghost" onClick={cerrarModal} disabled={enviando}>Cancelar</Btn>
-                        <Btn onClick={enviar} disabled={!completo || enviando}>
-                            {enviando ? 'Enviando...' : 'Enviar novedad'}
-                        </Btn>
-                    </div>
+                    <Btn onClick={enviar} disabled={!completo || enviando} className="w-full justify-center">
+                        {enviando ? 'Enviando...' : 'Enviar novedad'}
+                    </Btn>
                 </div>
             </Modal>
         </DashboardLayout>

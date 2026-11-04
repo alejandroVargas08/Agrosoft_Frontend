@@ -2,10 +2,9 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ClipboardList, Coins, History as IconoHistorial, User } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { Badge, Card, EmptyState, PageHeader, SearchBar, Tab } from '../../components/ui/AgroUI';
+import { Badge, Card, EmptyState, PageHeader, SearchBar } from '../../components/ui/AgroUI';
 import { useHistorialGeneral, type EventoHistorial, type FuenteHistorial } from '../../hooks/Historial/useHistorialGeneral';
 
-// Tab recibe string[], asi que la etiqueta es la clave
 const TABS = ['Todo', 'Actividades', 'Precios'];
 const FUENTE_DE_TAB: Record<string, FuenteHistorial | null> = {
     Todo: null,
@@ -76,7 +75,7 @@ const Historial = () => {
         <DashboardLayout>
             <div className="mx-auto max-w-7xl p-4 sm:p-6">
                 <PageHeader
-                    title="Historial y auditoría"
+                    title="Historial y Auditoría"
                     subtitle="Quién cambió qué y cuándo, en todo lo que puedes ver"
                 />
 
@@ -87,7 +86,20 @@ const Historial = () => {
                 )}
 
                 <div className="mb-4 space-y-3">
-                    <Tab tabs={TABS} active={tab} onChange={setTab} />
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                        {TABS.map((t) => (
+                            <button
+                                key={t}
+                                type="button"
+                                onClick={() => setTab(t)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                                    tab === t ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                                }`}
+                            >
+                                {t}
+                            </button>
+                        ))}
+                    </div>
                     <SearchBar
                         value={busqueda}
                         onChange={setBusqueda}
@@ -115,15 +127,20 @@ const Historial = () => {
                                     {dia}
                                 </h2>
 
-                                <div className="space-y-2">
+                                <div className="relative">
+                                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
+                                    <div className="space-y-4 pl-10">
                                     {lista.map((e) => {
                                         const fuente = FUENTES[e.fuente];
                                         const Icono = fuente.icono;
                                         const campos = Object.entries(e.cambios ?? {});
 
                                         return (
+                                            <div key={e.clave} className="relative">
+                                                <div className="absolute -left-10 w-8 h-8 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center">
+                                                    <Icono size={14} className="text-primary" />
+                                                </div>
                                             <Card
-                                                key={e.clave}
                                                 className={e.actividadId ? 'cursor-pointer' : ''}
                                                 onClick={
                                                     e.actividadId
@@ -132,10 +149,6 @@ const Historial = () => {
                                                 }
                                             >
                                                 <div className="flex gap-3">
-                                                    <div className="mt-0.5 h-9 w-9 shrink-0 rounded-xl bg-icon-bg grid place-items-center">
-                                                        <Icono size={16} className="text-primary" />
-                                                    </div>
-
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             <p className="font-semibold text-foreground">{e.titulo}</p>
@@ -176,8 +189,10 @@ const Historial = () => {
                                                     </div>
                                                 </div>
                                             </Card>
+                                            </div>
                                         );
                                     })}
+                                    </div>
                                 </div>
                             </section>
                         ))}

@@ -149,18 +149,18 @@ export function ConversacionChat({
             <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md mb-3">
               <img src={Agrosoft} alt="AgroSoft" className="w-full h-full object-cover" />
             </div>
-            <h2 className="text-xl font-bold text-neutral-800">Hola, {nombreUsuario} 👋</h2>
-            <p className="text-sm text-neutral-500 mt-1 max-w-xs">
-              Soy <span className="font-semibold text-neutral-700">AgroBot</span>. Pregúntame sobre cultivos, plagas o envíame fotos para analizarlas.
+            <h2 className="text-xl font-bold text-foreground">Hola, {nombreUsuario} 👋</h2>
+            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+              Soy <span className="font-semibold text-foreground">AgroBot</span>. Pregúntame sobre cultivos, plagas o envíame fotos para analizarlas.
             </p>
             <div className="w-full max-w-md flex flex-col gap-2 mt-6">
               {sugerencias.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => handleEnviar(s)}
-                  className="flex items-center gap-2 text-xs sm:text-sm text-neutral-700 bg-white border border-neutral-200 rounded-full px-4 py-2.5 shadow-sm hover:bg-emerald-50 hover:border-emerald-300 transition-all text-left"
+                  className="flex items-center gap-2 text-xs sm:text-sm text-foreground bg-white border border-border rounded-full px-4 py-2.5 shadow-sm hover:bg-primary/5 hover:border-primary/40 transition-all text-left"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" strokeWidth={2.5} />
+                  <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" strokeWidth={2.5} />
                   {s}
                 </button>
               ))}
@@ -169,19 +169,19 @@ export function ConversacionChat({
         ) : (
           <div className="w-full flex flex-col gap-3 max-w-2xl mx-auto">
             {cargandoHistorial && (
-              <div className="text-center text-sm text-neutral-400 py-6">Cargando conversación...</div>
+              <div className="text-center text-sm text-muted-foreground py-6">Cargando conversación...</div>
             )}
             {mensajes.map((m) => (
               <div key={m.id} className={`flex ${m.rol === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-line shadow-sm ${
                     m.rol === 'user'
-                      ? 'bg-emerald-600 text-white rounded-br-sm'
-                      : 'bg-emerald-50 text-neutral-800 border border-emerald-100 rounded-bl-sm'
+                      ? 'bg-primary text-white rounded-br-sm'
+                      : 'bg-muted text-foreground rounded-bl-sm'
                   }`}
                 >
                   {m.tieneImagenes && (
-                    <div className={`text-xs mb-1 ${m.rol === 'user' ? 'text-emerald-100' : 'text-emerald-700'}`}>
+                    <div className={`text-xs mb-1 ${m.rol === 'user' ? 'text-white/70' : 'text-primary'}`}>
                       📎 {m.cantidadImagenes} imagen(es) adjunta(s)
                     </div>
                   )}
@@ -191,7 +191,7 @@ export function ConversacionChat({
             ))}
             {enviando && (
               <div className="flex justify-start">
-                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm text-emerald-700 animate-pulse">
+                <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm text-muted-foreground animate-pulse">
                   AgroBot está escribiendo...
                 </div>
               </div>
@@ -203,7 +203,7 @@ export function ConversacionChat({
       </div>
 
       <div
-        className="p-3 bg-white border-t border-neutral-100 shrink-0"
+        className="p-3 bg-white border-t border-border shrink-0"
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
         {archivos.length > 0 && (
@@ -211,13 +211,13 @@ export function ConversacionChat({
             {archivos.map((archivo, index) => (
               <div
                 key={`${archivo.name}-${index}`}
-                className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs rounded-full px-3 py-1.5 max-w-full"
+                className="flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs rounded-full px-3 py-1.5 max-w-full"
               >
                 <span className="truncate max-w-[140px]">📎 {archivo.name}</span>
                 <button
                   type="button"
                   onClick={() => quitarArchivo(index)}
-                  className="text-emerald-600 hover:text-emerald-900 shrink-0"
+                  className="text-primary hover:text-primary/70 shrink-0"
                   aria-label={`Quitar ${archivo.name}`}
                 >
                   <X className="w-3.5 h-3.5" />
@@ -227,10 +227,10 @@ export function ConversacionChat({
           </div>
         )}
 
-        <div className="flex items-center border border-neutral-300 rounded-full px-3 py-1.5 focus-within:border-emerald-600 transition-colors shadow-sm max-w-2xl mx-auto">
+        <div className="flex items-center border border-border rounded-full px-3 py-1.5 focus-within:border-primary/40 transition-colors shadow-sm max-w-2xl mx-auto">
           <label
             className={`cursor-pointer mr-2 flex items-center ${
-              archivos.length >= MAX_IMAGENES ? 'text-neutral-200 pointer-events-none' : 'text-neutral-400 hover:text-emerald-700'
+              archivos.length >= MAX_IMAGENES ? 'text-muted pointer-events-none' : 'text-muted-foreground hover:text-primary'
             }`}
           >
             <ImagePlus className="w-5 h-5" strokeWidth={2} />
@@ -249,21 +249,21 @@ export function ConversacionChat({
             onChange={(e) => setTexto(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !enviando && handleEnviar()}
             placeholder="Escribe tu consulta..."
-            className="w-full text-sm focus:outline-none bg-transparent text-neutral-700 placeholder-neutral-400"
+            className="w-full text-sm focus:outline-none bg-transparent text-foreground placeholder:text-muted-foreground"
           />
 
           <button
             onClick={() => handleEnviar()}
             disabled={enviando || (!texto && archivos.length === 0)}
-            className="ml-2 bg-emerald-600 text-white rounded-full p-2 hover:bg-emerald-700 disabled:opacity-40 transition-all flex items-center justify-center shrink-0"
+            className="ml-2 bg-primary text-white rounded-full p-2 hover:bg-primary/90 disabled:opacity-40 transition-all flex items-center justify-center shrink-0"
           >
             <Send className="w-4 h-4" strokeWidth={2.5} />
           </button>
         </div>
         {archivos.length >= MAX_IMAGENES && (
-          <p className="text-[10px] text-center text-amber-600 mt-1">Máximo {MAX_IMAGENES} imágenes por consulta.</p>
+          <p className="text-[10px] text-center text-[#F16C07] mt-1">Máximo {MAX_IMAGENES} imágenes por consulta.</p>
         )}
-        <p className="text-[10px] text-center text-neutral-400 mt-2">
+        <p className="text-[10px] text-center text-muted-foreground mt-2">
           AgroBot puede cometer errores. Verifica con un agrónomo.
         </p>
       </div>

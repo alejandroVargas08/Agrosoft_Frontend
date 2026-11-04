@@ -1,183 +1,139 @@
-import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Pencil, GraduationCap, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle, GraduationCap, Mail, MapPin, Pencil, Phone } from 'lucide-react';
 import { usePerfil } from '../hooks/usePerfil';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import { Badge, Btn, Card, PageHeader, StatusBadge } from '../components/ui/AgroUI';
 
-function formatearFecha(fecha?: string) {
-  if (!fecha) return 'No registrada';
-  const date = new Date(fecha);
-  if (isNaN(date.getTime())) return fecha;
-  return new Intl.DateTimeFormat('es-CO', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(date);
-}
+const fecha = (valor?: string) => {
+    if (!valor) return 'No registrada';
+    const d = new Date(valor);
+    if (isNaN(d.getTime())) return valor;
+    return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+};
 
-function inicial(nombre?: string) {
-  return nombre?.trim()?.charAt(0)?.toUpperCase() ?? '?';
-}
+const inicial = (nombre?: string) => nombre?.trim()?.charAt(0)?.toUpperCase() ?? 'U';
+
+/** Una fila de la ficha personal: ícono, etiqueta y valor */
+const Dato = ({ icono: Icono, etiqueta, valor }: {
+    icono: typeof Mail; etiqueta: string; valor: string;
+}) => (
+    <div className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+        <Icono size={14} className="text-muted-foreground shrink-0" />
+        <div className="min-w-0">
+            <p className="text-xs text-muted-foreground">{etiqueta}</p>
+            <p className="font-medium text-foreground break-words">{valor}</p>
+        </div>
+    </div>
+);
 
 export default function Perfil() {
-  const { perfil, cargando, error } = usePerfil();
+    const navigate = useNavigate();
+    const { perfil, cargando, error } = usePerfil();
 
-  if (cargando) {
-    return (
-      <div className="p-4 sm:p-8">
-        <div className="animate-pulse space-y-4 max-w-5xl">
-          <div className="h-8 w-40 bg-gray-200 rounded" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="h-64 bg-gray-200 rounded-xl md:col-span-1" />
-            <div className="h-64 bg-gray-200 rounded-xl md:col-span-2" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+    const contenido = () => {
+        if (cargando) return <p className="text-sm text-muted-foreground">Cargando tu perfil...</p>;
 
-  if (error) {
-    return (
-      <div className="p-4 sm:p-8">
-        <div className="max-w-xl bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
-          {error}
-        </div>
-      </div>
-    );
-  }
+        if (error) {
+            return (
+                <div className="max-w-xl p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-medium">
+                    {error}
+                </div>
+            );
+        }
 
-  if (!perfil) {
-    return (
-      <div className="p-4 sm:p-8">
-        <div className="max-w-xl bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-4">
-          Tu perfil no fue encontrado.
-        </div>
-      </div>
-    );
-  }
+        if (!perfil) {
+            return (
+                <div className="max-w-xl p-3 bg-[#FFF3E0] border border-[#F16C07]/30 rounded-xl text-sm text-[#E65100] font-medium">
+                    Tu perfil no fue encontrado.
+                </div>
+            );
+        }
 
-  const { nombre, correo: email, telefono, ubicacion, rol, correoVerificado, programaFormacion } = perfil;
+        const { nombre, apellido, correo, telefono, ubicacion, rol, correoVerificado, programaFormacion } = perfil;
+        const nombreCompleto = [nombre, apellido].filter(Boolean).join(' ') || 'Sin nombre';
 
-  return (
-    <DashboardLayout>
-      <div className="p-4 sm:p-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Mi Perfil</h1>
-            <Link
-              to="/editar-perfil"
-              className="inline-flex items-center gap-2 border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              style={{ backgroundColor: '#ffffff' }}
-            >
-              <Pencil size={16} />
-              Editar
-            </Link>
-          </div>
+        return (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <Card className="lg:col-span-1 text-center">
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 text-3xl font-bold text-primary">
+                        {inicial(nombre)}
+                    </div>
+                    <h2 className="font-bold text-foreground">{nombreCompleto}</h2>
+                    <p className="text-sm text-muted-foreground break-words">{correo || 'Correo no registrado'}</p>
+                    <div className="mt-2"><Badge color="primary">{rol || 'Usuario'}</Badge></div>
+                    {correoVerificado && (
+                        <div className="mt-2 flex items-center justify-center gap-1 text-xs text-emerald-600">
+                            <CheckCircle size={12} />Correo verificado
+                        </div>
+                    )}
+                </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div
-              className="md:col-span-1 rounded-xl shadow-sm p-6 flex flex-col items-center text-center"
-              style={{ backgroundColor: '#ffffff' }}
-            >
-              <div className="w-20 h-20 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-3xl font-bold mb-4">
-                {inicial(nombre)}
-              </div>
-              <h2 className="text-lg font-bold text-gray-900">{nombre || 'Sin nombre'}</h2>
-              <p className="text-sm text-gray-500 mb-3">{email || 'Correo no registrado'}</p>
-              <span className="inline-block bg-green-50 text-green-700 text-xs font-semibold px-3 py-1 rounded-full mb-2">
-                {rol || 'Usuario'}
-              </span>
-              {correoVerificado && (
-                <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
-                  <CheckCircle2 size={14} />
-                  Correo verificado
-                </span>
-              )}
+                <div className="lg:col-span-2 space-y-4">
+                    <Card>
+                        <h3 className="font-semibold text-foreground mb-3">Información personal</h3>
+                        <div className="space-y-2 text-sm">
+                            <Dato icono={Mail} etiqueta="Correo" valor={correo || 'No registrado'} />
+                            <Dato icono={Phone} etiqueta="Teléfono" valor={telefono || 'No registrado'} />
+                            <Dato icono={MapPin} etiqueta="Ubicación" valor={ubicacion || 'No registrada'} />
+                        </div>
+                    </Card>
+
+                    {programaFormacion ? (
+                        <Card className="border-primary/20 bg-primary/5">
+                            <div className="flex items-center gap-2 mb-3">
+                                <GraduationCap size={18} className="text-primary" />
+                                <h3 className="font-semibold text-foreground">Programa de Formación SENA</h3>
+                            </div>
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between gap-3">
+                                    <span className="text-muted-foreground shrink-0">Programa</span>
+                                    <span className="font-medium text-right">{programaFormacion.nombre}</span>
+                                </div>
+                                <div className="flex justify-between gap-3">
+                                    <span className="text-muted-foreground">Tipo</span>
+                                    <span className="font-medium">{programaFormacion.tipo}</span>
+                                </div>
+                                <div className="flex justify-between gap-3">
+                                    <span className="text-muted-foreground">Ficha</span>
+                                    <span className="font-mono font-bold text-primary">{programaFormacion.ficha}</span>
+                                </div>
+                                <div className="flex justify-between gap-3">
+                                    <span className="text-muted-foreground shrink-0">Vigencia</span>
+                                    <span className="font-medium text-right">
+                                        {fecha(programaFormacion.fechaInicio)} — {fecha(programaFormacion.fechaFin)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center gap-3">
+                                    <span className="text-muted-foreground">Estado</span>
+                                    <StatusBadge status={programaFormacion.estado} />
+                                </div>
+                            </div>
+                        </Card>
+                    ) : (
+                        <Card className="border-primary/20 bg-primary/5">
+                            <p className="text-sm text-muted-foreground">
+                                Aún no tienes un programa de formación registrado.
+                            </p>
+                        </Card>
+                    )}
+                </div>
             </div>
+        );
+    };
 
-            <div className="md:col-span-2 flex flex-col gap-6">
-              <div className="rounded-xl shadow-sm p-6" style={{ backgroundColor: '#ffffff' }}>
-                <h3 className="text-base font-bold text-gray-900 mb-4">Información personal</h3>
-                <div className="divide-y divide-gray-100">
-                  <div className="flex items-start gap-3 py-3">
-                    <Mail size={18} className="text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-gray-500">Correo</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {email || 'No registrado'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 py-3">
-                    <Phone size={18} className="text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-gray-500">Teléfono</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {telefono || 'No registrado'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 py-3">
-                    <MapPin size={18} className="text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-gray-500">Ubicación</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {ubicacion || 'No registrada'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {programaFormacion ? (
-                <div className="rounded-xl p-6" style={{ backgroundColor: '#eef6ee' }}>
-                  <div className="flex items-center gap-2 mb-4">
-                    <GraduationCap size={18} className="text-green-700" />
-                    <h3 className="text-base font-bold text-gray-900">
-                      Programa de Formación SENA
-                    </h3>
-                  </div>
-                  <dl className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <dt className="text-gray-500">Programa:</dt>
-                      <dd className="font-medium text-gray-900">{programaFormacion.nombre}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-gray-500">Tipo:</dt>
-                      <dd className="font-medium text-gray-900">{programaFormacion.tipo}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-gray-500">Ficha:</dt>
-                      <dd className="font-medium text-green-700">{programaFormacion.ficha}</dd>
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                      <dt className="text-gray-500">Vigencia:</dt>
-                      <dd className="font-medium text-gray-900">
-                        {formatearFecha(programaFormacion.fechaInicio)} —{' '}
-                        {formatearFecha(programaFormacion.fechaFin)}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <dt className="text-gray-500">Estado:</dt>
-                      <dd>
-                        <span className="bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                          {programaFormacion.estado}
-                        </span>
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-              ) : (
-                <div
-                  className="rounded-xl p-6 text-sm text-gray-500"
-                  style={{ backgroundColor: '#eef6ee' }}
-                >
-                  Aún no tienes un programa de formación registrado.
-                </div>
-              )}
+    return (
+        <DashboardLayout>
+            <div className="max-w-7xl mx-auto p-4 sm:p-6">
+                <PageHeader
+                    title="Mi Perfil"
+                    action={
+                        <Btn variant="outline" size="sm" onClick={() => navigate('/editar-perfil')}>
+                            <Pencil size={14} />Editar
+                        </Btn>
+                    }
+                />
+                {contenido()}
             </div>
-          </div>
-        </div>
-      </div>
-    </DashboardLayout>
-  );
+        </DashboardLayout>
+    );
 }

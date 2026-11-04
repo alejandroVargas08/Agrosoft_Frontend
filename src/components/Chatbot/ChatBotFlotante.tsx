@@ -14,7 +14,7 @@ export default function ChatBotFlotante() {
     <>
       <button
         onClick={() => setAbierto(!abierto)}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 bg-emerald-700 text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center shadow-xl hover:bg-emerald-800 transition-all"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 bg-primary text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center shadow-xl hover:bg-primary/90 transition-all"
         title="Abrir AgroBot"
       >
         <Bot className="w-7 h-7 sm:w-8 sm:h-8" />
@@ -23,7 +23,7 @@ export default function ChatBotFlotante() {
       {abierto && (
         <div className="fixed inset-0 sm:inset-auto sm:bottom-24 sm:right-6 z-50 w-full sm:w-96 h-[100dvh] sm:h-[540px] sm:max-h-[620px] rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden bg-white">
           <div
-            className="bg-gradient-to-br from-emerald-900 to-emerald-600 text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-sm"
+            className="bg-gradient-to-br from-[#1a4d2e] to-primary text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-sm"
             style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
           >
             <div className="flex items-center gap-3">
@@ -33,8 +33,8 @@ export default function ChatBotFlotante() {
               <div>
                 <h3 className="font-bold text-base leading-tight">AgroBot</h3>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="text-xs text-emerald-100 font-medium">Asistente agrícola con IA</span>
+                  <span className="w-2 h-2 rounded-full bg-white/70 animate-pulse"></span>
+                  <span className="text-xs text-white/70 font-medium">Asistente agrícola con IA</span>
                 </div>
               </div>
             </div>

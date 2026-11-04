@@ -79,6 +79,10 @@ export function useAlertas() {
             titulo: nombre + ' fuera de rango',
             descripcion: 'Reporta ' + num(a.valor) + ' (umbral: ' + num(a.umbral) + ')',
             fecha: hace(a.fechaAlerta),
+            origen: nombre,
+            medicion: a.tipo || 'Lectura',
+            valor: num(a.valor) + (sensor?.unidad ? ' ' + sensor.unidad : ''),
+            umbral: num(a.umbral) + (sensor?.unidad ? ' ' + sensor.unidad : ''),
         };
     });
 
@@ -91,6 +95,10 @@ export function useAlertas() {
         titulo: 'Stock bajo: ' + i.nombre,
         descripcion: num(i.stockDisponible) + ' ' + i.unidadUso + ' disponibles, mínimo ' + num(i.stockMinimo) + ' ' + i.unidadUso,
         fecha: '',
+        origen: i.nombre,
+        medicion: 'Stock',
+        valor: num(i.stockDisponible) + ' ' + i.unidadUso,
+        umbral: num(i.stockMinimo) + ' ' + i.unidadUso,
     }));
 
     // Alertas de tareas: vencidas en rojo, las de los próximos días en naranja
@@ -106,6 +114,11 @@ export function useAlertas() {
             titulo: (dias < 0 ? 'Tarea vencida: ' : 'Tarea pendiente: ') + actividad.nombre,
             descripcion: actividad.tipo + ' · Lote ' + actividad.loteId,
             fecha: textoPlazo(dias),
+            origen: actividad.nombre,
+            medicion: 'Plazo',
+            valor: textoPlazo(dias),
+            // El plazo no se compara contra un umbral numérico
+            umbral: '',
         }));
 
     // Las más graves primero

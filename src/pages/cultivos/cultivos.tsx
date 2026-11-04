@@ -10,12 +10,16 @@ import type { Lote, SubLote } from '../../types/territorio';
 
 const GESTIONAR = 'cultivos.gestionar';
 
+// La lista de tipos del diseño
+const TIPOS_CULTIVO = ['Tomate', 'Maíz', 'Lechuga', 'Papa', 'Cebolla', 'Pimiento', 'Pepino', 'Café', 'Otro'];
+
 const numero = (valor: number) => new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(valor || 0);
 
 const fecha = (valor?: string | null) =>
     valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
-// Colores por tipo de cultivo, tal cual el diseño
+// Colores por tipo de cultivo. El diseño los usa SOLO en la tabla de cosechas:
+// las tarjetas de cultivo siempre llevan el verde.
 const FONDO_TIPO: Record<string, string> = {
     Tomate: 'bg-red-100', 'Maíz': 'bg-blue-100', Lechuga: 'bg-icon-bg',
     'Café': 'bg-icon-bg', Cebolla: 'bg-purple-100',
@@ -45,7 +49,6 @@ const Cultivos = () => {
 
     const {
         cultivos, cosechas, lotes, cargando, error,
-        finalizar, finalizando, eliminar, eliminando,
     } = useCultivosConCosechas(filtroLote ? Number(filtroLote) : undefined);
 
     const {
@@ -54,6 +57,10 @@ const Cultivos = () => {
         isModalOpen: modalNuevo,
         onSucces: () => setModalNuevo(false),
     });
+
+    // Adaptador: el hook espera un evento, los campos de AgroUI entregan el valor
+    const campo = (name: string) => (valor: string) =>
+        handleFormChange({ target: { name, value: valor } } as React.ChangeEvent<HTMLInputElement>);
 
     // El nombre del cultivo de cada cosecha, para la tabla
     const nombrePorCultivo = useMemo(
@@ -77,7 +84,7 @@ const Cultivos = () => {
 
     return (
         <DashboardLayout>
-            <div className="p-6 max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <PageHeader
                     title="Cultivos"
                     subtitle="Gestión de cultivos y sus cosechas"
@@ -150,8 +157,10 @@ const Cultivos = () => {
                                         className="bg-card border border-border rounded-xl p-3 cursor-pointer hover:shadow-md transition-shadow"
                                     >
                                         <div className="flex items-start justify-between mb-2">
-                                            <div className={`p-1.5 rounded-lg ${FONDO_TIPO[c.tipoCultivo] ?? 'bg-icon-bg'}`}>
-                                                <Leaf size={16} className={ICONO_TIPO[c.tipoCultivo] ?? 'text-primary'} />
+                                            {/* La tarjeta siempre va en verde: los colores por tipo
+                                                el diseño los usa solo en la tabla de cosechas */}
+                                            <div className="p-1.5 bg-icon-bg rounded-lg">
+                                                <Leaf size={16} className="text-primary" />
                                             </div>
                                             <StatusBadge status={c.estado} />
                                         </div>
@@ -190,29 +199,6 @@ const Cultivos = () => {
                                                 </p>
                                             )}
                                         </div>
-                                        {puedeGestionar && (
-                                            <div
-                                                className="flex gap-3 mt-2 pt-2 border-t border-border"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                {c.estado === 'activo' && (
-                                                    <button
-                                                        disabled={finalizando}
-                                                        onClick={() => finalizar(c.id)}
-                                                        className="text-[11px] font-semibold text-[#F16C07] hover:underline disabled:opacity-50"
-                                                    >
-                                                        Finalizar
-                                                    </button>
-                                                )}
-                                                <button
-                                                    disabled={eliminando}
-                                                    onClick={() => eliminar(c.id)}
-                                                    className="text-[11px] font-semibold text-red-600 hover:underline disabled:opacity-50"
-                                                >
-                                                    Eliminar
-                                                </button>
-                                            </div>
-                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -267,12 +253,9 @@ const Cultivos = () => {
                                                                 <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${FONDO_TIPO[tipo] ?? 'bg-icon-bg'}`}>
                                                                     <Leaf size={10} className={ICONO_TIPO[tipo] ?? 'text-primary'} />
                                                                 </div>
-                                                                <button
-                                                                    onClick={() => navigate('/cultivos/' + h.cultivoId)}
-                                                                    className="text-xs font-semibold text-foreground whitespace-nowrap hover:text-primary hover:underline"
-                                                                >
+                                                                <span className="text-xs font-semibold text-foreground whitespace-nowrap">
                                                                     {cultivo?.nombre ?? '—'}
-                                                                </button>
+                                                                </span>
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-3 text-xs whitespace-nowrap text-muted-foreground">{fecha(h.fechaCosecha)}</td>
@@ -300,49 +283,52 @@ const Cultivos = () => {
                 {/* Nuevo cultivo */}
                 <Modal open={modalNuevo} onClose={() => setModalNuevo(false)} title="Nuevo Cultivo">
                     {errorForm && <p className="text-red-600 mb-3 text-sm">{errorForm}</p>}
-                    <form onSubmit={handleCreateSubmit} className="flex flex-col gap-3">
-                        <Select
-                            label="Lote"
-                            value={form.loteId}
-                            onChange={(v) => handleFormChange({ target: { name: 'loteId', value: v } } as React.ChangeEvent<HTMLSelectElement>)}
-                            options={[
-                                { value: '', label: 'Seleccione un lote' },
-                                ...lotesForm.map((l: Lote) => ({ value: String(l.id), label: l.nombre })),
-                            ]}
-                        />
+                    <form onSubmit={handleCreateSubmit} className="space-y-3">
                         <Input
                             label="Nombre del cultivo"
                             required
                             value={form.nombreCultivo}
-                            onChange={(v) => handleFormChange({ target: { name: 'nombreCultivo', value: v } } as React.ChangeEvent<HTMLInputElement>)}
-                            placeholder="Ej: Maíz amarillo"
-                        />
-                        <Input
-                            label="Tipo de cultivo"
-                            required
-                            value={form.tipoCultivo}
-                            onChange={(v) => handleFormChange({ target: { name: 'tipoCultivo', value: v } } as React.ChangeEvent<HTMLInputElement>)}
-                            placeholder="Ej: Transitorio"
+                            onChange={campo('nombreCultivo')}
+                            placeholder="Ej: Tomate Chonto Lote 1"
                         />
                         <Select
-                            label="Sublote (opcional)"
-                            value={form.subLoteId}
-                            onChange={(v) => handleFormChange({ target: { name: 'subLoteId', value: v } } as React.ChangeEvent<HTMLSelectElement>)}
+                            label="Tipo de cultivo"
+                            value={form.tipoCultivo}
+                            onChange={campo('tipoCultivo')}
+                            options={[{ value: '', label: 'Seleccionar...' }, ...TIPOS_CULTIVO]}
+                        />
+                        <Select
+                            label="Lote"
+                            value={form.loteId}
+                            onChange={campo('loteId')}
                             options={[
-                                { value: '', label: 'Ninguno' },
-                                ...sublotes.map((s: SubLote) => ({ value: String(s.id), label: s.nombre })),
+                                { value: '', label: 'Seleccionar lote...' },
+                                ...lotesForm.map((l: Lote) => ({ value: String(l.id), label: l.nombre })),
                             ]}
                         />
+                        {sublotes.length > 0 && (
+                            <Select
+                                label="Sublote (opcional)"
+                                value={form.subLoteId}
+                                onChange={campo('subLoteId')}
+                                options={[
+                                    { value: '', label: 'Sin sublote' },
+                                    ...sublotes.map((s: SubLote) => ({ value: String(s.id), label: s.nombre })),
+                                ]}
+                            />
+                        )}
                         <Input
-                            label="Fecha de siembra"
+                            label="Fecha siembra"
                             type="date"
                             required
                             value={form.fechaSiembra}
-                            onChange={(v) => handleFormChange({ target: { name: 'fechaSiembra', value: v } } as React.ChangeEvent<HTMLInputElement>)}
+                            onChange={campo('fechaSiembra')}
                         />
-                        <div className="flex justify-end gap-2 pt-2">
+                        <div className="flex gap-3 pt-2">
+                            <Btn type="submit" disabled={creando} className="flex-1 justify-center">
+                                {creando ? 'Guardando...' : 'Guardar Cultivo'}
+                            </Btn>
                             <Btn variant="outline" onClick={() => setModalNuevo(false)}>Cancelar</Btn>
-                            <Btn type="submit" disabled={creando}>{creando ? 'Guardando...' : 'Guardar'}</Btn>
                         </div>
                     </form>
                 </Modal>

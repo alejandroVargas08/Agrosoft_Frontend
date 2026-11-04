@@ -81,8 +81,8 @@ const Incidencias = () => {
                     {incidencias.map((i) => (
                         <Card key={i.id} className="p-3">
                             <div className="flex items-start justify-between mb-2">
-                                <div className={`p-1.5 rounded-lg ${i.severidad === 'high' ? 'bg-red-100' : i.severidad === 'medium' ? 'bg-amber-100' : 'bg-blue-100'}`}>
-                                    <AlertTriangle size={14} className={i.severidad === 'high' ? 'text-red-600' : i.severidad === 'medium' ? 'text-amber-600' : 'text-blue-600'} />
+                                <div className={`p-1.5 rounded-lg ${i.severidad === 'high' ? 'bg-red-100' : i.severidad === 'medium' ? 'bg-[#FFF3E0]' : 'bg-blue-100'}`}>
+                                    <AlertTriangle size={14} className={i.severidad === 'high' ? 'text-red-600' : i.severidad === 'medium' ? 'text-[#F16C07]' : 'text-blue-600'} />
                                 </div>
                                 <button
                                     onClick={() => cambiarEstado(i.id, SIGUIENTE_ESTADO[i.estado])}

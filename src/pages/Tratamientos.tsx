@@ -49,8 +49,8 @@ const Tratamientos = () => {
                     {tratamientos.map((t) => (
                         <Card key={t.id} className="p-3">
                             <div className="flex items-start justify-between mb-2">
-                                <div className="p-1.5 bg-amber-100 rounded-lg">
-                                    <Syringe size={14} className="text-amber-700" />
+                                <div className="p-1.5 bg-[#FFF3E0] rounded-lg">
+                                    <Syringe size={14} className="text-[#F16C07]" />
                                 </div>
                                 <button
                                     onClick={() => cambiarEstado(t.id, SIGUIENTE_ESTADO[t.estado])}
