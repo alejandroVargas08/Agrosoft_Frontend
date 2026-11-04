@@ -4,6 +4,7 @@ import { MessageCircle, HelpCircle, Shield, LogOut, ChevronRight, ExternalLink, 
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Badge, Btn, Card, Modal, PageHeader } from '../components/ui/AgroUI';
 import { useTelegram } from '../hooks/useTelegram';
+import { usePerfil } from '../hooks/usePerfil';
 
 const BOT = 'AgroSoftSenaBot';
 
@@ -16,16 +17,19 @@ const NOTIFICACIONES = [
     { clave: 'notifIncidencias', label: 'Nuevas incidencias' },
 ] as const;
 
-function Switch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Switch({ checked, onChange, disabled = false }: {
+    checked: boolean; onChange: (v: boolean) => void; disabled?: boolean;
+}) {
     return (
         <button
             type="button"
             role="switch"
             aria-checked={checked}
+            disabled={disabled}
             onClick={() => onChange(!checked)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                checked ? 'bg-primary' : 'bg-muted'
-            }`}
+            className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+            } ${checked ? 'bg-primary' : 'bg-muted'}`}
         >
             <span
                 className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
@@ -40,6 +44,22 @@ export default function Configuracion() {
     const navigate = useNavigate();
     const { disponible, vinculado, cargandoEstado, refrescarEstado, generarCodigo, desvincular } =
         useTelegram();
+
+    const { perfil, cambiarDosPasos } = usePerfil();
+    const [guardandoDosPasos, setGuardandoDosPasos] = useState(false);
+    const [errorDosPasos, setErrorDosPasos] = useState<string | null>(null);
+
+    const alternarDosPasos = async (activo: boolean) => {
+        setErrorDosPasos(null);
+        setGuardandoDosPasos(true);
+        try {
+            await cambiarDosPasos(activo);
+        } catch {
+            setErrorDosPasos('No se pudo guardar el cambio. Intenta de nuevo.');
+        } finally {
+            setGuardandoDosPasos(false);
+        }
+    };
 
     const [modalAbierto, setModalAbierto] = useState(false);
     const [codigo, setCodigo] = useState<string | null>(null);
@@ -104,9 +124,24 @@ export default function Configuracion() {
                     <Card>
                         <h3 className="mb-3 font-semibold text-foreground">Privacidad y Seguridad</h3>
                         <div className="space-y-3">
-                            {/* El diseño tiene aqui tambien "Verificacion en dos pasos".
-                                No se pone porque el backend no la tiene: seria un
-                                interruptor que no activa nada. */}
+                            <div className="flex items-center justify-between gap-3 border-b border-border py-2">
+                                <div>
+                                    <p className="text-sm font-medium text-foreground">Verificación en dos pasos</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {errorDosPasos
+                                            ? errorDosPasos
+                                            : perfil?.dosPasosActivo
+                                              ? 'Al iniciar sesión te pediremos un código enviado a tu correo'
+                                              : 'Código por correo al iniciar sesión'}
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={perfil?.dosPasosActivo ?? false}
+                                    disabled={!perfil || guardandoDosPasos}
+                                    onChange={alternarDosPasos}
+                                />
+                            </div>
+
                             <div className="flex items-center justify-between gap-3 py-2">
                                 <div>
                                     <p className="text-sm font-medium text-foreground">Vincular con Telegram</p>

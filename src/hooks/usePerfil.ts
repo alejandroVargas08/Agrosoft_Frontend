@@ -26,6 +26,7 @@ interface PerfilUsuario {
   telefono: string;
   estado: string;
   correoVerificado: boolean;
+  dosPasosActivo: boolean;
   rolId: number;
   rol: string | null;
   programaFormacion: ProgramaFormacion | null;
@@ -75,5 +76,12 @@ export function usePerfil() {
     return data;
   };
 
-  return { perfil, cargando, error, actualizarPerfil };
+  /** El PATCH de arriba no refresca este campo, asi que va aparte. */
+  const cambiarDosPasos = async (activo: boolean) => {
+    if (!user?.id) return;
+    await usuarioApi.actualizar(user.id, { dosPasosActivo: activo });
+    setPerfil((prev) => (prev ? { ...prev, dosPasosActivo: activo } : prev));
+  };
+
+  return { perfil, cargando, error, actualizarPerfil, cambiarDosPasos };
 }

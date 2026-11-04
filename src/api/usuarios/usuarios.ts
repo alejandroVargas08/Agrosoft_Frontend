@@ -57,6 +57,8 @@ export interface ActualizarUsuario {
     correo?: string;
     telefono?: string;
     estado?: string;
+    /** Verificación en dos pasos al iniciar sesión. */
+    dosPasosActivo?: boolean;
 }
 
 /** Lo que devuelve restablecer la contraseña. Si no se manda una, el backend
