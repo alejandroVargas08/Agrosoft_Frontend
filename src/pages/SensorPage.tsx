@@ -28,10 +28,8 @@ export default function SensorPage() {
     const queryClient = useQueryClient();
     const { puede } = usePermisos();
 
-    // El diseño solo le deja editar rangos al instructor y al admin. No hay
-    // permiso de sensores en el backend, asi que se usa el de actividades,
-    // que es justo el que separa al instructor del aprendiz.
-    const puedeEditarRangos = puede('actividades.gestionar');
+    // El diseño solo le deja editar rangos al instructor y al admin.
+    const puedeEditarRangos = puede('sensores.gestionar');
 
     // Se guarda el id y no la estacion, para que el refresco cada 10s no deje
     // la pantalla de detalle mirando datos viejos.
