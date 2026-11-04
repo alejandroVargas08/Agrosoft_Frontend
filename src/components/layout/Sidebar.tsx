@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Map, ClipboardList, AlertTriangle, AlertCircle, Activity, FlaskConical, Package, BookOpen, Radio, BarChart3, Bell, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, Plane, GraduationCap, CheckSquare, Inbox } from "lucide-react";
+import { Home, Map, ClipboardList, AlertTriangle, AlertCircle, Activity, CheckCircle, FlaskConical, Package, BookOpen, Radio, BarChart3, Bell, User, Settings, X, ChevronDown, LogOut, Bot, Leaf, Plane, GraduationCap } from "lucide-react";
 import logoAgrosoft from "../../assets/img/logo-agrosoft.png";
 import { cerrarSesion } from "../../hooks/useAuth";
 import { CerrarSesionModal } from "../ui/CerrarSesionModal";
@@ -43,9 +43,9 @@ const itemsAprendiz: MenuItem[] = [
 
 const itemsInstructor: MenuItem[] = [
     { icon: Home, label: 'Inicio', path: '/inicio' },
-    { icon: GraduationCap, label: 'Mis Fichas', path: '/mis-fichas' },
-    { icon: CheckSquare, label: 'Por revisar', path: '/por-revisar' },
-    { icon: Inbox, label: 'Novedades', path: '/novedades' },
+    { icon: GraduationCap, label: 'Mis fichas', path: '/mis-fichas' },
+    { icon: CheckCircle, label: 'Por revisar', path: '/por-revisar' },
+    { icon: AlertCircle, label: 'Novedades', path: '/novedades' },
     { icon: ClipboardList, label: 'Actividades', path: '/actividades' },
     { icon: Leaf, label: 'Cultivos', path: '/cultivos' },
     { icon: Map, label: 'Lotes y Sublotes', path: '/territorio' },
