@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { alertasApi } from '../api/alertas';
 import type { Alerta, SeveridadAlerta } from '../types/alertas';
+import { detectarTipo } from '../services/sensorService';
+import { ETIQUETA_MEDIDA } from '../components/sensores/medidas';
 
 // "Hace 15 min", "Hace 2h", "Hace 1 día"
 const hace = (iso: string) => {
@@ -71,6 +73,12 @@ export function useAlertas() {
         const desviacion = a.umbral ? Math.abs(a.valor - a.umbral) / Math.abs(a.umbral) : 0;
         const severidad: SeveridadAlerta = desviacion > 0.2 ? 'high' : 'medium';
 
+        // El diseño muestra la medida ("Temperatura", "Indice UV"), no el
+        // 'min'/'max' que guarda la alerta: eso va en el umbral.
+        const unidad = sensor?.unidad ? ' ' + sensor.unidad : '';
+        const medida = ETIQUETA_MEDIDA[detectarTipo(sensor?.tipo ?? nombre)];
+        const lado = a.tipo === 'min' ? 'mín ' : a.tipo === 'max' ? 'máx ' : '';
+
         return {
             id: 'sensor-' + a.id,
             idOriginal: a.id,
@@ -80,9 +88,9 @@ export function useAlertas() {
             descripcion: 'Reporta ' + num(a.valor) + ' (umbral: ' + num(a.umbral) + ')',
             fecha: hace(a.fechaAlerta),
             origen: nombre,
-            medicion: a.tipo || 'Lectura',
-            valor: num(a.valor) + (sensor?.unidad ? ' ' + sensor.unidad : ''),
-            umbral: num(a.umbral) + (sensor?.unidad ? ' ' + sensor.unidad : ''),
+            medicion: medida,
+            valor: num(a.valor) + unidad,
+            umbral: lado + num(a.umbral) + unidad,
         };
     });
 
@@ -110,7 +118,7 @@ export function useAlertas() {
             id: 'task-' + actividad.id,
             idOriginal: actividad.id,
             tipo: 'task' as const,
-            severidad: (dias < 0 ? 'high' : dias === 0 ? 'medium' : 'low') as SeveridadAlerta,
+            severidad: (dias < 0 ? 'high' : 'medium') as SeveridadAlerta,
             titulo: (dias < 0 ? 'Tarea vencida: ' : 'Tarea pendiente: ') + actividad.nombre,
             descripcion: actividad.tipo + ' · Lote ' + actividad.loteId,
             fecha: textoPlazo(dias),
@@ -122,7 +130,7 @@ export function useAlertas() {
         }));
 
     // Las más graves primero
-    const PESO: Record<SeveridadAlerta, number> = { high: 0, medium: 1, low: 2 };
+    const PESO: Record<SeveridadAlerta, number> = { high: 0, medium: 1 };
     const alertas = [...alertasSensor, ...alertasStock, ...alertasTarea].sort(
         (a, b) => PESO[a.severidad] - PESO[b.severidad],
     );

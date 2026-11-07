@@ -1,8 +1,13 @@
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { ClipboardList, Package, Plus, UserCheck } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, EmptyState, Input, Modal, PageHeader, Select, Textarea } from '../../components/ui/AgroUI';
+import ModalProductos from '../../components/actividadDetalle/ModalProductos';
+import { useActividadInsumoReserva } from '../../hooks/Actividades/useActividadInsumoReserva';
+import { actividadInsumoReservaApi } from '../../api/actividades/actividadInsumoReserva';
+import { mensajeError } from '../../api/errores/errores';
 import { useActividades } from '../../hooks/Actividades/useActividad';
 import { useActividadForm } from '../../hooks/Actividades/useActividadForm';
 import { useAsignarAprendices } from '../../hooks/Actividades/useAsignarAprendices';
@@ -36,6 +41,8 @@ const COLORES_AVATAR = [
     'bg-purple-100 text-purple-700',
 ];
 
+type Seleccion = { insumoId: number; cantidad: number }[];
+
 const EJECUTAR_ACTIVIDADES = 'actividades.ejecutar';
 const GESTIONAR_ACTIVIDADES = 'actividades.gestionar';
 
@@ -65,6 +72,78 @@ const Actividades = () => {
     const plural = pendientes === 1 ? '' : 's';
     const textoPendientes = `${pendientes} tarea${plural} pendiente${plural}`;
 
+    // El Figma abre un modal de productos desde el encabezado y desde cada tarjeta.
+    // Desde el encabezado no hay actividad elegida, asi que el modal la pregunta.
+    const [productosAbierto, setProductosAbierto] = useState(false);
+    const [productosActividadId, setProductosActividadId] = useState<number | null>(null);
+
+    // Solo para saber que insumos ya estan apartados y no volver a ofrecerlos
+    const reserva = useActividadInsumoReserva(productosActividadId ?? undefined);
+
+    // Lo elegido queda en espera cuando todavia no se sabe la actividad destino
+    const [seleccionPendiente, setSeleccionPendiente] = useState<Seleccion>([]);
+    const [actividadDestino, setActividadDestino] = useState('');
+
+    const queryClient = useQueryClient();
+
+    // El endpoint reserva un insumo por llamada, asi que van en serie
+    const reservarMutation = useMutation({
+        mutationFn: async ({ actividadId, seleccion }: { actividadId: number; seleccion: Seleccion }) => {
+            for (const { insumoId, cantidad } of seleccion) {
+                await actividadInsumoReservaApi.reservar(actividadId, {
+                    insumoId, cantidadReservada: cantidad,
+                });
+            }
+        },
+        onSuccess: (_datos, variables) => {
+            queryClient.invalidateQueries({
+                queryKey: ['actividad-insumo-reserva', variables.actividadId],
+            });
+        },
+    });
+
+    const abrirProductos = (actividadId: number | null) => {
+        setProductosActividadId(actividadId);
+        setProductosAbierto(true);
+    };
+
+    const cerrarProductos = () => {
+        setProductosAbierto(false);
+        setProductosActividadId(null);
+    };
+
+    const cerrarDestino = () => {
+        setSeleccionPendiente([]);
+        setActividadDestino('');
+        reservarMutation.reset();
+    };
+
+    /**
+     * Abierto desde una tarjeta ya se sabe a dónde va. Desde el encabezado no,
+     * así que lo elegido espera y se pregunta la actividad en este último paso.
+     */
+    const confirmarProductos = (seleccion: Seleccion) => {
+        if (productosActividadId !== null) {
+            reservarMutation.mutate({ actividadId: productosActividadId, seleccion });
+            cerrarProductos();
+            return;
+        }
+        setSeleccionPendiente(seleccion);
+        setProductosAbierto(false);
+    };
+
+    const textoSeleccion = `Elegiste ${seleccionPendiente.length} producto${
+        seleccionPendiente.length === 1 ? '' : 's'
+    }. Indica a qué actividad se apartan.`;
+
+    const confirmarDestino = () => {
+        if (!actividadDestino) return;
+        reservarMutation.mutate(
+            { actividadId: Number(actividadDestino), seleccion: seleccionPendiente },
+            { onSuccess: cerrarDestino },
+        );
+    };
+
     const cerrarAsignar = () => {
         asignacion.cerrar();
         setSeleccionados([]);
@@ -87,7 +166,7 @@ const Actividades = () => {
                     subtitle="Labores y Tareas de Campo"
                     action={
                         <div className="flex gap-2">
-                            <Btn variant="outline" onClick={() => navigate('/inventario')}>
+                            <Btn variant="outline" onClick={() => abrirProductos(null)}>
                                 <Package size={16} />Productos
                             </Btn>
                             {puedeGestionar && (
@@ -229,7 +308,7 @@ const Actividades = () => {
                                             ) : (
                                                 <button
                                                     type="button"
-                                                    onClick={(e) => { e.stopPropagation(); navigate('/inventario'); }}
+                                                    onClick={(e) => { e.stopPropagation(); abrirProductos(actividad.id); }}
                                                     className="flex items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-primary/70"
                                                 >
                                                     <Package size={11} />Productos
@@ -399,6 +478,55 @@ const Actividades = () => {
                                 </div>
                             </>
                         )}
+                    </div>
+                </Modal>
+                <ModalProductos
+                    abierto={productosAbierto}
+                    onCerrar={cerrarProductos}
+                    yaReservados={reserva.reservas.map((r) => r.insumoId)}
+                    onConfirmar={confirmarProductos}
+                    guardando={reservarMutation.isPending}
+                />
+
+                {/* Último paso cuando se abrió desde el encabezado: falta saber
+                    a qué actividad se apartan los insumos elegidos. */}
+                <Modal
+                    open={seleccionPendiente.length > 0}
+                    onClose={cerrarDestino}
+                    title="¿Para cuál actividad?"
+                >
+                    <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">{textoSeleccion}</p>
+
+                        {reservarMutation.isError && (
+                            <p className="text-sm text-red-600">
+                                {mensajeError(reservarMutation.error, 'No se pudieron apartar los insumos.')}
+                            </p>
+                        )}
+
+                        <Select
+                            label="Actividad"
+                            value={actividadDestino}
+                            onChange={setActividadDestino}
+                            options={[
+                                { value: '', label: 'Seleccione una actividad' },
+                                ...actividades.map((a) => ({
+                                    value: String(a.id),
+                                    label: a.tipo + (a.subtipo ? ' — ' + a.subtipo : ''),
+                                })),
+                            ]}
+                        />
+
+                        <div className="flex gap-3 pt-1">
+                            <Btn
+                                onClick={confirmarDestino}
+                                disabled={!actividadDestino || reservarMutation.isPending}
+                                className="flex-1 justify-center"
+                            >
+                                {reservarMutation.isPending ? 'Apartando…' : 'Apartar'}
+                            </Btn>
+                            <Btn variant="outline" onClick={cerrarDestino}>Cancelar</Btn>
+                        </div>
                     </div>
                 </Modal>
             </div>

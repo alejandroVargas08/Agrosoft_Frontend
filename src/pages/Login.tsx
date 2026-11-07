@@ -4,7 +4,7 @@ import { isAxiosError } from 'axios';
 import { api } from '../api/axios';
 import logoAgrosoft from '../assets/img/logo-agrosoft.png';
 import logoSena from '../assets/img/logo-sena-blanco.png';
-import { LuSprout, LuCpu, LuMail, LuLock, LuEye, LuEyeOff, LuAsterisk, LuClock } from 'react-icons/lu';
+import { LuSprout, LuCpu, LuMail, LuLock, LuEye, LuEyeOff, LuAsterisk, LuClock, LuShieldCheck } from 'react-icons/lu';
 import { FiBarChart2 } from 'react-icons/fi';
 
 function Login() {
@@ -17,35 +17,81 @@ function Login() {
     const [avisoCuenta, setAvisoCuenta] = useState('');
     const [exito, setExito] = useState('');
 
+    // Segundo paso, solo para quien tiene la verificacion en dos pasos activa
+    const [pidiendoCodigo, setPidiendoCodigo] = useState(false);
+    const [codigo, setCodigo] = useState('');
+    const [enviando, setEnviando] = useState(false);
+
+    /** Guarda el token y entra. Es el final de los dos caminos. */
+    const entrar = (data: { access_token: string; usuario?: unknown; user?: unknown }) => {
+        localStorage.setItem('token', data.access_token);
+        setExito('Inicio de sesión excelente');
+
+        const usuario = data.usuario ?? data.user;
+        if (usuario) {
+            localStorage.setItem('user', JSON.stringify(usuario));
+        }
+
+        navigate('/inicio');
+    };
+
+    const mostrarFallo = (err: unknown, porDefecto: string) => {
+        const datos = isAxiosError(err) ? err.response?.data : undefined;
+        const mensaje = datos?.message ?? porDefecto;
+        setExito('');
+        if (datos?.estado) setAvisoCuenta(mensaje);
+        else setError(mensaje);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setAvisoCuenta('');
         setExito('');
+        setEnviando(true);
 
         try {
             const { data } = await api.post('/usuarios/login', { correo, password });
-            localStorage.setItem('token', data.access_token);
-            setExito('Inicio de sesión excelente');
 
-            if (data.usuario) {
-                localStorage.setItem('user', JSON.stringify(data.usuario));
-            } else if (data.user) {
-                localStorage.setItem('user', JSON.stringify(data.user));
+            // La contraseña es correcta pero falta el codigo: no hay token
+            // todavia, asi que no se guarda nada y se pasa al segundo paso.
+            if (data.requiereDosPasos) {
+                setPidiendoCodigo(true);
+                setCodigo('');
+                setExito(data.message ?? 'Te enviamos un código a tu correo.');
+                return;
             }
 
-            navigate('/inicio');
+            entrar(data);
         } catch (err) {
-            const datos = isAxiosError(err) ? err.response?.data : undefined;
-            const mensaje = datos?.message ?? 'Error al iniciar sesión';
-            setExito('');
-
-            if (datos?.estado) {
-                setAvisoCuenta(mensaje);
-            } else {
-                setError(mensaje);
-            }
+            mostrarFallo(err, 'Error al iniciar sesión');
+        } finally {
+            setEnviando(false);
         }
+    };
+
+    const confirmarCodigo = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setAvisoCuenta('');
+        setEnviando(true);
+
+        try {
+            const { data } = await api.post('/usuarios/login/dos-pasos', { correo, codigo });
+            entrar(data);
+        } catch (err) {
+            mostrarFallo(err, 'No se pudo verificar el código');
+        } finally {
+            setEnviando(false);
+        }
+    };
+
+    const volverAlLogin = () => {
+        setPidiendoCodigo(false);
+        setCodigo('');
+        setPassword('');
+        setError('');
+        setExito('');
     };
 
     const inputClasses =
@@ -107,10 +153,66 @@ function Login() {
             <main className="flex w-full flex-1 flex-col bg-neutral-50 px-6 py-10 lg:w-1/2 lg:justify-center lg:px-16 lg:py-16">
                 <div className="mx-auto flex w-full max-w-lg flex-1 flex-col lg:justify-center">
                     <header className="mb-8">
-                        <h2 className="mb-1 text-3xl font-extrabold text-neutral-900">Bienvenido</h2>
-                        <p className="text-neutral-500">Inicia sesión en tu cuenta</p>
+                        <h2 className="mb-1 text-3xl font-extrabold text-neutral-900">
+                            {pidiendoCodigo ? 'Revisa tu correo' : 'Bienvenido'}
+                        </h2>
+                        <p className="text-neutral-500">
+                            {pidiendoCodigo
+                                ? `Enviamos un código de 6 dígitos a ${correo}`
+                                : 'Inicia sesión en tu cuenta'}
+                        </p>
                     </header>
 
+                    {/* ── Segundo paso: el codigo ── */}
+                    {pidiendoCodigo ? (
+                        <form className="flex flex-col gap-5" onSubmit={confirmarCodigo}>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-semibold text-neutral-800">Código de verificación</label>
+                                <div className="relative">
+                                    <LuShieldCheck className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        autoComplete="one-time-code"
+                                        maxLength={6}
+                                        placeholder="000000"
+                                        value={codigo}
+                                        onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
+                                        required
+                                        autoFocus
+                                        className={inputClasses + ' tracking-[0.4em]'}
+                                    />
+                                </div>
+                                <p className="text-xs text-neutral-500">El código vence a los 15 minutos.</p>
+                            </div>
+
+                            {exito && <p className="text-sm font-medium text-green-700">{exito}</p>}
+                            {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+
+                            {avisoCuenta && (
+                                <div className="flex items-start gap-2 rounded-xl border border-[#F16C07]/30 bg-[#FFF3E0] px-4 py-3">
+                                    <LuClock size={18} className="mt-0.5 shrink-0 text-[#F16C07]" />
+                                    <p className="text-sm font-medium text-[#E65100]">{avisoCuenta}</p>
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={codigo.length !== 6 || enviando}
+                                className="mt-2 w-full rounded-xl bg-green-800 py-3.5 font-semibold text-white transition hover:bg-green-900 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {enviando ? 'Verificando…' : 'Verificar e ingresar'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={volverAlLogin}
+                                className="text-sm font-semibold text-green-700 hover:underline"
+                            >
+                                Volver a iniciar sesión
+                            </button>
+                        </form>
+                    ) : (
                     <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
                         <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-semibold text-neutral-800">Correo electrónico</label>
@@ -170,11 +272,13 @@ function Login() {
 
                         <button
                             type="submit"
-                            className="mt-2 w-full rounded-xl bg-green-800 py-3.5 font-semibold text-white transition hover:bg-green-900"
+                            disabled={enviando}
+                            className="mt-2 w-full rounded-xl bg-green-800 py-3.5 font-semibold text-white transition hover:bg-green-900 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            Iniciar Sesión
+                            {enviando ? 'Entrando…' : 'Iniciar Sesión'}
                         </button>
                     </form>
+                    )}
 
                     <p className="mt-6 text-center text-sm text-neutral-600">
                         ¿No tienes cuenta?{' '}

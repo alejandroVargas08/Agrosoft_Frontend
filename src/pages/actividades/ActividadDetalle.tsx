@@ -3,10 +3,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { TabEvidencias } from '../../components/actividadDetalle/TabEvidencias';
 import { TabHerramientas } from '../../components/actividadDetalle/TabHerramientas';
 import { TabUsos } from '../../components/actividadDetalle/TabUsos';
-import { TabReservas } from '../../components/actividadDetalle/TabReservas';
 import { TabInsumos } from '../../components/actividadDetalle/TabInsumos';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { TabServicio } from '../../components/actividadDetalle/TabServicios';
 import { TabCostos } from '../../components/actividadDetalle/TabCostos';
 import { TabHistorial } from '../../components/actividadDetalle/TabHistorial';
 import { TabAprendices } from '../../components/actividadDetalle/TabAprendices';
@@ -16,14 +14,14 @@ import { usePermisos } from '../../hooks/permisos/usePermisos';
 
 
 const PESTAÑAS = [
+    // Estas son las del Figma, en su mismo orden. Reservas y Servicios no
+    // aparecen allá, así que no se muestran aunque el backend los soporte.
     { id: 'costos', label: 'Costos' },
     { id: 'insumos', label: 'Insumos' },
     { id: 'herramientas', label: 'Herramientas' },
     { id: 'aprendices', label: 'Aprendices' },
-    { id: 'reservas', label: 'Reservas' },
-    { id: 'usos', label: 'Usos' },
-    { id: 'servicios', label: 'Servicios' },
     { id: 'evidencias', label: 'Evidencias' },
+    { id: 'usos', label: 'Insumos usados' },
     { id: 'historial', label: 'Historial' },
 ] as const;
 
@@ -117,15 +115,13 @@ const ActividadDetalle = () => {
                     ))}
             </div>
 
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-100">
+            <div>
                 {pestañaActiva === 'costos' && <TabCostos actividadId={actividadIdNum} actividad={actividad} />}
                 {pestañaActiva === 'historial' && <TabHistorial actividadId={actividadIdNum} />}
                 {pestañaActiva === 'aprendices' && puedeAsignar && <TabAprendices actividadId={actividadIdNum} />}
                 {pestañaActiva === 'insumos' && <TabInsumos actividadId={actividadIdNum} />}
-                {pestañaActiva === 'reservas' && <TabReservas actividadId={actividadIdNum} />}
                 {pestañaActiva === 'usos' && <TabUsos actividadId={actividadIdNum} />}
                 {pestañaActiva === 'herramientas' && <TabHerramientas actividadId={actividadIdNum} />}
-                {pestañaActiva === 'servicios' && <TabServicio actividadId={actividadIdNum} />}
                 {pestañaActiva === 'evidencias' && <TabEvidencias actividadId={actividadIdNum} />}
             </div>
         </div>

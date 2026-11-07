@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
     Plus, AlertCircle, FlaskConical, Wrench, Warehouse, MapPin,
     ArrowUp, ArrowDown, Minus, Truck,
@@ -28,7 +27,6 @@ const MOVIMIENTO_UI = {
 };
 
 const Inventario = () => {
-    const navigate = useNavigate();
     const [tab, setTab] = useState('Insumos');
     const [modalAlmacen, setModalAlmacen] = useState(false);
     const [modalMovimiento, setModalMovimiento] = useState(false);
@@ -50,7 +48,6 @@ const Inventario = () => {
                 <PageHeader
                     title="Inventario"
                     subtitle="Insumos, herramientas y almacenes"
-                    action={<Btn onClick={() => navigate('/inventario/nuevo')}><Plus size={16} />Nuevo Insumo</Btn>}
                 />
 
                 {bajoStock.length > 0 && (
@@ -97,7 +94,7 @@ const Inventario = () => {
                                         </div>
                                         <div className="grid grid-cols-3 gap-2 text-xs mt-2">
                                             <div className="p-2 bg-muted rounded-lg text-center">
-                                                <p className="text-muted-foreground">Stock disponible</p>
+                                                <p className="text-muted-foreground">Stock actual</p>
                                                 <p className="font-bold text-foreground">{fmt(item.stockDisponible)} {item.unidadUso}</p>
                                             </div>
                                             <div className="p-2 bg-muted rounded-lg text-center">
@@ -113,40 +110,20 @@ const Inventario = () => {
                                             ficha del insumo trae las horas. Sin eso no se inventa nada. */}
                                         {item.tipoInsumo === 'herramienta' &&
                                             item.vidaUtilHoras !== undefined &&
-                                            item.vidaUtilHoras > 0 && (() => {
-                                                const usadas = item.horasUsadas ?? 0;
-                                                const gastado = Math.min(100, Math.round((usadas / item.vidaUtilHoras!) * 100));
-                                                const restantes = Math.max(0, item.vidaUtilHoras! - usadas);
-                                                const porAgotarse = gastado >= 80;
-
-                                                return (
-                                                    <div className="mt-3">
-                                                        <div className="mb-1 flex items-center justify-between text-xs">
-                                                            <span className="text-muted-foreground">Vida útil</span>
-                                                            <span className={porAgotarse ? 'font-semibold text-red-600' : 'text-muted-foreground'}>
-                                                                {fmt(usadas)} de {fmt(item.vidaUtilHoras!)} h · quedan {fmt(restantes)} h
-                                                            </span>
-                                                        </div>
-                                                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                                                            <div
-                                                                className={`h-2 rounded-full transition-all ${porAgotarse ? 'bg-red-500' : 'bg-[#F16C07]'}`}
-                                                                style={{ width: gastado + '%' }}
-                                                            />
-                                                        </div>
-                                                        {item.depreciacionAcumulada !== undefined && (
-                                                            <p className="mt-1 text-xs text-muted-foreground">
-                                                                Depreciación acumulada: {fmt(item.depreciacionAcumulada, true)}
-                                                            </p>
-                                                        )}
+                                            item.vidaUtilHoras > 0 && (
+                                                <div className="mt-2">
+                                                    <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                                                        <span>Vida útil</span>
+                                                        <span>{fmt(item.horasUsadas ?? 0)}h / {fmt(item.vidaUtilHoras)}h</span>
                                                     </div>
-                                                );
-                                            })()}
-
-                                        {item.stockReservado > 0 && (
-                                            <p className="text-xs text-muted-foreground mt-2">
-                                                Reservado: {fmt(item.stockReservado)} {item.unidadUso}
-                                            </p>
-                                        )}
+                                                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                                                        <div
+                                                            className="h-full rounded-full bg-[#F16C07]"
+                                                            style={{ width: Math.min(100, ((item.horasUsadas ?? 0) / item.vidaUtilHoras) * 100) + '%' }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
                                         {proveedor && <p className="text-xs text-muted-foreground mt-2">Proveedor: {proveedor}</p>}
                                     </Card>
                                 );
@@ -155,8 +132,7 @@ const Inventario = () => {
                                 <EmptyState
                                     icon={FlaskConical}
                                     title="Sin insumos"
-                                    description={busqueda ? 'Ningún insumo coincide con la búsqueda' : 'Registra el primer insumo del inventario'}
-                                    action={<Btn onClick={() => navigate('/inventario/nuevo')}><Plus size={16} />Nuevo Insumo</Btn>}
+                                    description={busqueda ? 'Ningún insumo coincide con la búsqueda' : 'Aún no hay insumos en el inventario'}
                                 />
                             )}
                         </div>
@@ -215,18 +191,15 @@ const Inventario = () => {
                                                 <p className="font-medium text-foreground">{nombreInsumo(m.insumoId)}</p>
                                                 <p className="text-xs text-muted-foreground">{ui.label} · {fmtFecha(m.fecha)}</p>
                                                 {m.descripcion && <p className="text-xs text-muted-foreground">{m.descripcion}</p>}
-                                                {m.tipo === 'traslado' && (
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {nombreAlmacen(m.almacenOrigenId)} → {nombreAlmacen(m.almacenDestinoId)}
-                                                    </p>
-                                                )}
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <p className={`font-bold ${m.tipo === 'entrada' ? 'text-emerald-600' : m.tipo === 'salida' ? 'text-red-600' : 'text-foreground'}`}>
                                                 {m.tipo === 'entrada' ? '+' : m.tipo === 'salida' ? '-' : ''}{fmt(m.cantidadUso)}
                                             </p>
-                                            <p className="text-xs text-muted-foreground">{fmt(m.costoTotal, true)}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {m.usuario ? m.usuario.nombre + ' ' + m.usuario.apellido : '—'}
+                                            </p>
                                         </div>
                                     </div>
                                 </Card>

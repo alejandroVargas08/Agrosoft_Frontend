@@ -4,6 +4,7 @@ import { AlertCircle, Bell, Bug, CalendarDays, Check, Cpu, Package, UserCheck, t
 import { useNotificacionesContext } from '../../context/NotificacionesContext';
 import { tiempoRelativo } from '../../utils/tiempoRelativo';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import { Btn, EmptyState } from '../../components/ui/AgroUI';
 
 interface EstiloTipo {
     icono: LucideIcon;
@@ -29,6 +30,20 @@ const TIPOS: Record<string, EstiloTipo> = {
 const POR_DEFECTO: EstiloTipo = { icono: Bell, color: 'text-primary', fondo: 'bg-icon-bg', etiqueta: 'Sistema' };
 
 const estiloDe = (tipo: string) => TIPOS[tipo] ?? POR_DEFECTO;
+
+/**
+ * Los chips de tipo del diseño, que van siempre todos, haya o no
+ * notificaciones de esa clase. Cada uno agrupa los tipos que manda el
+ * backend: "Tarea" cubre tarea y tarea_proxima.
+ */
+const CATEGORIAS: { label: string; tipos: string[] }[] = [
+    { label: 'Sensor', tipos: ['alerta_sensor'] },
+    { label: 'Stock', tipos: ['stock_bajo'] },
+    { label: 'Tarea', tipos: ['tarea', 'tarea_proxima'] },
+    { label: 'Diagnóstico', tipos: ['diagnostico_completado'] },
+    { label: 'Novedad', tipos: ['novedad'] },
+    { label: 'Solicitud', tipos: ['solicitud'] },
+];
 
 const LECTURA = [
     { valor: 'todas', label: 'Todas' },
@@ -60,18 +75,17 @@ export default function Notificaciones() {
     const navigate = useNavigate();
 
     const [lectura, setLectura] = useState<FiltroLectura>('todas');
-    const [tipo, setTipo] = useState('');
+    const [categoria, setCategoria] = useState('');
 
-    // Solo se ofrecen los tipos que de verdad llegaron
-    const tiposPresentes = useMemo(
-        () => [...new Set(notificaciones.map((n) => n.tipo))],
-        [notificaciones],
+    const tiposDeLaCategoria = useMemo(
+        () => CATEGORIAS.find((c) => c.label === categoria)?.tipos ?? null,
+        [categoria],
     );
 
     const visibles = notificaciones.filter((n) => {
         if (lectura === 'sin_leer' && n.leida) return false;
         if (lectura === 'leidas' && !n.leida) return false;
-        if (tipo && n.tipo !== tipo) return false;
+        if (tiposDeLaCategoria && !tiposDeLaCategoria.includes(n.tipo)) return false;
         return true;
     });
 
@@ -91,22 +105,15 @@ export default function Notificaciones() {
 
     return (
         <DashboardLayout>
-            <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
-                <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="mx-auto max-w-7xl p-4 sm:p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Notificaciones</h1>
-                        <p className="text-sm text-muted-foreground">
-                            {sinLeer === 0 ? 'Todo al día' : sinLeer + ' sin leer'}
-                        </p>
+                        <h1 className="text-xl font-bold text-foreground">Notificaciones</h1>
+                        <p className="text-sm text-muted-foreground">{sinLeer} sin leer</p>
                     </div>
-                    <button
-                        onClick={marcarTodasLeidas}
-                        disabled={sinLeer === 0}
-                        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:py-2"
-                    >
-                        <Check size={16} />
-                        Marcar todas como leídas
-                    </button>
+                    <Btn variant="outline" size="sm" onClick={marcarTodasLeidas} disabled={sinLeer === 0}>
+                        <Check size={14} />Marcar todas como leídas
+                    </Btn>
                 </div>
 
                 <div className="mb-5 flex flex-wrap items-center gap-2">
@@ -120,45 +127,45 @@ export default function Notificaciones() {
                         </button>
                     ))}
 
-                    {tiposPresentes.length > 1 && (
-                        <>
-                            <span className="text-xs text-muted-foreground">|</span>
-                            <button
-                                onClick={() => setTipo('')}
-                                className={CHIP + (tipo === '' ? CHIP_ACTIVO : CHIP_INACTIVO)}
-                            >
-                                Todos los tipos
-                            </button>
-                            {tiposPresentes.map((t) => (
-                                <button
-                                    key={t}
-                                    onClick={() => setTipo(t)}
-                                    className={CHIP + (tipo === t ? CHIP_ACTIVO : CHIP_INACTIVO)}
-                                >
-                                    {estiloDe(t).etiqueta}
-                                </button>
-                            ))}
-                        </>
-                    )}
+                    <span className="text-xs text-muted-foreground">|</span>
+                    <button
+                        onClick={() => setCategoria('')}
+                        className={CHIP + (categoria === '' ? CHIP_ACTIVO : CHIP_INACTIVO)}
+                    >
+                        Todos los tipos
+                    </button>
+                    {CATEGORIAS.map((c) => (
+                        <button
+                            key={c.label}
+                            onClick={() => setCategoria(c.label)}
+                            className={CHIP + (categoria === c.label ? CHIP_ACTIVO : CHIP_INACTIVO)}
+                        >
+                            {c.label}
+                        </button>
+                    ))}
                 </div>
 
                 {cargando && <p className="text-sm text-muted-foreground">Cargando...</p>}
                 {error && <p className="text-sm text-red-600">{error}</p>}
                 {!cargando && !error && visibles.length === 0 && (
-                    <p className="py-16 text-center text-sm text-muted-foreground">
-                        {notificaciones.length === 0
-                            ? 'No tienes notificaciones'
-                            : 'No hay notificaciones con estos filtros'}
-                    </p>
+                    <EmptyState
+                        icon={Bell}
+                        title="Sin notificaciones"
+                        description={
+                            notificaciones.length === 0
+                                ? 'No tienes notificaciones'
+                                : 'No hay notificaciones con los filtros seleccionados'
+                        }
+                    />
                 )}
 
-                <div className="space-y-5">
+                <div className="space-y-4">
                     {grupos.map((grupo) => (
                         <div key={grupo.dia}>
                             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 {grupo.dia}
                             </p>
-                            <ul className="space-y-2 sm:space-y-3">
+                            <ul className="space-y-2">
                                 {grupo.items.map((n) => {
                                     const estilo = estiloDe(n.tipo);
                                     const Icono = estilo.icono;
@@ -166,14 +173,14 @@ export default function Notificaciones() {
                                         <li key={n.id}>
                                             <button
                                                 onClick={() => alAbrir(n.id, n.leida, estilo.ruta)}
-                                                className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
+                                                className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-4 text-left transition-all hover:shadow-sm ${
                                                     n.leida
-                                                        ? 'border-border bg-card opacity-75 hover:opacity-100'
-                                                        : 'border-primary/20 bg-primary/5 hover:bg-primary/10'
+                                                        ? 'border-border bg-card opacity-70'
+                                                        : 'border-primary/20 bg-primary/5'
                                                 }`}
                                             >
-                                                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 ${n.leida ? 'bg-muted' : estilo.fondo}`}>
-                                                    <Icono size={18} className={n.leida ? 'text-muted-foreground' : estilo.color} />
+                                                <span className={`shrink-0 rounded-lg p-2 ${n.leida ? 'bg-muted' : estilo.fondo}`}>
+                                                    <Icono size={16} className={n.leida ? 'text-muted-foreground' : estilo.color} />
                                                 </span>
 
                                                 <span className="min-w-0 flex-1">
@@ -188,7 +195,7 @@ export default function Notificaciones() {
                                                             </span>
                                                         </span>
                                                     </span>
-                                                    <span className="block break-words text-sm text-muted-foreground">
+                                                    <span className="mt-0.5 line-clamp-2 block break-words text-xs text-muted-foreground">
                                                         {n.mensaje}
                                                     </span>
                                                     <span className="mt-1 block text-xs text-muted-foreground">

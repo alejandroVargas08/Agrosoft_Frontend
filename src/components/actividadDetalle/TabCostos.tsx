@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { Hammer, Truck, Users, Wrench } from 'lucide-react';
+import { Card } from '../ui/AgroUI';
 import { actividadInsumosApi } from '../../api/actividades/actividadInsumos';
-import { actividadInsumoUsoApi } from '../../api/actividades/actividadInsumoUso';
-import { actividadServiciosApi } from '../../api/actividades/actividadServicios';
 import { actividadHerramientasApi } from '../../api/actividades/actividadHerramientas';
 import { insumosApi } from '../../api/inventario';
+import { useActividadResponsables } from '../../hooks/Actividades/useActividadResponsables';
 import type { Actividad } from '../../types/actividades';
 
 const pesos = (valor: number) =>
@@ -26,21 +25,13 @@ export function TabCostos({ actividadId, actividad }: Props) {
         queryFn: async () => (await actividadInsumosApi.listar(actividadId!)).data,
         enabled: habilitado,
     });
-    const usos = useQuery({
-        queryKey: ['actividad-insumo-uso', actividadId],
-        queryFn: async () => (await actividadInsumoUsoApi.listar(actividadId!)).data,
-        enabled: habilitado,
-    });
-    const servicios = useQuery({
-        queryKey: ['actividad-servicios', actividadId],
-        queryFn: async () => (await actividadServiciosApi.listar(actividadId!)).data,
-        enabled: habilitado,
-    });
     const herramientas = useQuery({
         queryKey: ['actividad-herramientas', actividadId],
         queryFn: async () => (await actividadHerramientasApi.listar(actividadId!)).data,
         enabled: habilitado,
     });
+
+    const { responsables } = useActividadResponsables(actividadId);
 
     // La ficha del insumo trae el costo de adquisicion, el valor residual y la
     // vida util: con eso se calcula la depreciacion por hora de cada herramienta
@@ -55,9 +46,6 @@ export function TabCostos({ actividadId, actividad }: Props) {
     const manoDeObra = horas * precioHora;
 
     const costoInsumos = (insumos.data ?? []).reduce((s, i) => s + (i.costoTotal || 0), 0);
-    const costoUsos = (usos.data ?? []).reduce((s, u) => s + (u.costoTotal || 0), 0);
-    const costoServicios = (servicios.data ?? []).reduce((s, x) => s + (x.costo || 0), 0);
-    const horasHerramienta = (herramientas.data ?? []).reduce((s, h) => s + (h.horasEstimadas || 0), 0);
 
     // Depreciacion lineal: (costo - valor residual) / vida util, por hora de uso.
     // Solo cuenta la herramienta cuya ficha tenga los tres datos.
@@ -78,57 +66,83 @@ export function TabCostos({ actividadId, actividad }: Props) {
         costoHerramientas += (depreciable / vidaUtil) * (h.horasEstimadas || 0);
     }
 
-    const total = manoDeObra + costoInsumos + costoUsos + costoServicios + costoHerramientas;
+    // Los tres rubros del diseño. Insumos usados y servicios no se muestran.
+    const total = manoDeObra + costoInsumos + costoHerramientas;
 
-    const cargando = insumos.isLoading || usos.isLoading || servicios.isLoading || catalogoInsumos.isLoading;
+    const cargando = insumos.isLoading || herramientas.isLoading || catalogoInsumos.isLoading;
 
     const RUBROS = [
-        { icono: Users, titulo: 'Mano de obra', detalle: horas + 'h × ' + pesos(precioHora) + '/h', valor: manoDeObra },
-        { icono: Wrench, titulo: 'Insumos planeados', detalle: (insumos.data ?? []).length + ' registros', valor: costoInsumos },
-        { icono: Hammer, titulo: 'Insumos usados', detalle: (usos.data ?? []).length + ' registros', valor: costoUsos },
-        { icono: Truck, titulo: 'Servicios', detalle: (servicios.data ?? []).length + ' contratados', valor: costoServicios },
-        { icono: Hammer, titulo: 'Herramientas', detalle: horasHerramienta + 'h de uso · depreciación', valor: costoHerramientas },
+        { titulo: 'Mano de obra', detalle: horas + 'h × ' + pesos(precioHora) + '/h', valor: manoDeObra },
+        { titulo: 'Insumos', detalle: (insumos.data ?? []).length + ' items', valor: costoInsumos },
+        { titulo: 'Herramientas', detalle: 'Depreciación', valor: costoHerramientas },
     ];
 
     if (cargando) {
-        return <p className="text-sm text-neutral-500 py-6 text-center">Calculando los costos...</p>;
+        return <p className="py-6 text-center text-sm text-muted-foreground">Calculando los costos...</p>;
     }
 
     return (
-        <div className="space-y-3">
-            {RUBROS.map(({ icono: Icono, titulo, detalle, valor }) => (
-                <div key={titulo} className="flex items-center justify-between gap-3 p-3 bg-[#f0f4f1] rounded-2xl">
-                    <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2 bg-white rounded-xl shrink-0">
-                            <Icono className="w-4 h-4 text-[#2d7a3e]" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card>
+                <h3 className="mb-3 font-semibold text-foreground">Desglose de costos</h3>
+
+                <div className="space-y-3">
+                    {RUBROS.map(({ titulo, detalle, valor }) => (
+                        <div key={titulo} className="flex items-center justify-between gap-3 rounded-lg bg-muted p-2">
+                            <div className="min-w-0">
+                                <p className="text-sm font-medium text-foreground">{titulo}</p>
+                                <p className="text-xs text-muted-foreground">{detalle}</p>
+                            </div>
+                            <span className="shrink-0 font-semibold text-foreground">{pesos(valor)}</span>
                         </div>
-                        <div className="min-w-0">
-                            <p className="text-sm font-medium text-neutral-900">{titulo}</p>
-                            <p className="text-xs text-neutral-500">{detalle}</p>
-                        </div>
+                    ))}
+
+                    <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/10 p-2">
+                        <p className="text-sm font-bold text-primary">Total</p>
+                        <span className="text-lg font-bold text-primary">{pesos(total)}</span>
                     </div>
-                    <span className="font-semibold text-neutral-900 shrink-0">{pesos(valor)}</span>
                 </div>
-            ))}
 
-            <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#2d7a3e]/10 border border-[#2d7a3e]/20">
-                <p className="text-sm font-bold text-[#2d7a3e]">Costo total</p>
-                <span className="text-lg font-bold text-[#2d7a3e]">{pesos(total)}</span>
-            </div>
+                {herramientasSinDatos > 0 && (
+                    <p className="pt-3 text-xs text-muted-foreground">
+                        {herramientasSinDatos} herramienta{herramientasSinDatos === 1 ? '' : 's'} con horas
+                        registradas no entra{herramientasSinDatos === 1 ? '' : 'n'} en el total: a su ficha de
+                        inventario le falta el costo de adquisición o la vida útil.
+                    </p>
+                )}
 
-            {herramientasSinDatos > 0 && (
-                <p className="text-xs text-neutral-500 pt-1">
-                    {herramientasSinDatos} herramienta{herramientasSinDatos === 1 ? '' : 's'} con horas
-                    registradas no entra{herramientasSinDatos === 1 ? '' : 'n'} en el total: a su ficha de
-                    inventario le falta el costo de adquisición o la vida útil.
-                </p>
-            )}
+                {horas === 0 && (
+                    <p className="pt-2 text-xs text-muted-foreground">
+                        Esta actividad no tiene horas registradas, así que la mano de obra queda en cero.
+                    </p>
+                )}
+            </Card>
 
-            {horas === 0 && (
-                <p className="text-xs text-neutral-500 pt-1">
-                    Esta actividad no tiene horas registradas, así que la mano de obra queda en cero.
-                </p>
-            )}
+            <Card>
+                <h3 className="mb-3 font-semibold text-foreground">Responsables</h3>
+
+                {responsables.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                        Todavía no hay responsables registrados en esta actividad.
+                    </p>
+                ) : (
+                    <div className="space-y-2">
+                        {responsables.map((r) => {
+                            const nombre = r.usuario
+                                ? r.usuario.nombre + ' ' + r.usuario.apellido
+                                : 'Usuario #' + r.usuarioId;
+                            return (
+                                <div key={r.id ?? r.usuarioId} className="flex items-center gap-2 rounded-lg bg-muted p-2">
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                        {nombre.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="truncate text-sm font-medium text-foreground">{nombre}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </Card>
         </div>
     );
 }

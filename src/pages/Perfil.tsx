@@ -1,5 +1,10 @@
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, GraduationCap, Mail, MapPin, Pencil, Phone } from 'lucide-react';
+import {
+    Activity, Award, BookOpen, Calendar, CheckCircle, GraduationCap, Hash,
+    Mail, MapPin, Pencil, Phone,
+} from 'lucide-react';
+import logoAgrosoft from '../assets/img/logo-agrosoft.png';
 import { usePerfil } from '../hooks/usePerfil';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Badge, Btn, Card, PageHeader, StatusBadge } from '../components/ui/AgroUI';
@@ -13,15 +18,17 @@ const fecha = (valor?: string) => {
 
 const inicial = (nombre?: string) => nombre?.trim()?.charAt(0)?.toUpperCase() ?? 'U';
 
-/** Una fila de la ficha personal: ícono, etiqueta y valor */
+/** Una fila de ficha: ícono, etiqueta y valor. La usan las dos tarjetas. */
 const Dato = ({ icono: Icono, etiqueta, valor }: {
-    icono: typeof Mail; etiqueta: string; valor: string;
+    icono: typeof Mail; etiqueta: string; valor: ReactNode;
 }) => (
-    <div className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-        <Icono size={14} className="text-muted-foreground shrink-0" />
+    <div className="flex items-center gap-3 border-b border-border py-2 last:border-0">
+        <Icono size={14} className="shrink-0 text-muted-foreground" />
         <div className="min-w-0">
             <p className="text-xs text-muted-foreground">{etiqueta}</p>
-            <p className="font-medium text-foreground break-words">{valor}</p>
+            {typeof valor === 'string'
+                ? <p className="break-words font-medium text-foreground">{valor}</p>
+                : <div className="mt-0.5">{valor}</div>}
         </div>
     </div>
 );
@@ -54,7 +61,10 @@ export default function Perfil() {
 
         return (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <Card className="lg:col-span-1 text-center">
+                {/* La columna ocupa todo el alto: la tarjeta queda arriba con su
+                    tamaño y el logo se centra en lo que sobra. */}
+                <div className="flex flex-col gap-4 lg:col-span-1">
+                <Card className="shrink-0 text-center">
                     <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 text-3xl font-bold text-primary">
                         {inicial(nombre)}
                     </div>
@@ -68,54 +78,57 @@ export default function Perfil() {
                     )}
                 </Card>
 
+                {/* El Figma deja este espacio vacio, pero con dos tarjetas a la
+                    derecha queda un hueco grande: va el logo para cerrarlo.
+                    En movil las tarjetas se apilan y no sobra nada, asi que
+                    alli no se muestra. */}
+                    <div className="hidden flex-1 flex-col items-center justify-center gap-3 py-6 opacity-40 lg:flex">
+                        <img src={logoAgrosoft} alt="" className="w-full max-w-[220px] rounded-3xl object-cover" />
+                        <div className="text-center">
+                            <p className="text-xl font-bold text-muted-foreground">AgroSoft</p>
+                            <p className="text-sm uppercase tracking-widest text-muted-foreground">SENA</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="lg:col-span-2 space-y-4">
                     <Card>
                         <h3 className="font-semibold text-foreground mb-3">Información personal</h3>
-                        <div className="space-y-2 text-sm">
+                        <div className="text-sm">
                             <Dato icono={Mail} etiqueta="Correo" valor={correo || 'No registrado'} />
                             <Dato icono={Phone} etiqueta="Teléfono" valor={telefono || 'No registrado'} />
                             <Dato icono={MapPin} etiqueta="Ubicación" valor={ubicacion || 'No registrada'} />
                         </div>
                     </Card>
 
-                    {programaFormacion ? (
-                        <Card className="border-primary/20 bg-primary/5">
-                            <div className="flex items-center gap-2 mb-3">
-                                <GraduationCap size={18} className="text-primary" />
-                                <h3 className="font-semibold text-foreground">Programa de Formación SENA</h3>
+                    <Card>
+                        <div className="mb-3 flex items-center gap-2">
+                            <GraduationCap size={18} className="text-primary" />
+                            <h3 className="font-semibold text-foreground">Programa de Formación SENA</h3>
+                        </div>
+
+                        {programaFormacion ? (
+                            <div className="text-sm">
+                                <Dato icono={BookOpen} etiqueta="Programa" valor={programaFormacion.nombre} />
+                                <Dato icono={Award} etiqueta="Tipo" valor={programaFormacion.tipo} />
+                                <Dato icono={Hash} etiqueta="Ficha" valor={programaFormacion.ficha} />
+                                <Dato
+                                    icono={Calendar}
+                                    etiqueta="Vigencia"
+                                    valor={fecha(programaFormacion.fechaInicio) + ' — ' + fecha(programaFormacion.fechaFin)}
+                                />
+                                <Dato
+                                    icono={Activity}
+                                    etiqueta="Estado"
+                                    valor={<StatusBadge status={programaFormacion.estado} />}
+                                />
                             </div>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between gap-3">
-                                    <span className="text-muted-foreground shrink-0">Programa</span>
-                                    <span className="font-medium text-right">{programaFormacion.nombre}</span>
-                                </div>
-                                <div className="flex justify-between gap-3">
-                                    <span className="text-muted-foreground">Tipo</span>
-                                    <span className="font-medium">{programaFormacion.tipo}</span>
-                                </div>
-                                <div className="flex justify-between gap-3">
-                                    <span className="text-muted-foreground">Ficha</span>
-                                    <span className="font-mono font-bold text-primary">{programaFormacion.ficha}</span>
-                                </div>
-                                <div className="flex justify-between gap-3">
-                                    <span className="text-muted-foreground shrink-0">Vigencia</span>
-                                    <span className="font-medium text-right">
-                                        {fecha(programaFormacion.fechaInicio)} — {fecha(programaFormacion.fechaFin)}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center gap-3">
-                                    <span className="text-muted-foreground">Estado</span>
-                                    <StatusBadge status={programaFormacion.estado} />
-                                </div>
-                            </div>
-                        </Card>
-                    ) : (
-                        <Card className="border-primary/20 bg-primary/5">
+                        ) : (
                             <p className="text-sm text-muted-foreground">
                                 Aún no tienes un programa de formación registrado.
                             </p>
-                        </Card>
-                    )}
+                        )}
+                    </Card>
                 </div>
             </div>
         );

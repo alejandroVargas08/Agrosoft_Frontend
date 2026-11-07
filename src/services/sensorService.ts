@@ -3,11 +3,16 @@ import type { Sensor, TipoSensor } from "../types/sensor";
 
 type Raw = Record<string, unknown>;
 
-function detectarTipo(t: string): TipoSensor {
+/** Deduce la medida a partir del nombre del tipo de sensor. */
+export function detectarTipo(t: string): TipoSensor {
   const v = t.toLowerCase();
   if (v.includes("temp")) return "temperatura";
   if (v.includes("hum")) return "humedad";
   if (v.includes("ph")) return "ph";
+  // UVM-30A y similares: el nombre del tipo suele traer "uv" o "ultravioleta"
+  if (v.includes("uv") || v.includes("ultraviolet")) return "uv";
+  // BH1750, fotorresistor: "luz", "lumin", "lux"
+  if (v.includes("lumin") || v.includes("lux") || v.includes("luz")) return "luminosidad";
   return "otro";
 }
 
@@ -61,6 +66,9 @@ function normalizar(s: Raw): Sensor {
     loteId: num(s.loteId),
     subLoteId: num(s.subLoteId),
     cultivoId: num(s.cultivoId),
+    protocolo: primerTexto(s.protocolo),
+    mqttTopic: primerTexto(s.mqttTopic),
+    endpointUrl: primerTexto(s.endpointUrl),
   };
 }
 

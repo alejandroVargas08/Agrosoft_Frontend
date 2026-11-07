@@ -150,6 +150,8 @@ export interface Movimiento {
     almacenDestinoId?: number;
     fecha?: string;              // ISO, la pone el backend
     stockResultante?: number;    // solo al registrar
+    // El backend resuelve el nombre; null si el usuario ya no existe.
+    usuario?: { id: number; nombre: string; apellido: string } | null;
 }
 
 // ---------- Reservas ----------
