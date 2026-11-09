@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { resumenAprendicesApi } from '../../api/instructor';
+import { novedadesApi } from '../../api/novedades';
 import { mensajeError } from '../../api/errores/errores';
 
 export function useAprendizDetalle(aprendizId: number) {
@@ -19,7 +20,20 @@ export function useAprendizDetalle(aprendizId: number) {
         enabled: habilitado,
     });
 
+    // Las de toda la bandeja: se filtran por autor, que es como el diseño las
+    // muestra en el detalle
+    const novedadesQuery = useQuery({
+        queryKey: ['novedades'],
+        queryFn: async () => (await novedadesApi.listar()).data,
+        enabled: habilitado,
+        staleTime: 60_000,
+    });
+
     const aprendiz = (resumenQuery.data ?? []).find((a) => a.id === aprendizId) ?? null;
+
+    const novedades = (novedadesQuery.data ?? [])
+        .filter((n) => n.reportadaPor?.id === aprendizId)
+        .sort((a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime());
 
     // Lo más reciente arriba: es lo que el instructor quiere ver primero
     const tareas = [...(tareasQuery.data ?? [])].sort((a, b) => {
@@ -33,6 +47,7 @@ export function useAprendizDetalle(aprendizId: number) {
     return {
         aprendiz,
         tareas,
+        novedades,
         devueltas,
         cargando: resumenQuery.isLoading || tareasQuery.isLoading,
         error: tareasQuery.error

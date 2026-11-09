@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, CheckCircle, Clock, FileText, GraduationCap, Phone, RotateCcw, Users } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, Clock, FileText, GraduationCap, Phone, RotateCcw, Users } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, PageHeader, StatCard, StatusBadge } from '../../components/ui/AgroUI';
 import { useAprendizDetalle } from '../../hooks/instructor/useAprendizDetalle';
@@ -22,18 +22,26 @@ const Campo = ({ icono: Icono, titulo, valor, mono = false }: {
 
 /** El punto de color de la línea de tiempo, según cómo va la tarea. */
 const color = (tarea: Asignacion) => {
-    if (tarea.estado === 'APROBADA') return 'bg-emerald-500';
-    if (tarea.estado === 'DEVUELTA') return 'bg-red-500';
-    if (tarea.vencida) return 'bg-red-500';
-    if (tarea.estado === 'ENTREGADA') return 'bg-primary';
+    if (tarea.estado === 'APROBADA') return 'bg-chip-bg';
+    if (tarea.estado === 'DEVUELTA' || tarea.vencida) return 'bg-destructive';
     return 'bg-[#F59E0B]';
+};
+
+/** "Hace 3h", "Hace 2d". Tal cual el fmtRelative del diseño. */
+const hace = (valor: string) => {
+    const diferencia = Date.now() - new Date(valor).getTime();
+    const horas = Math.floor(diferencia / 3600000);
+    const dias = Math.floor(diferencia / 86400000);
+    if (horas < 1) return 'Hace un momento';
+    if (horas < 24) return 'Hace ' + horas + 'h';
+    return 'Hace ' + dias + 'd';
 };
 
 const AprendizDetalle = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const aprendizId = Number(id);
-    const { aprendiz, tareas, devueltas, cargando, error, noEncontrado } = useAprendizDetalle(aprendizId);
+    const { aprendiz, tareas, novedades, devueltas, cargando, error, noEncontrado } = useAprendizDetalle(aprendizId);
 
     if (noEncontrado) {
         return (
@@ -88,7 +96,6 @@ const AprendizDetalle = () => {
                                 <Campo icono={FileText} titulo="Documento" valor={aprendiz.identificacion} />
                                 <Campo icono={Phone} titulo="Teléfono" valor={aprendiz.telefono} />
                                 <Campo icono={GraduationCap} titulo="Ficha" valor={aprendiz.idFicha ?? 'Sin ficha'} mono />
-                                <Campo icono={Clock} titulo="Último ingreso" valor={fecha(aprendiz.ultimoIngreso)} />
                             </div>
                         </Card>
 
@@ -136,14 +143,29 @@ const AprendizDetalle = () => {
                                                     <p className="text-xs text-muted-foreground mt-0.5">
                                                         Asignada: {fecha(tarea.creadoEn)}
                                                         {tarea.entregadaEn ? ' · Entregada: ' + fecha(tarea.entregadaEn) : ''}
-                                                        {tarea.horasTrabajadas !== null ? ' · ' + tarea.horasTrabajadas + 'h' : ''}
                                                     </p>
-                                                    {tarea.comentarioInstructor && (
-                                                        <p className="text-xs text-muted-foreground mt-1 italic">
-                                                            Tu comentario: {tarea.comentarioInstructor}
-                                                        </p>
-                                                    )}
                                                 </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </Card>
+
+                            <Card>
+                                <h3 className="font-semibold text-foreground mb-3">Novedades reportadas</h3>
+
+                                {novedades.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">Sin novedades reportadas.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {novedades.map((novedad) => (
+                                            <div key={novedad.id} className="flex items-start gap-2 p-3 bg-muted/40 rounded-lg">
+                                                <AlertCircle size={14} className="text-muted-foreground mt-0.5 shrink-0" />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-medium text-foreground">{novedad.descripcion}</p>
+                                                    <p className="text-[10px] text-muted-foreground">{hace(novedad.creadoEn)}</p>
+                                                </div>
+                                                <StatusBadge status={novedad.estado} />
                                             </div>
                                         ))}
                                     </div>

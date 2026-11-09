@@ -16,13 +16,6 @@ import { InicioUsuario } from '../../hooks/useAuth';
 const hoy = () =>
     new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 
-const saludo = () => {
-    const hora = new Date().getHours();
-    if (hora < 12) return 'Buenos días';
-    if (hora < 19) return 'Buenas tardes';
-    return 'Buenas noches';
-};
-
 const fecha = (valor: string) =>
     new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
 
@@ -100,7 +93,7 @@ const InicioInstructor = () => {
             <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold text-foreground">
-                        {saludo()}{primerNombre ? ', ' + primerNombre : ''}
+                        Buenos días{primerNombre ? ', ' + primerNombre : ''}
                     </h1>
                     <p className="text-sm text-muted-foreground mt-1">{hoy()}</p>
                 </div>
@@ -185,11 +178,9 @@ const InicioInstructor = () => {
                         ) : (
                             <div className="space-y-2">
                                 {proximasFechas.map((plazo) => (
-                                    <button
+                                    <div
                                         key={plazo.actividadId}
-                                        type="button"
-                                        onClick={() => navigate('/actividades/' + plazo.actividadId)}
-                                        className="w-full flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-xl text-left hover:shadow-sm transition"
+                                        className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-xl"
                                     >
                                         <div className="min-w-0">
                                             <p className="text-sm font-semibold text-foreground truncate">{plazo.actividad}</p>
@@ -207,7 +198,7 @@ const InicioInstructor = () => {
                                         >
                                             {plazo.diasRestantes}d restantes
                                         </span>
-                                    </button>
+                                    </div>
                                 ))}
                             </div>
                         )}

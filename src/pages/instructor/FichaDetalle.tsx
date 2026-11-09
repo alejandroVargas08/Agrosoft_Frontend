@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle, ClipboardList, Copy, GraduationCap, Key, MapPin, Users } from 'lucide-react';
+import { AlertCircle, CheckCircle, ClipboardList, Copy, ExternalLink, GraduationCap, Key, MapPin, Users } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Modal, PageHeader, SearchBar, StatCard, StatusBadge, Tab } from '../../components/ui/AgroUI';
 import { useFichaDetalle } from '../../hooks/instructor/useFichaDetalle';
@@ -25,6 +25,19 @@ const FichaDetalle = () => {
         codigo, cargandoCodigo, generandoCodigo, generarCodigo, errorCodigo,
         cargando, error, fichaNoEncontrada,
     } = useFichaDetalle(fichaId);
+
+    /** Usa el compartir del sistema si lo hay; si no, deja el código copiado. */
+    const compartir = () => {
+        if (!codigo) return;
+        const texto = 'Regístrate en AgroSoft con el código de invitación ' + codigo.codigo;
+        if (navigator.share) {
+            void navigator.share({ text: texto }).catch(() => {});
+            return;
+        }
+        navigator.clipboard?.writeText(texto);
+        setCopiado(true);
+        window.setTimeout(() => setCopiado(false), 2000);
+    };
 
     const copiar = () => {
         if (!codigo) return;
@@ -176,13 +189,7 @@ const FichaDetalle = () => {
                             {actividades.map((actividad) => (
                                 <Card key={actividad.actividadId}>
                                     <div className="flex items-center justify-between gap-2 mb-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => navigate('/actividades/' + actividad.actividadId)}
-                                            className="font-semibold text-foreground text-left hover:underline truncate"
-                                        >
-                                            {actividad.actividad}
-                                        </button>
+                                        <p className="font-semibold text-foreground truncate">{actividad.actividad}</p>
                                         <StatusBadge status={actividad.estado} />
                                     </div>
                                     <div className="flex items-center gap-3">
@@ -254,9 +261,14 @@ const FichaDetalle = () => {
                         {codigo && (
                             <>
                                 <p className="text-xs text-muted-foreground">Vence el {fecha(codigo.expiraEn)}</p>
-                                <Btn onClick={copiar} className="w-full justify-center">
-                                    <Copy size={14} />{copiado ? 'Copiado' : 'Copiar'}
-                                </Btn>
+                                <div className="flex gap-2">
+                                    <Btn onClick={copiar} className="flex-1 justify-center">
+                                        <Copy size={14} />{copiado ? 'Copiado' : 'Copiar'}
+                                    </Btn>
+                                    <Btn variant="outline" onClick={compartir} className="flex-1 justify-center">
+                                        <ExternalLink size={14} />Compartir
+                                    </Btn>
+                                </div>
                             </>
                         )}
 
@@ -273,11 +285,6 @@ const FichaDetalle = () => {
                                     : 'Generar código'}
                         </button>
 
-                        {codigo && (
-                            <p className="text-xs text-muted-foreground">
-                                Al generar uno nuevo, el anterior deja de funcionar de inmediato.
-                            </p>
-                        )}
                     </div>
                 </Modal>
             </div>

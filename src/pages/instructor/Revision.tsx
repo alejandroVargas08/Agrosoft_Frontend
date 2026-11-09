@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Badge, Btn, Card, EmptyState, Modal, PageHeader, Textarea } from '../../components/ui/AgroUI';
@@ -18,6 +19,7 @@ const Dato = ({ titulo, valor, destacado = false }: { titulo: string; valor: str
 );
 
 const Revision = () => {
+    const navigate = useNavigate();
     const {
         entregas, total, fichasDisponibles, ficha, setFicha, soloVencidas, setSoloVencidas,
         cargando, error, errorAccion, procesando, aprobar, devolver,
@@ -118,10 +120,7 @@ const Revision = () => {
                                                 <p className="font-semibold text-foreground">{entrega.aprendiz}</p>
                                                 <p className="text-xs text-muted-foreground">Ficha {entrega.ficha}</p>
                                             </div>
-                                            <div className="flex gap-2">
-                                                {entrega.entregadaTarde && <Badge color="warning">Tarde</Badge>}
-                                                {asignacion.vencida && <Badge color="danger">Vencida</Badge>}
-                                            </div>
+                                            {entrega.entregadaTarde && <Badge color="warning">Tarde</Badge>}
                                         </div>
                                     </div>
 
@@ -144,6 +143,16 @@ const Revision = () => {
                                     )}
 
                                     <div className="flex gap-2">
+                                        {asignacion.actividad && (
+                                            <Btn
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => navigate('/actividades/' + asignacion.actividad!.id)}
+                                                className="flex-1 justify-center"
+                                            >
+                                                Ver detalle
+                                            </Btn>
+                                        )}
                                         <Btn
                                             size="sm"
                                             onClick={() => { setDecision({ entrega, accion: 'aprobar' }); setComentario(''); }}

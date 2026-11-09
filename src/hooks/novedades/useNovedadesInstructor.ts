@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { novedadesApi } from '../../api/novedades';
 import { insumosApi } from '../../api/inventario';
+import { resumenAprendicesApi } from '../../api/instructor';
 import { mensajeError } from '../../api/errores/errores';
 import type { EstadoNovedad } from '../../types/novedades';
 
@@ -28,6 +29,16 @@ export function useNovedadesInstructor() {
         queryFn: async () => (await insumosApi.listar()).data,
         staleTime: 1000 * 60 * 5,
     });
+
+    // El diseño muestra la ficha de quien reportó; la novedad no la trae,
+    // así que se resuelve por el aprendiz
+    const resumenQuery = useQuery({
+        queryKey: ['aprendices-resumen'],
+        queryFn: async () => (await resumenAprendicesApi.listar()).data,
+        staleTime: 60_000,
+    });
+
+    const fichaDeAprendiz = new Map((resumenQuery.data ?? []).map((a) => [a.id, a.idFicha]));
 
     const todas = novedadesQuery.data ?? [];
     const contar = (p: PestanaNovedad) => todas.filter((n) => n.estado === POR_PESTANA[p]).length;
@@ -60,6 +71,8 @@ export function useNovedadesInstructor() {
             Atendidas: contar('Atendidas'),
             Descartadas: contar('Descartadas'),
         } as Record<PestanaNovedad, number>,
+        ficha: (aprendizId: number | null | undefined) =>
+            aprendizId === undefined || aprendizId === null ? null : fichaDeAprendiz.get(aprendizId) ?? null,
         insumo: (id: number | null) =>
             id === null ? null : (insumosQuery.data ?? []).find((i) => i.id === id) ?? null,
         cargando: novedadesQuery.isLoading,
