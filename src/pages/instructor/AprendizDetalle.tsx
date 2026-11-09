@@ -41,7 +41,7 @@ const AprendizDetalle = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const aprendizId = Number(id);
-    const { aprendiz, tareas, novedades, devueltas, cargando, error, noEncontrado } = useAprendizDetalle(aprendizId);
+    const { aprendiz, ficha, tareas, novedades, devueltas, cargando, error, noEncontrado } = useAprendizDetalle(aprendizId);
 
     if (noEncontrado) {
         return (
@@ -68,7 +68,7 @@ const AprendizDetalle = () => {
             <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <PageHeader
                     title={aprendiz ? aprendiz.nombre + ' ' + aprendiz.apellido : 'Aprendiz'}
-                    subtitle={aprendiz?.idFicha ? 'Aprendiz · Ficha ' + aprendiz.idFicha : 'Aprendiz'}
+                    subtitle={ficha ? 'Aprendiz · Ficha ' + ficha : 'Aprendiz'}
                     onBack={volver}
                 />
 
@@ -95,7 +95,7 @@ const AprendizDetalle = () => {
                             <div className="space-y-2 text-sm">
                                 <Campo icono={FileText} titulo="Documento" valor={aprendiz.identificacion} />
                                 <Campo icono={Phone} titulo="Teléfono" valor={aprendiz.telefono} />
-                                <Campo icono={GraduationCap} titulo="Ficha" valor={aprendiz.idFicha ?? 'Sin ficha'} mono />
+                                <Campo icono={GraduationCap} titulo="Ficha" valor={ficha ?? 'Sin ficha'} mono />
                             </div>
                         </Card>
 

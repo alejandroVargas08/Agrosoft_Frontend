@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { novedadesApi } from '../../api/novedades';
 import { insumosApi } from '../../api/inventario';
-import { resumenAprendicesApi } from '../../api/instructor';
+import { misFichasApi, resumenAprendicesApi } from '../../api/instructor';
 import { mensajeError } from '../../api/errores/errores';
 import type { EstadoNovedad } from '../../types/novedades';
 
@@ -38,7 +38,22 @@ export function useNovedadesInstructor() {
         staleTime: 60_000,
     });
 
-    const fichaDeAprendiz = new Map((resumenQuery.data ?? []).map((a) => [a.id, a.idFicha]));
+    // La ficha sale del programa de formacion, no de usuarios.id_ficha: esa
+    // columna es texto que la persona escribio al registrarse y puede no
+    // coincidir. El resto de la aplicacion usa el programa, y aqui igual.
+    const fichasQuery = useQuery({
+        queryKey: ['mis-fichas'],
+        queryFn: async () => (await misFichasApi.listar()).data,
+        staleTime: 5 * 60_000,
+    });
+
+    const numeroDeFicha = new Map((fichasQuery.data ?? []).map((f) => [f.id, f.ficha]));
+    const fichaDeAprendiz = new Map(
+        (resumenQuery.data ?? []).map((a) => [
+            a.id,
+            a.programaFormacionId !== null ? numeroDeFicha.get(a.programaFormacionId) ?? null : null,
+        ]),
+    );
 
     const todas = novedadesQuery.data ?? [];
     const contar = (p: PestanaNovedad) => todas.filter((n) => n.estado === POR_PESTANA[p]).length;

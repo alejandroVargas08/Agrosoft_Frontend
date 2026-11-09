@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { resumenAprendicesApi } from '../../api/instructor';
+import { misFichasApi, resumenAprendicesApi } from '../../api/instructor';
 import { novedadesApi } from '../../api/novedades';
 import { mensajeError } from '../../api/errores/errores';
 
@@ -29,7 +29,21 @@ export function useAprendizDetalle(aprendizId: number) {
         staleTime: 60_000,
     });
 
+    // La ficha sale del programa de formacion, no de usuarios.id_ficha: esa
+    // columna es texto que la persona escribio al registrarse y puede no
+    // coincidir con el programa al que de verdad pertenece
+    const fichasQuery = useQuery({
+        queryKey: ['mis-fichas'],
+        queryFn: async () => (await misFichasApi.listar()).data,
+        staleTime: 5 * 60_000,
+    });
+
     const aprendiz = (resumenQuery.data ?? []).find((a) => a.id === aprendizId) ?? null;
+
+    const ficha =
+        aprendiz && aprendiz.programaFormacionId !== null
+            ? (fichasQuery.data ?? []).find((f) => f.id === aprendiz.programaFormacionId)?.ficha ?? null
+            : null;
 
     const novedades = (novedadesQuery.data ?? [])
         .filter((n) => n.reportadaPor?.id === aprendizId)
@@ -46,6 +60,7 @@ export function useAprendizDetalle(aprendizId: number) {
 
     return {
         aprendiz,
+        ficha,
         tareas,
         novedades,
         devueltas,
