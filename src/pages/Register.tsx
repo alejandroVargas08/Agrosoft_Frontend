@@ -22,6 +22,7 @@ interface FormRegistro {
     idFicha: string;
     programaFormacionId: string;
     codigoInstructor: string;
+    codigoInvitacion: string;
     fichasACargo: string;
     cargo: string;
     motivoSolicitud: string;
@@ -38,7 +39,7 @@ interface Resultado {
 
 const FORM_INICIAL: FormRegistro = {
     nombre: '', apellido: '', identificacion: '', telefono: '', email: '',
-    tipoUsuario: 'aprendiz', idFicha: '', programaFormacionId: '', codigoInstructor: '',
+    tipoUsuario: 'aprendiz', idFicha: '', programaFormacionId: '', codigoInstructor: '', codigoInvitacion: '',
     fichasACargo: '', cargo: '', motivoSolicitud: '', password: '', confirmPass: '',
 };
 
@@ -196,6 +197,8 @@ export const Register = () => {
     const fichaEncontrada = programaPorFicha.get(form.idFicha.trim()) ?? null;
     const fichasInstructor = separarFichas(form.fichasACargo);
     const fichasDesconocidas = fichasInstructor.filter((f) => !programaPorFicha.has(f));
+    // Con código de invitación la ficha la resuelve el servidor: el aprendiz no la teclea
+    const conInvitacion = form.tipoUsuario === 'aprendiz' && form.codigoInvitacion.trim().length > 0;
 
     const cambiarFicha = (valor: string) => {
         const programa = programaPorFicha.get(valor.trim());
@@ -208,7 +211,7 @@ export const Register = () => {
     };
 
     const validarPaso2 = (): string | null => {
-        if (form.tipoUsuario === 'aprendiz') {
+        if (form.tipoUsuario === 'aprendiz' && !conInvitacion) {
             if (!fichaEncontrada) return `La ficha ${form.idFicha.trim()} no está registrada. Pide al administrador que la registre.`;
             if (form.programaFormacionId && String(fichaEncontrada.id) !== form.programaFormacionId) return 'La ficha no corresponde al programa seleccionado';
         }
@@ -250,8 +253,9 @@ export const Register = () => {
                 email: form.email.trim(),
                 password: form.password,
                 tipoUsuario: form.tipoUsuario,
-                programaFormacionId: programa ? programa.id : undefined,
-                idFicha: form.tipoUsuario === 'aprendiz' ? form.idFicha.trim() : undefined,
+                codigoInvitacion: conInvitacion ? form.codigoInvitacion.trim().toUpperCase() : undefined,
+                programaFormacionId: conInvitacion ? undefined : programa ? programa.id : undefined,
+                idFicha: form.tipoUsuario === 'aprendiz' && !conInvitacion ? form.idFicha.trim() : undefined,
                 codigoInstructor: form.tipoUsuario === 'instructor' && form.codigoInstructor.trim() ? form.codigoInstructor.trim() : undefined,
                 fichasACargo: form.tipoUsuario === 'instructor' && fichasInstructor.length > 0 ? fichasInstructor : undefined,
                 cargo: form.tipoUsuario === 'administrador' ? form.cargo.trim() : undefined,
@@ -260,7 +264,7 @@ export const Register = () => {
             setResultado({
                 aprobado: !data.requiereAprobacion,
                 tipo: form.tipoUsuario,
-                ficha: form.tipoUsuario === 'aprendiz' ? form.idFicha.trim() : null,
+                ficha: form.tipoUsuario === 'aprendiz' && !conInvitacion ? form.idFicha.trim() : null,
                 programa,
             });
         } catch (err) {
@@ -352,6 +356,18 @@ export const Register = () => {
                                 <>
                                     {form.tipoUsuario === 'aprendiz' && (
                                         <>
+                                            <Campo label="Código de invitación" opcional>
+                                                <ConIcono icon={Key}>
+                                                    <input value={form.codigoInvitacion} onChange={(e) => set('codigoInvitacion')(e.target.value.toUpperCase())} placeholder="Ej: AGR-7K2" type="text" className={fieldClass} />
+                                                </ConIcono>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {conInvitacion
+                                                        ? 'Con el código no necesitas escribir la ficha: te deja en la de tu instructor.'
+                                                        : 'Si tu instructor te dio un código, escríbelo y te registras directo en su ficha.'}
+                                                </p>
+                                            </Campo>
+                                            {!conInvitacion && (
+                                            <>
                                             <Campo label="Número de Ficha" requerido>
                                                 <ConIcono icon={Hash}>
                                                     <input value={form.idFicha} onChange={(e) => cambiarFicha(e.target.value)} required placeholder="Ej: 2873456" type="text" className={fieldClass} />
@@ -372,6 +388,8 @@ export const Register = () => {
                                                 </select>
                                                 {programas.error && <p className="text-xs text-red-600">{mensajeError(programas.error, 'No se pudieron cargar los programas')}</p>}
                                             </Campo>
+                                            </>
+                                            )}
                                         </>
                                     )}
 

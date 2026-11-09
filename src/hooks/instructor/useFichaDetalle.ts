@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { misFichasApi, resumenAprendicesApi } from '../../api/instructor';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { codigoInvitacionApi, misFichasApi, panelInstructorApi, resumenAprendicesApi } from '../../api/instructor';
+import { novedadesApi } from '../../api/novedades';
 import { lotesApi } from '../../api/territorio';
 import { mensajeError } from '../../api/errores/errores';
 import type { ResumenAprendiz } from '../../types/instructor';
 
 export function useFichaDetalle(fichaId: number) {
     const [busqueda, setBusqueda] = useState('');
+    const clienteConsultas = useQueryClient();
+    const fichaValida = Number.isFinite(fichaId);
 
     const fichasQuery = useQuery({
         queryKey: ['mis-fichas'],
@@ -17,7 +20,19 @@ export function useFichaDetalle(fichaId: number) {
     const aprendicesQuery = useQuery({
         queryKey: ['aprendices-resumen', fichaId],
         queryFn: async () => (await resumenAprendicesApi.listar(fichaId)).data,
-        enabled: Number.isFinite(fichaId),
+        enabled: fichaValida,
+    });
+
+    const actividadesQuery = useQuery({
+        queryKey: ['actividades-de-ficha', fichaId],
+        queryFn: async () => (await panelInstructorApi.actividadesDeFicha(fichaId)).data,
+        enabled: fichaValida,
+    });
+
+    const novedadesQuery = useQuery({
+        queryKey: ['novedades', 'pendiente'],
+        queryFn: async () => (await novedadesApi.listar('pendiente')).data,
+        staleTime: 60_000,
     });
 
     // Los lotes traen programa_formacion_id, así que se filtran aquí: el
@@ -26,6 +41,17 @@ export function useFichaDetalle(fichaId: number) {
         queryKey: ['lotes'],
         queryFn: async () => (await lotesApi.listar()).data,
         staleTime: 1000 * 60 * 5,
+    });
+
+    const codigoQuery = useQuery({
+        queryKey: ['codigo-invitacion', fichaId],
+        queryFn: async () => (await codigoInvitacionApi.obtener(fichaId)).data,
+        enabled: fichaValida,
+    });
+
+    const generarCodigo = useMutation({
+        mutationFn: async () => (await codigoInvitacionApi.generar(fichaId)).data,
+        onSuccess: (nuevo) => clienteConsultas.setQueryData(['codigo-invitacion', fichaId], nuevo),
     });
 
     const ficha = (fichasQuery.data ?? []).find((f) => f.id === fichaId) ?? null;
@@ -44,21 +70,36 @@ export function useFichaDetalle(fichaId: number) {
             a.identificacion.includes(texto))
         : aprendices;
 
-    const sumar = (campo: 'entregadas' | 'vencidas' | 'horas') =>
+    // Las novedades se atribuyen a la ficha por quien las reportó
+    const deLaFicha = new Set(aprendices.map((a) => a.id));
+    const novedades = (novedadesQuery.data ?? []).filter(
+        (n) => n.reportadaPor !== null && deLaFicha.has(n.reportadaPor.id),
+    ).length;
+
+    const sumar = (campo: 'tareas' | 'aprobadas' | 'entregadas') =>
         aprendices.reduce((total, a) => total + a[campo], 0);
 
     return {
         ficha,
         aprendices: visibles,
+        actividades: actividadesQuery.data ?? [],
         totales: {
             aprendices: aprendices.length,
+            // Lo que sigue abierto: el total menos lo aprobado y lo que espera revisión
+            tareasActivas: Math.max(0, sumar('tareas') - sumar('aprobadas') - sumar('entregadas')),
             porRevisar: sumar('entregadas'),
-            vencidas: sumar('vencidas'),
-            horas: sumar('horas'),
+            novedades,
         },
         lotes,
         busqueda,
         setBusqueda,
+        codigo: codigoQuery.data ?? null,
+        cargandoCodigo: codigoQuery.isLoading,
+        generandoCodigo: generarCodigo.isPending,
+        generarCodigo: () => generarCodigo.mutate(),
+        errorCodigo: generarCodigo.error
+            ? mensajeError(generarCodigo.error, 'No se pudo generar el código.')
+            : '',
         cargando: fichasQuery.isLoading || aprendicesQuery.isLoading,
         error: aprendicesQuery.error
             ? mensajeError(aprendicesQuery.error, 'No se pudo cargar la ficha.')

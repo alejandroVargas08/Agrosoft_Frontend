@@ -42,6 +42,7 @@ export interface CrearUsuario {
     programaFormacionId?: number;
     tipoUsuario?: TipoUsuarioRegistro;
     codigoInstructor?: string;
+    codigoInvitacion?: string;
     fichasACargo?: string[];
     cargo?: string;
     motivoSolicitud?: string;

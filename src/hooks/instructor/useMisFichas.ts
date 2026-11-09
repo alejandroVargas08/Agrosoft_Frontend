@@ -1,72 +1,80 @@
 import { useQuery } from '@tanstack/react-query';
-import { aprendicesApi, misFichasApi, revisionApi } from '../../api/instructor';
+import { misFichasApi, resumenAprendicesApi } from '../../api/instructor';
+import { novedadesApi } from '../../api/novedades';
 import { mensajeError } from '../../api/errores/errores';
-import { usePermisos } from '../permisos/usePermisos';
-import { PERMISO_REVISAR_ACTIVIDADES } from './permisos';
-import type { Aprendiz, Ficha } from '../../types/instructor';
+import type { Ficha } from '../../types/instructor';
 
-/** Una ficha con los contadores que de verdad se pueden calcular. */
+/** Una ficha con los cuatro contadores del diseño. */
 export interface FichaConResumen extends Ficha {
     aprendices: number;
+    /** Asignadas, en progreso o devueltas: lo que el aprendiz todavía debe hacer. */
+    tareasActivas: number;
     porRevisar: number;
+    novedades: number;
 }
 
 export function useMisFichas() {
-    const { puede } = usePermisos();
-    const puedeRevisar = puede(PERMISO_REVISAR_ACTIVIDADES);
-
     const fichasQuery = useQuery({
         queryKey: ['mis-fichas'],
         queryFn: async () => (await misFichasApi.listar()).data,
     });
 
-    // Se piden todos los aprendices de una sola vez y se agrupan por ficha,
-    // en lugar de una consulta por ficha.
-    const aprendicesQuery = useQuery({
-        queryKey: ['aprendices'],
-        queryFn: async () => (await aprendicesApi.listar()).data,
+    // El resumen trae por aprendiz su ficha y sus conteos ya calculados por el
+    // backend, asi que de aqui salen tres de los cuatro contadores sin pedir
+    // una consulta por ficha
+    const resumenQuery = useQuery({
+        queryKey: ['aprendices-resumen'],
+        queryFn: async () => (await resumenAprendicesApi.listar()).data,
+        staleTime: 60_000,
     });
 
-    // Solo si el usuario puede revisar; si no, el backend responde 403
-    const porRevisarQuery = useQuery({
-        queryKey: ['asignaciones-por-revisar'],
-        queryFn: async () => (await revisionApi.porRevisar()).data,
-        enabled: puedeRevisar,
+    const novedadesQuery = useQuery({
+        queryKey: ['novedades', 'pendiente'],
+        queryFn: async () => (await novedadesApi.listar('pendiente')).data,
+        staleTime: 60_000,
     });
 
-    const aprendices = aprendicesQuery.data ?? [];
+    const resumen = resumenQuery.data ?? [];
 
-    // aprendizId -> fichaId, para poder atribuir cada entrega a su ficha
+    // aprendizId -> fichaId, para atribuirle a cada novedad la ficha de quien la reportó
     const fichaDeAprendiz = new Map<number, number>();
-    for (const a of aprendices) {
-        if (a.programaFormacionId !== null) fichaDeAprendiz.set(a.id, a.programaFormacionId);
+    for (const aprendiz of resumen) {
+        if (aprendiz.programaFormacionId !== null) {
+            fichaDeAprendiz.set(aprendiz.id, aprendiz.programaFormacionId);
+        }
     }
 
-    const porRevisarPorFicha = new Map<number, number>();
-    for (const asignacion of porRevisarQuery.data ?? []) {
-        const aprendizId = asignacion.aprendiz?.id;
-        if (aprendizId === undefined) continue;
-        const fichaId = fichaDeAprendiz.get(aprendizId);
+    const novedadesPorFicha = new Map<number, number>();
+    for (const novedad of novedadesQuery.data ?? []) {
+        const autor = novedad.reportadaPor?.id;
+        if (autor === undefined) continue;
+        const fichaId = fichaDeAprendiz.get(autor);
         if (fichaId === undefined) continue;
-        porRevisarPorFicha.set(fichaId, (porRevisarPorFicha.get(fichaId) ?? 0) + 1);
+        novedadesPorFicha.set(fichaId, (novedadesPorFicha.get(fichaId) ?? 0) + 1);
     }
 
-    const contarAprendices = (fichaId: number) =>
-        aprendices.filter((a: Aprendiz) => a.programaFormacionId === fichaId).length;
+    const fichas: FichaConResumen[] = (fichasQuery.data ?? []).map((ficha) => {
+        const suyos = resumen.filter((aprendiz) => aprendiz.programaFormacionId === ficha.id);
 
-    const fichas: FichaConResumen[] = (fichasQuery.data ?? []).map((ficha) => ({
-        ...ficha,
-        aprendices: contarAprendices(ficha.id),
-        porRevisar: porRevisarPorFicha.get(ficha.id) ?? 0,
-    }));
+        return {
+            ...ficha,
+            aprendices: suyos.length,
+            // Lo que queda abierto: el total menos lo aprobado y lo que espera revisión
+            tareasActivas: suyos.reduce(
+                (total, a) => total + Math.max(0, a.tareas - a.aprobadas - a.entregadas),
+                0,
+            ),
+            porRevisar: suyos.reduce((total, a) => total + a.entregadas, 0),
+            novedades: novedadesPorFicha.get(ficha.id) ?? 0,
+        };
+    });
 
     return {
         fichas,
         total: fichas.length,
-        cargando: fichasQuery.isLoading || aprendicesQuery.isLoading,
+        cargando: fichasQuery.isLoading || resumenQuery.isLoading,
         error: fichasQuery.error
             ? mensajeError(fichasQuery.error, 'No se pudieron cargar tus fichas.')
             : '',
-        puedeRevisar,
     };
 }

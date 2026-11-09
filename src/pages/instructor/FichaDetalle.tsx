@@ -1,27 +1,37 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, Clock, GraduationCap, MapPin, Users } from 'lucide-react';
+import { AlertCircle, CheckCircle, ClipboardList, Copy, GraduationCap, Key, MapPin, Users } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { Badge, Btn, Card, EmptyState, PageHeader, SearchBar, StatCard, StatusBadge, Tab } from '../../components/ui/AgroUI';
+import { Btn, Card, EmptyState, Modal, PageHeader, SearchBar, StatCard, StatusBadge, Tab } from '../../components/ui/AgroUI';
 import { useFichaDetalle } from '../../hooks/instructor/useFichaDetalle';
 
-const PESTANAS = ['Aprendices', 'Lotes'];
+const PESTANAS = ['Aprendices', 'Actividades', 'Lotes'];
+
+const COLUMNAS = ['Aprendiz', 'Correo', 'Tareas', 'Aprobadas', 'Vencidas', 'Horas', 'Último ingreso', 'Acciones'];
 
 const fecha = (valor: string | null) =>
     valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Nunca';
-
-const COLUMNAS = ['Aprendiz', 'Documento', 'Tareas', 'Aprobadas', 'Por revisar', 'Vencidas', 'Horas', 'Último ingreso', ''];
 
 const FichaDetalle = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const fichaId = Number(id);
     const [pestana, setPestana] = useState(PESTANAS[0]);
+    const [codigoAbierto, setCodigoAbierto] = useState(false);
+    const [copiado, setCopiado] = useState(false);
 
     const {
-        ficha, aprendices, totales, lotes, busqueda, setBusqueda,
+        ficha, aprendices, actividades, totales, lotes, busqueda, setBusqueda,
+        codigo, cargandoCodigo, generandoCodigo, generarCodigo, errorCodigo,
         cargando, error, fichaNoEncontrada,
     } = useFichaDetalle(fichaId);
+
+    const copiar = () => {
+        if (!codigo) return;
+        navigator.clipboard?.writeText(codigo.codigo);
+        setCopiado(true);
+        window.setTimeout(() => setCopiado(false), 2000);
+    };
 
     if (fichaNoEncontrada) {
         return (
@@ -45,6 +55,11 @@ const FichaDetalle = () => {
                     title={ficha ? 'Ficha ' + ficha.ficha : 'Ficha'}
                     subtitle={ficha?.nombre}
                     onBack={() => navigate('/mis-fichas')}
+                    action={
+                        <Btn variant="outline" onClick={() => setCodigoAbierto(true)}>
+                            <Key size={14} />Código de invitación
+                        </Btn>
+                    }
                 />
 
                 {error && (
@@ -55,19 +70,9 @@ const FichaDetalle = () => {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                     <StatCard icon={Users} label="Aprendices" value={totales.aprendices} color="primary" />
-                    <StatCard
-                        icon={Clock}
-                        label="Por revisar"
-                        value={totales.porRevisar}
-                        color={totales.porRevisar > 0 ? 'amber' : 'emerald'}
-                    />
-                    <StatCard
-                        icon={AlertTriangle}
-                        label="Vencidas"
-                        value={totales.vencidas}
-                        color={totales.vencidas > 0 ? 'red' : 'emerald'}
-                    />
-                    <StatCard icon={Clock} label="Horas del grupo" value={totales.horas + 'h'} color="blue" />
+                    <StatCard icon={ClipboardList} label="Tareas activas" value={totales.tareasActivas} color="blue" />
+                    <StatCard icon={CheckCircle} label="Por revisar" value={totales.porRevisar} color="amber" />
+                    <StatCard icon={AlertCircle} label="Novedades" value={totales.novedades} color="red" />
                 </div>
 
                 <Tab tabs={PESTANAS} active={pestana} onChange={setPestana} />
@@ -93,7 +98,7 @@ const FichaDetalle = () => {
                         ) : (
                             <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-sm min-w-[800px]">
+                                    <table className="w-full text-sm min-w-[700px]">
                                         <thead>
                                             <tr className="bg-muted border-b border-border">
                                                 {COLUMNAS.map((col) => (
@@ -120,21 +125,15 @@ const FichaDetalle = () => {
                                                             <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0">
                                                                 {a.nombre.charAt(0)}
                                                             </div>
-                                                            <div className="min-w-0">
-                                                                <p className="text-sm font-medium truncate">
-                                                                    {a.nombre} {a.apellido}
-                                                                </p>
-                                                                <p className="text-xs text-muted-foreground truncate">{a.correo}</p>
-                                                            </div>
+                                                            <span className="text-sm font-medium">
+                                                                {a.nombre} {a.apellido}
+                                                            </span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-3 text-xs text-muted-foreground">{a.identificacion}</td>
+                                                    <td className="px-4 py-3 text-xs text-muted-foreground">{a.correo}</td>
                                                     <td className="px-4 py-3 text-sm font-medium text-center">{a.tareas}</td>
-                                                    <td className="px-4 py-3 text-sm text-center font-bold text-primary">{a.aprobadas}</td>
                                                     <td className="px-4 py-3 text-sm text-center">
-                                                        <span className={a.entregadas > 0 ? 'text-[#F16C07] font-bold' : 'text-muted-foreground'}>
-                                                            {a.entregadas}
-                                                        </span>
+                                                        <span className="text-chip-bg font-bold">{a.aprobadas}</span>
                                                     </td>
                                                     <td className="px-4 py-3 text-sm text-center">
                                                         <span className={a.vencidas > 0 ? 'text-red-600 font-bold' : 'text-muted-foreground'}>
@@ -146,9 +145,14 @@ const FichaDetalle = () => {
                                                         {fecha(a.ultimoIngreso)}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        <Btn variant="outline" size="sm" onClick={() => navigate('/aprendices/' + a.id)}>
-                                                            Ver
-                                                        </Btn>
+                                                        <div className="flex gap-1">
+                                                            <Btn variant="outline" size="sm" onClick={() => navigate('/aprendices/' + a.id)}>
+                                                                Ver
+                                                            </Btn>
+                                                            <Btn size="sm" onClick={() => navigate('/actividades')}>
+                                                                Asignar
+                                                            </Btn>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -160,6 +164,44 @@ const FichaDetalle = () => {
                     </div>
                 )}
 
+                {pestana === 'Actividades' && (
+                    actividades.length === 0 ? (
+                        <EmptyState
+                            icon={ClipboardList}
+                            title="Sin actividades asignadas"
+                            description="Cuando le asignes una actividad a alguien de esta ficha, el avance del grupo aparece aquí."
+                        />
+                    ) : (
+                        <div className="space-y-3">
+                            {actividades.map((actividad) => (
+                                <Card key={actividad.actividadId}>
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/actividades/' + actividad.actividadId)}
+                                            className="font-semibold text-foreground text-left hover:underline truncate"
+                                        >
+                                            {actividad.actividad}
+                                        </button>
+                                        <StatusBadge status={actividad.estado} />
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1 bg-muted rounded-full h-2">
+                                            <div
+                                                className="h-2 rounded-full bg-primary transition-all"
+                                                style={{ width: (actividad.aprobadas / actividad.total) * 100 + '%' }}
+                                            />
+                                        </div>
+                                        <span className="text-xs text-muted-foreground shrink-0">
+                                            {actividad.aprobadas}/{actividad.total} aprobadas
+                                        </span>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    )
+                )}
+
                 {pestana === 'Lotes' && (
                     lotes.length === 0 ? (
                         <EmptyState
@@ -168,21 +210,20 @@ const FichaDetalle = () => {
                             description="Un lote pertenece a una ficha por su programa de formación. Los que no tienen ficha los ve todo el mundo y no salen aquí."
                         />
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {lotes.map((lote) => (
                                 <Card key={lote.id}>
                                     <div className="flex items-center gap-2 mb-2">
-                                        <div className="p-2 bg-primary/10 rounded-lg">
+                                        <div className="p-2 bg-icon-bg rounded-lg">
                                             <MapPin size={16} className="text-primary" />
                                         </div>
                                         <div className="min-w-0">
                                             <p className="font-semibold text-foreground truncate">{lote.nombre}</p>
-                                            <p className="text-xs text-muted-foreground">{lote.areaHa} ha</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {lote.areaHa} ha{lote.descripcion ? ' · ' + lote.descripcion : ''}
+                                            </p>
                                         </div>
                                     </div>
-                                    {lote.descripcion && (
-                                        <p className="text-xs text-muted-foreground mb-2">{lote.descripcion}</p>
-                                    )}
                                     <StatusBadge status={lote.estado} />
                                 </Card>
                             ))}
@@ -190,12 +231,55 @@ const FichaDetalle = () => {
                     )
                 )}
 
-                {ficha && (
-                    <p className="mt-6 text-xs text-muted-foreground">
-                        <Badge color="info">{ficha.tipo}</Badge>{' '}
-                        {fecha(ficha.fechaInicio)} — {fecha(ficha.fechaFin)}
-                    </p>
-                )}
+                <Modal open={codigoAbierto} onClose={() => setCodigoAbierto(false)} title="Código de invitación">
+                    <div className="text-center space-y-4">
+                        {errorCodigo && (
+                            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                {errorCodigo}
+                            </div>
+                        )}
+
+                        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6">
+                            {cargandoCodigo ? (
+                                <p className="text-sm text-muted-foreground">Cargando...</p>
+                            ) : codigo ? (
+                                <p className="text-4xl font-bold font-mono text-primary tracking-widest">{codigo.codigo}</p>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Esta ficha todavía no tiene código. Genera uno para que tus aprendices se registren directamente en ella.
+                                </p>
+                            )}
+                        </div>
+
+                        {codigo && (
+                            <>
+                                <p className="text-xs text-muted-foreground">Vence el {fecha(codigo.expiraEn)}</p>
+                                <Btn onClick={copiar} className="w-full justify-center">
+                                    <Copy size={14} />{copiado ? 'Copiado' : 'Copiar'}
+                                </Btn>
+                            </>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={generarCodigo}
+                            disabled={generandoCodigo}
+                            className="text-sm text-destructive hover:underline disabled:opacity-50"
+                        >
+                            {generandoCodigo
+                                ? 'Generando...'
+                                : codigo
+                                    ? 'Generar nuevo código'
+                                    : 'Generar código'}
+                        </button>
+
+                        {codigo && (
+                            <p className="text-xs text-muted-foreground">
+                                Al generar uno nuevo, el anterior deja de funcionar de inmediato.
+                            </p>
+                        )}
+                    </div>
+                </Modal>
             </div>
         </DashboardLayout>
     );
