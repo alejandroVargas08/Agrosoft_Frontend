@@ -61,6 +61,12 @@ const STATUS_MAP: Record<string, [BadgeColor, string]> = {
     with_images: ['progress', 'Con imágenes'],
     analyzing: ['progress', 'Analizando'], analyzed: ['vivid', 'Analizado'],
     error: ['danger', 'Error'],
+    // Estados de vuelo (el backend los guarda en mayuscula)
+    REGISTRADO: ['info', 'Registrado'],
+    CON_IMAGENES: ['progress', 'Con imágenes'],
+    ANALIZANDO: ['progress', 'Analizando'],
+    ANALIZADO: ['vivid', 'Analizado'],
+    ERROR: ['danger', 'Error'],
     attended: ['vivid', 'Atendida'], discarded: ['muted', 'Descartada'],
     // Asignaciones de actividades (el backend las guarda en mayuscula)
     ASIGNADA: ['info', 'Asignada'],
@@ -68,6 +74,10 @@ const STATUS_MAP: Record<string, [BadgeColor, string]> = {
     ENTREGADA: ['progress', 'Entregada'],
     APROBADA: ['vivid', 'Aprobada'],
     DEVUELTA: ['danger', 'Devuelta'],
+    // Actividades (el backend las guarda capitalizadas y con guion bajo)
+    Pendiente: ['danger', 'Pendiente'],
+    En_progreso: ['progress', 'En progreso'],
+    Completada: ['vivid', 'Completada'],
     // Novedades
     pendiente: ['danger', 'Pendiente'],
     atendida: ['vivid', 'Atendida'],

@@ -88,3 +88,33 @@ export interface ResumenAprendiz {
     costoHoras: number;
     ultimoIngreso: string | null;
 }
+
+/** Una actividad con el plazo encima, para el panel del instructor. */
+export interface ProximaFechaLimite {
+    actividadId: number;
+    actividad: string;
+    aprendices: number;
+    fechaLimite: string;
+    diasRestantes: number;
+}
+
+/** Un punto de la gráfica de tareas aprobadas por semana. */
+export interface AprobadasPorSemana {
+    semana: string;
+    aprobadas: number;
+}
+
+/** Una actividad de la ficha con el avance del grupo. */
+export interface ActividadDeFicha {
+    actividadId: number;
+    actividad: string;
+    estado: string;
+    aprobadas: number;
+    total: number;
+}
+
+/** El codigo con el que un aprendiz se registra y cae en la ficha. */
+export interface CodigoInvitacion {
+    codigo: string;
+    expiraEn: string;
+}
