@@ -10,7 +10,7 @@ import { ChecklistEntrega } from '../../components/instructor/ChecklistEntrega';
 const PESTANAS: PestanaTarea[] = ['Pendientes', 'Entregadas', 'Aprobadas'];
 
 const fecha = (valor: string | null) =>
-    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) : 'sin fecha';
+    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'sin fecha';
 
 /** El plazo en palabras, con el color según qué tan encima esté. */
 const plazo = (tarea: TareaPropia) => {

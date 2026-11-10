@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, ClipboardList, Droplets, FlaskConical, Lightbulb, RotateCcw, Star, Thermometer } from 'lucide-react';
+import { Calendar, Clock, ClipboardList, Droplets, Lightbulb, RotateCcw, Star, Sun, Thermometer } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, StatCard, StatusBadge } from '../../components/ui/AgroUI';
 import { InicioUsuario } from '../../hooks/useAuth';
 import { useMisTareas } from '../../hooks/instructor/useMisTareas';
 import { useSensores } from '../../hooks/sensores/useSensores';
 import { useNotificacionesContext } from '../../context/NotificacionesContext';
+import type { Sensor, TipoSensor } from '../../types/sensor';
 
 const hoyLargo = () =>
     new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -19,42 +20,71 @@ const haceCuanto = (iso: string) => {
 };
 
 /**
- * El Figma muestra una etiqueta genérica ("Temperatura"), no el nombre completo
- * del sensor, que aquí viene como "Temperatura - La Esperanza".
+ * El Figma arma la tarjeta del clima con cuatro medidas fijas y en este orden:
+ * temperatura, humedad, índice UV y luminosidad. El pH no está en esa tarjeta.
  */
-const etiquetaSensor = (nombre: string) => nombre.split(' - ')[0].trim();
+const MEDIDAS_DEL_CLIMA: TipoSensor[] = ['temperatura', 'humedad', 'uv', 'luminosidad'];
 
-const iconoSensor = (nombre: string) => {
-    const n = nombre.toLowerCase();
-    if (n.includes('temp')) return Thermometer;
-    if (n.includes('hum')) return Droplets;
-    if (n.includes('lumin') || n.includes('luz')) return Lightbulb;
-    if (n.includes('ph')) return FlaskConical;
-    return Thermometer;
+/** El Figma pone una etiqueta genérica, no el nombre del sensor. */
+const ETIQUETA: Partial<Record<TipoSensor, string>> = {
+    temperatura: 'Temperatura',
+    humedad: 'Humedad',
+    uv: 'Índice UV',
+    luminosidad: 'Luminosidad',
 };
 
-/** El Figma formatea el valor con su unidad pegada: 24,5°C, 68%, 38,5 klx */
-const valorSensor = (valor: number, unidad: string): string => {
-    const u = unidad.trim().toLowerCase();
-    const num = (v: number, decimales = 1) =>
-        v.toLocaleString('es-CO', { maximumFractionDigits: decimales });
+const ICONO: Partial<Record<TipoSensor, typeof Thermometer>> = {
+    temperatura: Thermometer,
+    humedad: Droplets,
+    uv: Sun,
+    luminosidad: Lightbulb,
+};
 
-    if (u === 'c' || u === '°c') return num(valor) + '°C';
-    if (u === '%') return num(valor) + '%';
-    if (u === 'lux') {
-        // Mismo formato y mismas palabras que el Figma
+/**
+ * El Figma pinta de ámbar el bombillo de la luminosidad. Al sol del UV intenta
+ * darle el color del nivel, pero le pasa una clase de Tailwind donde va un
+ * color CSS, así que no aplica: queda en el color heredado. Se deja igual.
+ */
+const COLOR_ICONO: Partial<Record<TipoSensor, string>> = {
+    temperatura: 'text-primary',
+    humedad: 'text-primary',
+    uv: '',
+    luminosidad: 'text-[#F59E0B]',
+};
+
+/** La escala del índice UV del Figma. */
+const nivelUV = (uv: number) =>
+    uv <= 2 ? 'Bajo' : uv <= 5 ? 'Moderado' : uv <= 7 ? 'Alto' : uv <= 10 ? 'Muy alto' : 'Extremo';
+
+const num = (valor: number, decimales = 1) =>
+    valor.toLocaleString('es-CO', { maximumFractionDigits: decimales });
+
+/**
+ * Cada medida lleva su propio formato, el mismo del Figma:
+ * 24,5°C · 68% · UV 9 · Muy alto · 88 klx · Pleno sol
+ */
+const valorSensor = (tipo: TipoSensor, valor: number, unidad: string): string => {
+    if (tipo === 'temperatura') return num(valor) + '°C';
+    if (tipo === 'humedad') return num(valor) + '%';
+    if (tipo === 'uv') return 'UV ' + num(valor, 0) + ' · ' + nivelUV(valor);
+    if (tipo === 'luminosidad') {
         const texto = valor >= 100_000
             ? Math.round(valor / 1000) + ' klx'
             : valor >= 1000
                 ? num(valor / 1000) + ' klx'
                 : num(valor, 0) + ' lx';
-        const calidad = valor <= 1000
-            ? 'Oscuro'
-            : valor <= 10_000
-                ? 'Nublado'
-                : valor <= 50_000
-                    ? 'Luz media'
-                    : 'Pleno sol';
+        // De noche el Figma dice "Noche", sin mirar el valor
+        const hora = new Date().getHours();
+        const esDeDia = hora >= 6 && hora < 18;
+        const calidad = !esDeDia
+            ? 'Noche'
+            : valor <= 1000
+                ? 'Oscuro'
+                : valor <= 10_000
+                    ? 'Nublado'
+                    : valor <= 50_000
+                        ? 'Luz media'
+                        : 'Pleno sol';
         return texto + ' · ' + calidad;
     }
     return num(valor, 2) + (unidad ? ' ' + unidad : '');
@@ -80,7 +110,27 @@ const InicioAprendiz = () => {
     const horas = todas.reduce((suma, t) => suma + (t.asignacion.horasTrabajadas ?? 0), 0);
 
     const ultimas = notificaciones.slice(0, 3);
-    const enLinea = sensores.filter((s) => s.enLinea && s.valor !== null).slice(0, 4);
+
+    // El Figma muestra una sola estación, la del lote del aprendiz. Se agrupa
+    // por lote y se toma el que tenga más medidas en línea: esa es la estación
+    // completa. Antes se tomaban los primeros cuatro sensores sin importar el
+    // lote, así que la tarjeta podía mezclar dos lotes distintos.
+    const porLote = new Map<number | null, Sensor[]>();
+    for (const sensor of sensores) {
+        if (!sensor.enLinea || sensor.valor === null) continue;
+        if (!MEDIDAS_DEL_CLIMA.includes(sensor.tipo)) continue;
+        const delLote = porLote.get(sensor.loteId) ?? [];
+        delLote.push(sensor);
+        porLote.set(sensor.loteId, delLote);
+    }
+    const estacion = [...porLote.values()].sort((a, b) => b.length - a.length)[0] ?? [];
+
+    // Una medida por tipo, en el orden del Figma
+    const medidas = MEDIDAS_DEL_CLIMA
+        .map((tipo) => estacion.find((sensor) => sensor.tipo === tipo))
+        .filter((sensor): sensor is Sensor => sensor !== undefined);
+
+    const uv = medidas.find((sensor) => sensor.tipo === 'uv');
 
     return (
         <DashboardLayout>
@@ -136,27 +186,36 @@ const InicioAprendiz = () => {
                     </Card>
                 )}
 
-                {enLinea.length > 0 && (
+                {medidas.length > 0 && (
                     <Card className="mb-4">
                         <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                             <Thermometer size={16} className="text-primary" />Clima ahora en tu lote
                         </h3>
                         <div className="flex items-center gap-3 flex-wrap">
-                            {enLinea.map((s) => {
-                                const Icono = iconoSensor(s.nombre);
+                            {medidas.map((sensor) => {
+                                const Icono = ICONO[sensor.tipo] ?? Thermometer;
                                 return (
-                                    <div key={s.id} className="flex items-center gap-2 p-3 bg-muted rounded-xl">
-                                        <Icono size={18} className="text-primary" />
+                                    <div key={sensor.id} className="flex items-center gap-2 p-3 bg-muted rounded-xl">
+                                        <Icono size={18} className={COLOR_ICONO[sensor.tipo]} />
                                         <div>
-                                            <p className="text-xs text-muted-foreground">{etiquetaSensor(s.nombre)}</p>
+                                            <p className="text-xs text-muted-foreground">{ETIQUETA[sensor.tipo]}</p>
                                             <p className="text-lg font-bold text-foreground">
-                                                {valorSensor(s.valor!, s.unidad)}
+                                                {valorSensor(sensor.tipo, sensor.valor!, sensor.unidad)}
                                             </p>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
+
+                        {uv !== undefined && uv.valor! >= 6 && (
+                            <div className="mt-3 p-3 bg-[#FFF3E0] border border-[#F16C07]/30 rounded-xl flex items-start gap-2">
+                                <Sun size={14} className="text-[#F16C07] shrink-0 mt-0.5" />
+                                <p className="text-xs text-[#E65100]">
+                                    UV alto: usa gorra, manga larga y bloqueador antes de salir al campo.
+                                </p>
+                            </div>
+                        )}
                     </Card>
                 )}
 

@@ -9,7 +9,7 @@ import type { EntregaPorRevisar } from '../../hooks/instructor/useRevision';
 type Decision = { entrega: EntregaPorRevisar; accion: 'aprobar' | 'devolver' };
 
 const fecha = (valor: string | null) =>
-    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) : '—';
+    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
 const Dato = ({ titulo, valor, destacado = false }: { titulo: string; valor: string; destacado?: boolean }) => (
     <div className="p-2 bg-muted rounded-lg">
