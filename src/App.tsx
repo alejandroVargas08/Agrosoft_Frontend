@@ -1,5 +1,6 @@
 import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { Register } from './pages/Register'
 import Login from './pages/Login'
 import InicioSegunRol from './pages/InicioSegunRol'
@@ -55,6 +56,18 @@ import ResultadoAnalisis from './pages/drones/ResultadoAnalisis'
 
 function App() {
   return (
+    <>
+      {/* Los avisos de confirmacion del diseño. Toma los colores del tema,
+          igual que el wrapper de sonner que trae el Figma. */}
+      <Toaster
+        position="bottom-right"
+        closeButton
+        style={{
+          '--normal-bg': 'var(--popover)',
+          '--normal-text': 'var(--popover-foreground)',
+          '--normal-border': 'var(--border)',
+        } as React.CSSProperties}
+      />
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -130,6 +143,7 @@ function App() {
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
+    </>
   )
 }
 

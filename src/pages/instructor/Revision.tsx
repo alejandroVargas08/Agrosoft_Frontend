@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CheckCircle, Image as Imagen, X } from 'lucide-react';
+import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Badge, Btn, Card, EmptyState, Modal, PageHeader, Textarea } from '../../components/ui/AgroUI';
 import { GaleriaEvidencias } from '../../components/instructor/GaleriaEvidencias';
@@ -50,8 +51,9 @@ const Revision = () => {
 
     const confirmar = () => {
         if (!decision) return;
-        if (esAprobar) aprobar(decision.entrega.asignacion.id, comentario, cerrar);
-        else devolver(decision.entrega.asignacion.id, comentario, cerrar);
+        const avisar = (mensaje: string) => () => { toast.success(mensaje); cerrar(); };
+        if (esAprobar) aprobar(decision.entrega.asignacion.id, comentario, avisar('Tarea aprobada'));
+        else devolver(decision.entrega.asignacion.id, comentario, avisar('Tarea devuelta'));
     };
 
     return (

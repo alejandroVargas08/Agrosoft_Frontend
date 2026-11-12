@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Calendar, ClipboardList, Leaf, MapPin } from 'lucide-react';
+import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Input, Modal, PageHeader, StatusBadge, Tab, Textarea } from '../../components/ui/AgroUI';
 import { useMisTareas } from '../../hooks/instructor/useMisTareas';
@@ -47,7 +48,10 @@ const MisTareas = () => {
 
     const confirmarEntrega = () => {
         if (!porEntregar || !horasValidas) return;
-        entregar(porEntregar.asignacion.id, Number(horas), comentario, cerrarEntrega);
+        entregar(porEntregar.asignacion.id, Number(horas), comentario, () => {
+            toast.success('Tarea entregada a tu instructor');
+            cerrarEntrega();
+        });
     };
 
     // Las pestañas llevan el conteo en la etiqueta, como en el diseño
@@ -173,7 +177,10 @@ const MisTareas = () => {
                             <div className="flex gap-3">
                                 <Btn
                                     disabled={procesando}
-                                    onClick={() => iniciar(porEmpezar.asignacion.id, () => setPorEmpezar(null))}
+                                    onClick={() => iniciar(porEmpezar.asignacion.id, () => {
+                                        toast.success('Tarea iniciada');
+                                        setPorEmpezar(null);
+                                    })}
                                     className="flex-1 justify-center"
                                 >
                                     {procesando ? 'Guardando...' : 'Empezar'}

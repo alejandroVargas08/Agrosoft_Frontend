@@ -7,7 +7,14 @@ import type { Ficha } from '../../types/instructor';
 /** Una ficha con los cuatro contadores del diseño. */
 export interface FichaConResumen extends Ficha {
     aprendices: number;
-    /** Asignadas, en progreso o devueltas: lo que el aprendiz todavía debe hacer. */
+    /**
+     * Asignadas, en progreso o devueltas: lo que el aprendiz todavía debe hacer.
+     *
+     * El diseño deja las devueltas por fuera de este contador, pero en Mis
+     * tareas las cuenta entre las pendientes. Se eligió lo segundo a propósito:
+     * una tarea devuelta es trabajo abierto, y así los dos contadores dicen lo
+     * mismo. No es un descuido, no lo "arregles" sin hablarlo.
+     */
     tareasActivas: number;
     porRevisar: number;
     novedades: number;

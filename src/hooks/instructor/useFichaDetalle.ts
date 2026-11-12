@@ -96,7 +96,8 @@ export function useFichaDetalle(fichaId: number) {
         codigo: codigoQuery.data ?? null,
         cargandoCodigo: codigoQuery.isLoading,
         generandoCodigo: generarCodigo.isPending,
-        generarCodigo: () => generarCodigo.mutate(),
+        generarCodigo: (alTerminar?: () => void) =>
+            generarCodigo.mutate(undefined, { onSuccess: () => alTerminar?.() }),
         errorCodigo: generarCodigo.error
             ? mensajeError(generarCodigo.error, 'No se pudo generar el código.')
             : '',

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle, ClipboardList, Copy, ExternalLink, GraduationCap, Key, MapPin, Users } from 'lucide-react';
+import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Modal, PageHeader, SearchBar, StatCard, StatusBadge, Tab } from '../../components/ui/AgroUI';
 import { useFichaDetalle } from '../../hooks/instructor/useFichaDetalle';
@@ -18,7 +19,6 @@ const FichaDetalle = () => {
     const fichaId = Number(id);
     const [pestana, setPestana] = useState(PESTANAS[0]);
     const [codigoAbierto, setCodigoAbierto] = useState(false);
-    const [copiado, setCopiado] = useState(false);
 
     const {
         ficha, aprendices, actividades, totales, lotes, busqueda, setBusqueda,
@@ -31,19 +31,17 @@ const FichaDetalle = () => {
         if (!codigo) return;
         const texto = 'Regístrate en AgroSoft con el código de invitación ' + codigo.codigo;
         if (navigator.share) {
-            void navigator.share({ text: texto }).catch(() => {});
+            void navigator.share({ text: texto }).then(() => toast('Compartido')).catch(() => {});
             return;
         }
         navigator.clipboard?.writeText(texto);
-        setCopiado(true);
-        window.setTimeout(() => setCopiado(false), 2000);
+        toast('Compartido');
     };
 
     const copiar = () => {
         if (!codigo) return;
         navigator.clipboard?.writeText(codigo.codigo);
-        setCopiado(true);
-        window.setTimeout(() => setCopiado(false), 2000);
+        toast.success('Código copiado');
     };
 
     if (fichaNoEncontrada) {
@@ -263,7 +261,7 @@ const FichaDetalle = () => {
                                 <p className="text-xs text-muted-foreground">Vence el {fecha(codigo.expiraEn)}</p>
                                 <div className="flex gap-2">
                                     <Btn onClick={copiar} className="flex-1 justify-center">
-                                        <Copy size={14} />{copiado ? 'Copiado' : 'Copiar'}
+                                        <Copy size={14} />Copiar
                                     </Btn>
                                     <Btn variant="outline" onClick={compartir} className="flex-1 justify-center">
                                         <ExternalLink size={14} />Compartir
@@ -274,7 +272,7 @@ const FichaDetalle = () => {
 
                         <button
                             type="button"
-                            onClick={generarCodigo}
+                            onClick={() => generarCodigo(() => toast.info('Nuevo código generado. El anterior ya no funciona.'))}
                             disabled={generandoCodigo}
                             className="text-sm text-destructive hover:underline disabled:opacity-50"
                         >

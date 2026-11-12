@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Leaf, Package, Wrench } from 'lucide-react';
+import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Badge, Btn, Card, EmptyState, Modal, PageHeader, Tab, Textarea } from '../../components/ui/AgroUI';
 import { useNovedadesInstructor } from '../../hooks/novedades/useNovedadesInstructor';
@@ -56,8 +57,9 @@ const NovedadesInstructor = () => {
 
     const confirmar = () => {
         if (!accion || !valida) return;
-        if (descarta) descartar(accion.novedad.id, respuesta.trim(), cerrar);
-        else atender(accion.novedad.id, respuesta.trim(), cerrar);
+        const avisar = (mensaje: string) => () => { toast.success(mensaje); cerrar(); };
+        if (descarta) descartar(accion.novedad.id, respuesta.trim(), avisar('Novedad descartada'));
+        else atender(accion.novedad.id, respuesta.trim(), avisar('Novedad marcada como atendida'));
     };
 
     const etiquetas = PESTANAS.map((p) => p + ' (' + conteos[p] + ')');

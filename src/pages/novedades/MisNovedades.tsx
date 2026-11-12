@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AlertCircle, Leaf, Package, Plus, Wrench } from 'lucide-react';
+import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Modal, PageHeader, Select, StatusBadge, Textarea } from '../../components/ui/AgroUI';
 import { useMisNovedades } from '../../hooks/novedades/useMisNovedades';
@@ -86,7 +87,10 @@ const MisNovedades = () => {
             ...(tipo === 'insumo_bajo' ? { insumoId: Number(insumoId) } : {}),
             ...(tipo === 'herramienta_danada' ? { nombreHerramienta } : {}),
             ...(tareaId ? { actividadId: Number(tareaId) } : {}),
-        }, cerrarModal);
+        }, () => {
+            toast.success('Tu instructor recibió la novedad');
+            cerrarModal();
+        });
     };
 
     const botonReportar = (
