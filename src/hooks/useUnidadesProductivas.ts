@@ -24,11 +24,13 @@ export function useUnidadesProductivas() {
     const error = errorTerritorio ?? (consultas.some((c) => c.error) ? 'No se pudieron cargar las unidades productivas' : null);
 
     // Ubicación: el sublote si lo tiene, si no el lote
+    // El área propia de la unidad manda; si no la tiene, la del sublote o el lote
     const ubicacionDe = (u: UnidadProductiva) => {
         const sublote = u.subLoteId ? sublotes.find((s) => s.id === u.subLoteId) : undefined;
-        if (sublote) return { nombre: sublote.nombre, areaM2: sublote.areaM2 };
         const lote = lotes.find((l) => l.id === u.loteId);
-        return { nombre: lote?.nombre ?? `Lote #${u.loteId}`, areaM2: lote?.areaM2 };
+        const nombre = sublote?.nombre ?? lote?.nombre ?? `Lote #${u.loteId}`;
+        const areaM2 = u.areaM2 ?? sublote?.areaM2 ?? lote?.areaM2;
+        return { nombre, areaM2 };
     };
 
     const unidadesVisibles = unidades
