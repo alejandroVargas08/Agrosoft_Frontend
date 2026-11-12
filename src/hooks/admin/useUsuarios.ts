@@ -56,7 +56,8 @@ export function useUsuarios() {
     });
 
     const refrescar = () => {
-        for (const clave of [['usuarios'], ['solicitudes-acceso'], ['aprendices'], ['programas-resumen'], ['mis-fichas']]) {
+        // ['admin'] cubre el contador del menú lateral y el panel del administrador
+        for (const clave of [['usuarios'], ['solicitudes-acceso'], ['aprendices'], ['programas-resumen'], ['mis-fichas'], ['admin']]) {
             queryClient.invalidateQueries({ queryKey: clave });
         }
     };
