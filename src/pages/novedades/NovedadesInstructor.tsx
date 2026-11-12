@@ -50,14 +50,14 @@ const NovedadesInstructor = () => {
         setRespuesta('');
     };
 
-    // El backend exige la respuesta en los dos casos: el aprendiz tiene que
-    // saber en qué quedó lo que reportó
-    const valida = respuesta.trim().length >= 3;
+    // Descartar obliga a explicar por qué; atender no, como en el diseño
+    const descarta = accion?.tipo === 'descartar';
+    const valida = !descarta || respuesta.trim().length >= 3;
 
     const confirmar = () => {
         if (!accion || !valida) return;
-        const guardar = accion.tipo === 'atender' ? atender : descartar;
-        guardar(accion.novedad.id, respuesta.trim(), cerrar);
+        if (descarta) descartar(accion.novedad.id, respuesta.trim(), cerrar);
+        else atender(accion.novedad.id, respuesta.trim(), cerrar);
     };
 
     const etiquetas = PESTANAS.map((p) => p + ' (' + conteos[p] + ')');
@@ -177,29 +177,26 @@ const NovedadesInstructor = () => {
                     {accion && (
                         <div className="space-y-3">
                             <Textarea
-                                label={accion.tipo === 'descartar' ? 'Motivo' : 'Respuesta'}
+                                label={descarta ? 'Motivo' : 'Respuesta (opcional)'}
                                 value={respuesta}
                                 onChange={setRespuesta}
                                 placeholder={
-                                    accion.tipo === 'descartar'
+                                    descarta
                                         ? 'Indica por qué se descarta esta novedad...'
                                         : 'Indica qué acciones se tomaron...'
                                 }
                                 rows={3}
-                                required
+                                required={descarta}
                             />
-                            <p className="text-xs text-muted-foreground">
-                                La respuesta es obligatoria: el aprendiz tiene que saber en qué quedó lo que reportó.
-                            </p>
 
                             <div className="flex gap-3">
                                 <Btn
-                                    variant={accion.tipo === 'descartar' ? 'danger' : 'primary'}
+                                    variant={descarta ? 'danger' : 'primary'}
                                     onClick={confirmar}
                                     disabled={!valida || procesando}
                                     className="flex-1 justify-center"
                                 >
-                                    {procesando ? 'Guardando...' : accion.tipo === 'descartar' ? 'Descartar' : 'Confirmar'}
+                                    {procesando ? 'Guardando...' : descarta ? 'Descartar' : 'Confirmar'}
                                 </Btn>
                                 <Btn variant="outline" onClick={cerrar} className="flex-1 justify-center">
                                     Cancelar
