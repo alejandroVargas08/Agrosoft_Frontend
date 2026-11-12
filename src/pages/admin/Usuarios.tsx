@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, Clock, GraduationCap, Key, MoreVertical, Plus, Shield, ToggleLeft, Trash2, Users, X } from 'lucide-react';
+import { Check, Clock, Edit2, GraduationCap, Key, MoreVertical, Plus, Shield, ToggleLeft, Trash2, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Badge, Btn, Card, EmptyState, Input, Modal, PageHeader, SearchBar, Select, StatusBadge, Textarea } from '../../components/ui/AgroUI';
@@ -7,7 +7,7 @@ import { useFichasACargo, useUsuarios } from '../../hooks/admin/useUsuarios';
 import type { Usuario } from '../../api/usuarios/usuarios';
 import type { ProgramaFormacion } from '../../api/programa_formacion/programasFormacion';
 
-type Accion = 'rol' | 'fichas' | 'estado' | 'contrasena' | 'rechazar' | 'eliminar';
+type Accion = 'perfil' | 'rol' | 'fichas' | 'estado' | 'contrasena' | 'rechazar' | 'eliminar';
 
 const ESTADOS = [
     { value: '', label: 'Todos los estados' },
@@ -112,7 +112,7 @@ const Usuarios = () => {
         usuarios, total, roles, programas, filtros, ponerFiltro,
         nombreRol, fichaDe, nombrePrograma,
         cargando, error, errorAccion, procesando,
-        cambiarEstado, cambiarRol, aprobar, rechazar, eliminar, cambiarFicha,
+        cambiarEstado, editarPerfil, cambiarRol, aprobar, rechazar, eliminar, cambiarFicha,
         restablecerContrasena, contrasenaGenerada, limpiarContrasena,
         crearUsuario, creando, contrasenaDelNuevo, limpiarNuevo,
     } = useUsuarios();
@@ -120,6 +120,9 @@ const Usuarios = () => {
     const [abierto, setAbierto] = useState<{ usuario: Usuario; accion: Accion } | null>(null);
     const [rolElegido, setRolElegido] = useState('');
     const [motivo, setMotivo] = useState('');
+    const [perfil, setPerfil] = useState({ nombre: '', apellido: '', correo: '', telefono: '' });
+    const ponerPerfil = (clave: keyof typeof perfil) => (valor: string) =>
+        setPerfil((p) => ({ ...p, [clave]: valor }));
 
     // El menú de tres puntos del diseño: uno abierto a la vez
     const [menuDe, setMenuDe] = useState<number | null>(null);
@@ -182,11 +185,18 @@ const Usuarios = () => {
         setAbierto({ usuario, accion });
         setRolElegido(String(usuario.rolId));
         setMotivo('');
+        setPerfil({
+            nombre: usuario.nombre,
+            apellido: usuario.apellido,
+            correo: usuario.correo,
+            telefono: usuario.telefono ?? '',
+        });
         limpiarContrasena();
         if (accion === 'contrasena') restablecerContrasena(usuario.id);
     };
 
     const TITULOS: Record<Accion, string> = {
+        perfil: 'Editar perfil',
         rol: 'Cambiar rol',
         fichas: 'Fichas a cargo',
         estado: 'Cambiar estado',
@@ -303,6 +313,10 @@ const Usuarios = () => {
 
                                             {menuDe === u.id && (
                                                 <div className="absolute right-0 top-8 z-20 w-56 bg-white border border-border rounded-xl shadow-lg py-1">
+                                                    <Opcion icono={Edit2} onClick={() => { setMenuDe(null); abrir(u, 'perfil'); }}>
+                                                        Editar perfil
+                                                    </Opcion>
+
                                                     {u.estado === 'pendiente' && (
                                                         <>
                                                             <Opcion icono={Check} onClick={() => { setMenuDe(null); aprobar(u.id); }}>
@@ -362,6 +376,41 @@ const Usuarios = () => {
                                 </strong>{' '}
                                 · {abierto.usuario.correo}
                             </p>
+
+                            {abierto.accion === 'perfil' && (() => {
+                                const datos = {
+                                    nombre: perfil.nombre.trim(),
+                                    apellido: perfil.apellido.trim(),
+                                    correo: perfil.correo.trim(),
+                                    telefono: perfil.telefono.trim(),
+                                };
+                                const completo = datos.nombre !== '' && datos.apellido !== '' && datos.correo.includes('@');
+                                const u = abierto.usuario;
+                                const cambio =
+                                    datos.nombre !== u.nombre || datos.apellido !== u.apellido ||
+                                    datos.correo !== u.correo || datos.telefono !== (u.telefono ?? '');
+                                return (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Input label="Nombre" value={perfil.nombre} onChange={ponerPerfil('nombre')} required />
+                                            <Input label="Apellido" value={perfil.apellido} onChange={ponerPerfil('apellido')} required />
+                                        </div>
+                                        <Input label="Correo electrónico" type="email" value={perfil.correo} onChange={ponerPerfil('correo')} required autoComplete="off" />
+                                        <Input label="Teléfono" value={perfil.telefono} onChange={ponerPerfil('telefono')} autoComplete="off" />
+                                        {errorAccion && <p className="text-sm text-red-600">{errorAccion}</p>}
+                                        <div className="flex gap-3">
+                                            <Btn
+                                                disabled={procesando || !completo || !cambio}
+                                                onClick={() => editarPerfil(u.id, datos, () => { cerrar(); toast.success('Perfil actualizado'); })}
+                                                className="flex-1 justify-center"
+                                            >
+                                                {procesando ? 'Guardando...' : 'Guardar'}
+                                            </Btn>
+                                            <Btn variant="outline" onClick={cerrar} className="flex-1 justify-center">Cancelar</Btn>
+                                        </div>
+                                    </>
+                                );
+                            })()}
 
                             {abierto.accion === 'rol' && (
                                 <>

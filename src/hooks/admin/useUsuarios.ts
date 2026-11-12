@@ -141,6 +141,8 @@ export function useUsuarios() {
                 { id: usuario.id, data: { estado: usuario.estado === 'activo' ? 'inactivo' : 'activo' } },
                 { onSuccess: () => alTerminar?.() },
             ),
+        editarPerfil: (id: number, data: ActualizarUsuario, alTerminar?: () => void) =>
+            actualizarMutation.mutate({ id, data }, { onSuccess: () => alTerminar?.() }),
         cambiarRol: (id: number, rolId: number, alTerminar?: () => void) =>
             rolMutation.mutate({ id, rolId }, { onSuccess: () => alTerminar?.() }),
         cambiarPrograma: (id: number, programaId: number | null, alTerminar?: () => void) =>
