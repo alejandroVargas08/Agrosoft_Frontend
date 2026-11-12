@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Image as Imagen, X } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Badge, Btn, Card, EmptyState, Modal, PageHeader, Textarea } from '../../components/ui/AgroUI';
+import { GaleriaEvidencias } from '../../components/instructor/GaleriaEvidencias';
 import { useRevision } from '../../hooks/instructor/useRevision';
 import type { EntregaPorRevisar } from '../../hooks/instructor/useRevision';
 
@@ -10,6 +10,10 @@ type Decision = { entrega: EntregaPorRevisar; accion: 'aprobar' | 'devolver' };
 
 const fecha = (valor: string | null) =>
     valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
+/** El diseño encabeza el detalle con el nombre de la actividad, no con su tipo. */
+const tituloDe = (entrega: EntregaPorRevisar) =>
+    entrega.asignacion.actividad?.nombre ?? entrega.actividad;
 
 const Dato = ({ titulo, valor, destacado = false }: { titulo: string; valor: string; destacado?: boolean }) => (
     <div className="p-2 bg-muted rounded-lg">
@@ -19,7 +23,6 @@ const Dato = ({ titulo, valor, destacado = false }: { titulo: string; valor: str
 );
 
 const Revision = () => {
-    const navigate = useNavigate();
     const {
         entregas, total, fichasDisponibles, ficha, setFicha, soloVencidas, setSoloVencidas,
         cargando, error, errorAccion, procesando, aprobar, devolver,
@@ -27,6 +30,14 @@ const Revision = () => {
 
     const [decision, setDecision] = useState<Decision | null>(null);
     const [comentario, setComentario] = useState('');
+    const [detalle, setDetalle] = useState<EntregaPorRevisar | null>(null);
+
+    // Desde el detalle se decide sin volver a la lista: se cierra y se abre el modal
+    const decidirDesdeDetalle = (entrega: EntregaPorRevisar, accion: 'aprobar' | 'devolver') => {
+        setDetalle(null);
+        setDecision({ entrega, accion });
+        setComentario('');
+    };
 
     const cerrar = () => {
         setDecision(null);
@@ -119,6 +130,12 @@ const Revision = () => {
                                             <div>
                                                 <p className="font-semibold text-foreground">{entrega.aprendiz}</p>
                                                 <p className="text-xs text-muted-foreground">Ficha {entrega.ficha}</p>
+                                                {entrega.fotos.length > 0 && (
+                                                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#EBF3ED] px-2 py-1 text-[11px] font-semibold text-[#2D7A3E]">
+                                                        <Imagen size={12} />
+                                                        {entrega.fotos.length} foto{entrega.fotos.length !== 1 ? 's' : ''}
+                                                    </span>
+                                                )}
                                             </div>
                                             {entrega.entregadaTarde && <Badge color="warning">Tarde</Badge>}
                                         </div>
@@ -143,16 +160,14 @@ const Revision = () => {
                                     )}
 
                                     <div className="flex gap-2">
-                                        {asignacion.actividad && (
-                                            <Btn
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => navigate('/actividades/' + asignacion.actividad!.id)}
-                                                className="flex-1 justify-center"
-                                            >
-                                                Ver detalle
-                                            </Btn>
-                                        )}
+                                        <Btn
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setDetalle(entrega)}
+                                            className="flex-1 justify-center"
+                                        >
+                                            Ver detalle
+                                        </Btn>
                                         <Btn
                                             size="sm"
                                             onClick={() => { setDecision({ entrega, accion: 'aprobar' }); setComentario(''); }}
@@ -172,6 +187,70 @@ const Revision = () => {
                                 </Card>
                             );
                         })}
+                    </div>
+                )}
+
+                {detalle && (
+                    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+                        <div className="absolute inset-0 bg-black/40" onClick={() => setDetalle(null)} />
+                        <div className="relative max-h-[94vh] w-full overflow-y-auto rounded-t-2xl bg-card shadow-2xl sm:max-w-3xl sm:rounded-2xl">
+                            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card p-4">
+                                <div>
+                                    <h3 className="font-semibold text-foreground">{tituloDe(detalle)}</h3>
+                                    <p className="text-xs text-muted-foreground">
+                                        {detalle.aprendiz} · Ficha {detalle.ficha}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setDetalle(null)}
+                                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
+                                    aria-label="Cerrar detalle"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-5 p-4 sm:p-5">
+                                <GaleriaEvidencias
+                                    fotos={detalle.fotos}
+                                    datos={{
+                                        aprendiz: detalle.aprendiz,
+                                        actividad: tituloDe(detalle),
+                                        fecha: detalle.asignacion.entregadaEn
+                                            ? fecha(detalle.asignacion.entregadaEn)
+                                            : 'Sin fecha',
+                                    }}
+                                />
+
+                                {detalle.asignacion.comentarioAprendiz && (
+                                    <div className="rounded-xl border border-border bg-muted/50 p-3">
+                                        <p className="mb-1 text-xs font-semibold text-foreground">
+                                            Comentario del aprendiz:
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {detalle.asignacion.comentarioAprendiz}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3 border-t border-border pt-4">
+                                    <Btn
+                                        onClick={() => decidirDesdeDetalle(detalle, 'aprobar')}
+                                        className="flex-1 justify-center"
+                                    >
+                                        Aprobar
+                                    </Btn>
+                                    <Btn
+                                        variant="danger"
+                                        onClick={() => decidirDesdeDetalle(detalle, 'devolver')}
+                                        className="flex-1 justify-center"
+                                    >
+                                        Devolver
+                                    </Btn>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -204,7 +283,7 @@ const Revision = () => {
                                 required={!esAprobar}
                                 placeholder={
                                     esAprobar
-                                        ? 'Buen trabajo, bien documentado...'
+                                        ? 'Excelente trabajo, bien documentado...'
                                         : 'Falta la foto del área fertilizada...'
                                 }
                             />

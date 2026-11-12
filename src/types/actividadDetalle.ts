@@ -48,10 +48,17 @@ export interface ActividadEvidencia {
     actividadId: number;
     descripcion: string | null;
     imagenes: string[];
+    /**
+     * La entrega del aprendiz a la que pertenece. Null cuando la evidencia es
+     * de la actividad en general: las que sube el instructor, y las que ya
+     * existian antes de que se separaran por entrega.
+     */
+    asignacionId: number | null;
 }
 export interface CrearActividadEvidenciaPayload {
     descripcion?: string;
     imagenes?: string[];
+    asignacionId?: number;
 }
 
 

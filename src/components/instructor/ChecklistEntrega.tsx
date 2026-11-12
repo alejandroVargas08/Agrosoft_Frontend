@@ -7,14 +7,23 @@ import { actividadInsumoUsoApi } from '../../api/actividades/actividadInsumoUso'
  * La lista de verificación del modal de entrega.
  *
  * En el Figma los dos puntos están escritos a mano (uno hecho, otro no). Aquí
- * se consultan de verdad: las evidencias y los insumos usados de la actividad.
+ * se consultan de verdad: las evidencias que subió el aprendiz en esta entrega
+ * y los insumos usados de la actividad.
  */
-export function ChecklistEntrega({ actividadId }: { actividadId: number | undefined }) {
+export function ChecklistEntrega({
+    actividadId,
+    asignacionId,
+}: {
+    actividadId: number | undefined;
+    asignacionId: number;
+}) {
     const [evidencias, usos] = useQueries({
         queries: [
             {
-                queryKey: ['actividad-evidencias', actividadId],
-                queryFn: async () => (await ActividadEvidenciaApi.listar(actividadId!)).data,
+                // Las suyas, no las de todos los que tienen esta actividad
+                queryKey: ['actividad-evidencias', actividadId, asignacionId],
+                queryFn: async () =>
+                    (await ActividadEvidenciaApi.listar(actividadId!, asignacionId)).data,
                 enabled: actividadId !== undefined,
             },
             {

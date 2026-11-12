@@ -189,7 +189,10 @@ const MisTareas = () => {
                 <Modal open={!!porEntregar} onClose={cerrarEntrega} title="Entregar tarea">
                     {porEntregar && (
                         <div className="space-y-4">
-                            <ChecklistEntrega actividadId={porEntregar.asignacion.actividad?.id} />
+                            <ChecklistEntrega
+                                actividadId={porEntregar.asignacion.actividad?.id}
+                                asignacionId={porEntregar.asignacion.id}
+                            />
 
                             <div className="p-3 bg-[#FFF3E0] border border-[#F16C07]/30 rounded-xl flex items-start gap-2">
                                 <AlertCircle size={14} className="text-[#F16C07] shrink-0 mt-0.5" />
