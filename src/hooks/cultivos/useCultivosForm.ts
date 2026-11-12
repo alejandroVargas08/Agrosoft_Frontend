@@ -48,8 +48,6 @@ export function useCultivoForm({ isModalOpen, onSucces} : UseCultivoFormProps) {
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Datos para el formulario', form);
-        console.log('Lote Id', loteIdNum);
 
         if (!loteIdNum) return;
 
@@ -61,6 +59,8 @@ export function useCultivoForm({ isModalOpen, onSucces} : UseCultivoFormProps) {
         loteId: loteIdNum,
         subLoteId: form.subLoteId ? Number(form.subLoteId) : undefined,
         fechaSiembra: form.fechaSiembra, 
+        ...(form.fechaFinalizacion ? { fechaFinalizacion: form.fechaFinalizacion } : {}),
+        ...(form.costoEstimado !== '' ? { costoEstimado: Number(form.costoEstimado) } : {}),
         };
         crearMutation.mutate(payload);
     };

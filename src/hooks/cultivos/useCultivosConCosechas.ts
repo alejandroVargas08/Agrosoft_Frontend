@@ -81,7 +81,8 @@ export function useCultivosConCosechas(loteFiltroId?: number) {
                     ...c,
                     nombreLote: nombreLote.get(c.loteId) ?? 'Lote #' + c.loteId,
                     nombreSubLote: c.subLoteId !== null ? nombreSubLote.get(c.subLoteId) ?? null : null,
-                    areaM2: areaLote.get(c.loteId) ?? null,
+                    // El área propia del cultivo manda; si no la tiene, la del lote
+                    areaM2: c.areaM2 ?? areaLote.get(c.loteId) ?? null,
                     cosechas,
                     totalKg: cosechas.reduce((s, h) => s + (h.cantidadKg || 0), 0),
                     ultimaCosecha: cosechas

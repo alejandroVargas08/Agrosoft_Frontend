@@ -45,7 +45,6 @@ import SensoresPage from './pages/SensorPage'
 import Actividades from './pages/actividades/actividades'
 import ActividadDetalle from './pages/actividades/ActividadDetalle'
 import Cultivos from './pages/cultivos/cultivos'
-import CultivoDetalle from './pages/cultivos/CultivoDetalle'
 import Notificaciones from './pages/notificaciones/Notificaciones'
 import LayoutConNotificaciones from './components/layout/LayoutConNotificaciones'
 import Historial from './pages/historial/historial'
@@ -112,7 +111,7 @@ function App() {
         <Route path="/mis-novedades" element={<MisNovedades />} />
         <Route path="/novedades" element={<NovedadesInstructor />} />
         <Route path="/cultivos" element={<Cultivos />} />
-        <Route path="/cultivos/:id" element={<CultivoDetalle />} />
+        <Route path="/cultivos/:id" element={<Cultivos />} />
         <Route path="/historial" element={<Historial />} />
         <Route path="/unidades-productivas" element={<UnidadesProductivas />} />
         <Route path="/unidades-productivas/nueva" element={<NuevaUnidadProductiva />} />

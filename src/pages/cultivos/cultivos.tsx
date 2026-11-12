@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Calendar, Crop, Leaf, MapPin, Plus, Scale, X } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, EmptyState, Input, Modal, PageHeader, Select, StatusBadge } from '../../components/ui/AgroUI';
 import { useCultivosConCosechas } from '../../hooks/cultivos/useCultivosConCosechas';
 import { useCultivoForm } from '../../hooks/cultivos/useCultivosForm';
+import PanelCultivo from '../../components/cultivos/PanelCultivo';
+import RegistrarCosechaModal from '../../components/cultivos/RegistrarCosechaModal';
 import { usePermisos } from '../../hooks/permisos/usePermisos';
 import type { Lote, SubLote } from '../../types/territorio';
 
@@ -15,8 +18,11 @@ const TIPOS_CULTIVO = ['Tomate', 'Maíz', 'Lechuga', 'Papa', 'Cebolla', 'Pimient
 
 const numero = (valor: number) => new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(valor || 0);
 
+// Fechas sin hora: llegan a medianoche UTC y en Colombia saldrían un día antes
 const fecha = (valor?: string | null) =>
-    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—';
+
+const UNIDAD: Record<string, string> = { kg: 'kg', toneladas: 'Toneladas', unidades: 'Unidades', bultos: 'Bultos', cajas: 'Cajas' };
 
 // Colores por tipo de cultivo. El diseño los usa SOLO en la tabla de cosechas:
 // las tarjetas de cultivo siempre llevan el verde.
@@ -40,12 +46,13 @@ type Pestana = 'Cultivo' | 'Cosecha';
 
 const Cultivos = () => {
     const navigate = useNavigate();
+    // /cultivos/:id abre el panel lateral del cultivo sobre la lista
+    const { id } = useParams<{ id: string }>();
     const { puede } = usePermisos();
     const [pestana, setPestana] = useState<Pestana>('Cultivo');
     const [filtroLote, setFiltroLote] = useState('');
     const [modalNuevo, setModalNuevo] = useState(false);
     const [modalCosecha, setModalCosecha] = useState(false);
-    const [cultivoCosecha, setCultivoCosecha] = useState('');
 
     const {
         cultivos, cosechas, lotes, cargando, error,
@@ -55,7 +62,7 @@ const Cultivos = () => {
         form, lotes: lotesForm, sublotes, handleFormChange, handleCreateSubmit, creando, errorForm,
     } = useCultivoForm({
         isModalOpen: modalNuevo,
-        onSucces: () => setModalNuevo(false),
+        onSucces: () => { setModalNuevo(false); toast.success('Cultivo registrado'); },
     });
 
     // Adaptador: el hook espera un evento, los campos de AgroUI entregan el valor
@@ -72,13 +79,6 @@ const Cultivos = () => {
         () => [...cosechas].sort((a, b) => (b.fechaCosecha ?? '').localeCompare(a.fechaCosecha ?? '')),
         [cosechas],
     );
-
-    // El formulario completo de cosecha vive en el detalle del cultivo:
-    // aquí solo se elige a cuál y se navega con ?cosecha=1 para que se abra solo
-    const irARegistrarCosecha = () => {
-        if (!cultivoCosecha) return;
-        navigate('/cultivos/' + cultivoCosecha + '?cosecha=1');
-    };
 
     const puedeGestionar = puede(GESTIONAR);
 
@@ -259,8 +259,8 @@ const Cultivos = () => {
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-3 text-xs whitespace-nowrap text-muted-foreground">{fecha(h.fechaCosecha)}</td>
-                                                        <td className="px-4 py-3 text-xs font-bold text-foreground">{numero(h.cantidadKg)}</td>
-                                                        <td className="px-4 py-3 text-xs text-muted-foreground">kg</td>
+                                                        <td className="px-4 py-3 text-xs font-bold text-foreground">{numero(h.cantidad ?? h.cantidadKg)}</td>
+                                                        <td className="px-4 py-3 text-xs text-muted-foreground">{UNIDAD[h.unidad ?? 'kg'] ?? h.unidad}</td>
                                                         <td className="px-4 py-3">
                                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${COLOR_CALIDAD[h.calidad] ?? 'bg-muted text-muted-foreground'}`}>
                                                                 {ETIQUETA_CALIDAD[h.calidad] ?? h.calidad}
@@ -317,12 +317,27 @@ const Cultivos = () => {
                                 ]}
                             />
                         )}
+                        <div className="grid grid-cols-2 gap-3">
+                            <Input
+                                label="Fecha siembra"
+                                type="date"
+                                required
+                                value={form.fechaSiembra}
+                                onChange={campo('fechaSiembra')}
+                            />
+                            <Input
+                                label="Fecha finalización"
+                                type="date"
+                                value={form.fechaFinalizacion}
+                                onChange={campo('fechaFinalizacion')}
+                            />
+                        </div>
                         <Input
-                            label="Fecha siembra"
-                            type="date"
-                            required
-                            value={form.fechaSiembra}
-                            onChange={campo('fechaSiembra')}
+                            label="Costo total estimado (COP)"
+                            type="number"
+                            value={form.costoEstimado}
+                            onChange={campo('costoEstimado')}
+                            placeholder="2800000"
                         />
                         <div className="flex gap-3 pt-2">
                             <Btn type="submit" disabled={creando} className="flex-1 justify-center">
@@ -333,29 +348,9 @@ const Cultivos = () => {
                     </form>
                 </Modal>
 
-                {/* Elegir cultivo para registrar la cosecha */}
-                <Modal open={modalCosecha} onClose={() => setModalCosecha(false)} title="Registrar cosecha">
-                    <div className="flex flex-col gap-3">
-                        <Select
-                            label="¿En qué cultivo?"
-                            value={cultivoCosecha}
-                            onChange={setCultivoCosecha}
-                            options={[
-                                { value: '', label: 'Seleccione un cultivo' },
-                                ...cultivos
-                                    .filter((c) => c.estado === 'activo')
-                                    .map((c) => ({ value: String(c.id), label: `${c.nombreCultivo} · ${c.nombreLote}` })),
-                            ]}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            El registro se completa en la ficha del cultivo, donde está el producto y los costos.
-                        </p>
-                        <div className="flex justify-end gap-2 pt-2">
-                            <Btn variant="outline" onClick={() => setModalCosecha(false)}>Cancelar</Btn>
-                            <Btn onClick={irARegistrarCosecha} disabled={!cultivoCosecha}>Continuar</Btn>
-                        </div>
-                    </div>
-                </Modal>
+                <RegistrarCosechaModal open={modalCosecha} onClose={() => setModalCosecha(false)} cultivos={cultivos} />
+
+                {id && <PanelCultivo cultivoId={Number(id)} onClose={() => navigate('/cultivos')} />}
             </div>
         </DashboardLayout>
     );
