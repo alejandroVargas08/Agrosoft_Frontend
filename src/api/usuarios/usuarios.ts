@@ -69,6 +69,23 @@ export interface ContrasenaRestablecida {
     contrasenaTemporal: string | null;
 }
 
+/** El alta que hace el administrador: elige el rol y el usuario queda activo. */
+export interface CrearUsuarioAdmin {
+    nombre: string;
+    apellido: string;
+    correo: string;
+    identificacion: string;
+    telefono?: string;
+    rolId: number;
+    programaFormacionId?: number;
+}
+
+/** La contraseña viene una sola vez, porque no se manda correo. */
+export interface UsuarioCreadoPorAdmin {
+    usuario: Usuario;
+    contrasenaTemporal: string;
+}
+
 export const usuarioApi = {
     listar: () => api.get<Usuario[]>('/usuarios'),
     // Solo el propio usuario o un administrador
@@ -83,6 +100,8 @@ export const usuarioApi = {
     cambiarRol: (id: number, rolId: number) => api.patch<Usuario>(`/usuarios/${id}/rol`, { rolId }),
     cambiarPrograma: (id: number, programaFormacionId: number | null) =>
         api.patch<Usuario>(`/usuarios/${id}/programa`, { programaFormacionId }),
+    crearComoAdmin: (data: CrearUsuarioAdmin) =>
+        api.post<UsuarioCreadoPorAdmin>('/usuarios/admin', data),
     restablecerContrasena: (id: number, nuevaContrasena?: string) =>
         api.patch<ContrasenaRestablecida>(
             `/usuarios/${id}/contrasena`,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { usuarioApi, type ActualizarUsuario, type Usuario } from '../../api/usuarios/usuarios';
+import { usuarioApi, type ActualizarUsuario, type CrearUsuarioAdmin, type Usuario } from '../../api/usuarios/usuarios';
 import { rolesApi } from '../../api/usuarios/roles';
 import { fichasACargoApi, programasFormacionApi } from '../../api/programa_formacion/programasFormacion';
 import { solicitudesApi } from '../../api/usuarios/solicitudes';
@@ -100,6 +100,11 @@ export function useUsuarios() {
     });
 
     // Esta no invalida nada: lo que importa es la contraseña que devuelve
+    const crearMutation = useMutation({
+        mutationFn: (data: CrearUsuarioAdmin) => usuarioApi.crearComoAdmin(data),
+        onSuccess: refrescar,
+    });
+
     const contrasenaMutation = useMutation({
         mutationFn: (id: number) => usuarioApi.restablecerContrasena(id),
     });
@@ -147,6 +152,12 @@ export function useUsuarios() {
             eliminarMutation.mutate(id, { onSuccess: () => alTerminar?.() }),
         cambiarFicha: (usuarioId: number, programaId: number, quitar: boolean) =>
             fichasMutation.mutate({ usuarioId, programaId, quitar }),
+        crearUsuario: (data: CrearUsuarioAdmin, alTerminar?: () => void) =>
+            crearMutation.mutate(data, { onSuccess: () => alTerminar?.() }),
+        creando: crearMutation.isPending,
+        /** La contraseña del usuario recién creado. Se ve una sola vez. */
+        contrasenaDelNuevo: crearMutation.data?.data.contrasenaTemporal ?? null,
+        limpiarNuevo: () => crearMutation.reset(),
         restablecerContrasena: (id: number) => contrasenaMutation.mutate(id),
         contrasenaGenerada: contrasenaMutation.data?.data.contrasenaTemporal ?? null,
         limpiarContrasena: () => contrasenaMutation.reset(),
