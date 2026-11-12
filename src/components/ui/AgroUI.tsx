@@ -290,10 +290,13 @@ interface InputProps {
     required?: boolean;
     className?: string;
     step?: string;
+    /** Para campos de credenciales que no son el login: sin esto Chrome mete
+     *  ahí el usuario y la contraseña guardados del sitio. */
+    autoComplete?: string;
 }
 
 export const Input = ({
-    label, value, onChange, type = 'text', placeholder = '', required = false, className = '', step,
+    label, value, onChange, type = 'text', placeholder = '', required = false, className = '', step, autoComplete,
 }: InputProps) => (
     <div className={`flex flex-col gap-1 ${className}`}>
         {label && (
@@ -308,6 +311,7 @@ export const Input = ({
             placeholder={placeholder}
             required={required}
             step={step}
+            autoComplete={autoComplete}
             className={FIELD_CLASS}
         />
     </div>
