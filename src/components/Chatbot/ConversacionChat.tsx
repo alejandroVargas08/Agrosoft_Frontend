@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ImagePlus, Sparkles, X, Send } from 'lucide-react';
+import { Bot, ImagePlus, Sparkles, X, Send } from 'lucide-react';
+import { toast } from 'sonner';
 import { crearConversacion, obtenerMensajes, enviarMensaje, enviarImagenes } from '../../services/iaService';
 import type { MensajeIA } from '../../services/iaService';
 import Agrosoft from '../../assets/img/agrosoft.png';
@@ -12,6 +13,35 @@ interface ConversacionChatProps {
 }
 
 const MAX_IMAGENES = 5;
+const MAX_BYTES = 5 * 1024 * 1024;
+
+/** Lo que se ve en pantalla: las fotos recién enviadas se muestran con una URL
+ *  local, porque el historial del backend solo guarda cuántas fueron. */
+type Mensaje = MensajeIA & { imagenesLocales?: string[] };
+
+// Las respuestas traen **negritas** en markdown, como en el diseño
+const conNegritas = (texto: string) =>
+  texto.split(/(\*\*[^*]+\*\*)/g).map((parte, i) =>
+    parte.startsWith('**') && parte.endsWith('**')
+      ? <strong key={i}>{parte.slice(2, -2)}</strong>
+      : <span key={i}>{parte}</span>,
+  );
+
+const hora = (iso: string) =>
+  new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+
+/** Los tres puntos del diseño mientras AgroBot responde */
+const Escribiendo = () => (
+  <div className="flex items-center gap-1 px-1 py-0.5">
+    {[0, 1, 2].map((i) => (
+      <div
+        key={i}
+        className="w-2 h-2 rounded-full bg-primary/40 animate-bounce"
+        style={{ animationDelay: `${i * 0.2}s` }}
+      />
+    ))}
+  </div>
+);
 
 export function ConversacionChat({
   usuarioId,
@@ -19,7 +49,7 @@ export function ConversacionChat({
   conversacionId,
   onConversacionCreada,
 }: ConversacionChatProps) {
-  const [mensajes, setMensajes] = useState<MensajeIA[]>([]);
+  const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
   const [texto, setTexto] = useState('');
   const [archivos, setArchivos] = useState<File[]>([]);
@@ -61,7 +91,10 @@ export function ConversacionChat({
 
   function agregarArchivos(nuevos: FileList | null) {
     if (!nuevos) return;
-    setArchivos((prev) => [...prev, ...Array.from(nuevos)].slice(0, MAX_IMAGENES));
+    const lista = Array.from(nuevos);
+    const validas = lista.filter((f) => f.size <= MAX_BYTES);
+    if (validas.length < lista.length) toast.error('Máximo 5 MB');
+    setArchivos((prev) => [...prev, ...validas].slice(0, MAX_IMAGENES));
   }
 
   function quitarArchivo(index: number) {
@@ -89,21 +122,25 @@ export function ConversacionChat({
     setEnviando(true);
     setError('');
 
-    const mensajeOptimista: MensajeIA = {
+    const mensajeOptimista: Mensaje = {
       id: Date.now(),
       rol: 'user',
       contenido: textoFinal,
       tieneImagenes: archivos.length > 0,
       cantidadImagenes: archivos.length,
       creadoEn: new Date().toISOString(),
+      imagenesLocales: archivos.map((f) => URL.createObjectURL(f)),
     };
     setMensajes((prev) => [...prev, mensajeOptimista]);
     setTexto('');
     const archivosAEnviar = archivos;
     setArchivos([]);
 
+    // La conversación de este envío: en una nueva, la que se acaba de crear
+    let idEnvio: number | null = conversacionOrigen;
     try {
       const id = await asegurarConversacion();
+      idEnvio = id;
       let respuesta: string;
       if (archivosAEnviar.length > 0) {
         respuesta = await enviarImagenes(
@@ -130,9 +167,12 @@ export function ConversacionChat({
           creadoEn: new Date().toISOString(),
         },
       ]);
-    } catch {
-      if (conversacionIdRef.current === conversacionOrigen) {
-        setError('Ocurrió un error inesperado.');
+    } catch (e) {
+      // Antes se comparaba con la conversación de origen, que en una nueva es
+      // null: el error se descartaba y no se veía nada
+      if (conversacionIdRef.current === idEnvio) {
+        const detalle = e instanceof Error ? e.message.replace(/^Error \d+:\s*/, '') : '';
+        setError(detalle && !/internal server error/i.test(detalle) ? detalle : 'AgroBot no pudo responder. Intenta de nuevo.');
       }
     } finally {
       setEnviando(false);
@@ -171,29 +211,51 @@ export function ConversacionChat({
             {cargandoHistorial && (
               <div className="text-center text-sm text-muted-foreground py-6">Cargando conversación...</div>
             )}
-            {mensajes.map((m) => (
-              <div key={m.id} className={`flex ${m.rol === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-line shadow-sm ${
-                    m.rol === 'user'
-                      ? 'bg-primary text-white rounded-br-sm'
-                      : 'bg-muted text-foreground rounded-bl-sm'
-                  }`}
-                >
-                  {m.tieneImagenes && (
-                    <div className={`text-xs mb-1 ${m.rol === 'user' ? 'text-white/70' : 'text-primary'}`}>
-                      📎 {m.cantidadImagenes} imagen(es) adjunta(s)
+            {mensajes.map((m) => {
+              const esUsuario = m.rol === 'user';
+              return (
+                <div key={m.id} className={`flex gap-3 ${esUsuario ? 'flex-row-reverse' : 'flex-row'}`}>
+                  {esUsuario ? (
+                    <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0 mt-0.5 text-sm font-bold text-primary">
+                      {nombreUsuario.charAt(0).toUpperCase()}
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shrink-0 mt-0.5">
+                      <Bot size={14} className="text-white" />
                     </div>
                   )}
-                  {m.contenido}
+                  <div className={`flex flex-col gap-1.5 max-w-[75%] ${esUsuario ? 'items-end' : 'items-start'}`}>
+                    {m.imagenesLocales && m.imagenesLocales.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 justify-end">
+                        {m.imagenesLocales.map((url) => (
+                          <div key={url} className="rounded-xl overflow-hidden border border-border">
+                            <img src={url} alt="Imagen" className="max-w-xs max-h-48 object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : m.tieneImagenes ? (
+                      <p className="text-xs text-muted-foreground">📎 {m.cantidadImagenes} imagen(es) adjunta(s)</p>
+                    ) : null}
+                    {m.contenido && (
+                      <div
+                        className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-line ${
+                          esUsuario ? 'bg-primary text-white rounded-tr-sm' : 'bg-muted text-foreground rounded-tl-sm'
+                        }`}
+                      >
+                        {conNegritas(m.contenido)}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground px-1">{hora(m.creadoEn)}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {enviando && (
-              <div className="flex justify-start">
-                <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm text-muted-foreground animate-pulse">
-                  AgroBot está escribiendo...
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shrink-0">
+                  <Bot size={14} className="text-white" />
                 </div>
+                <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3"><Escribiendo /></div>
               </div>
             )}
             {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</p>}
@@ -207,23 +269,27 @@ export function ConversacionChat({
         style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
         {archivos.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2 max-w-2xl mx-auto">
+          <div className="flex items-center gap-2 pb-2 max-w-2xl mx-auto flex-wrap">
             {archivos.map((archivo, index) => (
-              <div
-                key={`${archivo.name}-${index}`}
-                className="flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs rounded-full px-3 py-1.5 max-w-full"
-              >
-                <span className="truncate max-w-[140px]">📎 {archivo.name}</span>
+              <div key={`${archivo.name}-${index}`} className="relative shrink-0">
+                <img
+                  src={URL.createObjectURL(archivo)}
+                  alt={archivo.name}
+                  className="w-10 h-10 rounded-lg object-cover border border-border"
+                />
                 <button
                   type="button"
                   onClick={() => quitarArchivo(index)}
-                  className="text-primary hover:text-primary/70 shrink-0"
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-white rounded-full flex items-center justify-center"
                   aria-label={`Quitar ${archivo.name}`}
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X size={8} />
                 </button>
               </div>
             ))}
+            <p className="text-xs text-muted-foreground">
+              {archivos.length === 1 ? 'Imagen adjunta.' : `${archivos.length} imágenes adjuntas.`}
+            </p>
           </div>
         )}
 

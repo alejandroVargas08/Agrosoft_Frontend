@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, MessageSquare, Trash2 } from 'lucide-react';
+import { Plus, MessageCircle, Trash2 } from 'lucide-react';
 import { listarConversaciones, eliminarConversacion } from '../../services/iaService';
 import type { ConversacionIA } from '../../services/iaService';
 
@@ -60,18 +60,19 @@ export function ListaConversaciones({
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-muted/30 border-r border-border">
-      <div className="p-3 border-b border-border">
+    <div className="w-full h-full flex flex-col">
+      <div className="p-3">
         <button
           onClick={onNuevaConversacion}
-          className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg px-4 py-2.5 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white font-semibold text-sm rounded-xl hover:bg-primary/90 transition-colors"
         >
-          <Plus className="w-4 h-4" />
+          <Plus size={16} />
           Nueva conversación
         </button>
       </div>
+      <div className="border-t border-border" />
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto">
         {cargando && (
           <p className="text-xs text-muted-foreground text-center py-4">Cargando conversaciones...</p>
         )}
@@ -84,14 +85,11 @@ export function ListaConversaciones({
             <button
               key={c.id}
               onClick={() => onSeleccionar(c.id)}
-              className={`w-full flex items-center gap-2 text-left px-3 py-2.5 rounded-lg text-sm transition-colors group ${
-                conversacionActivaId === c.id
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-muted-foreground hover:bg-muted'
-              }`}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors border-b border-border last:border-b-0 group"
             >
-              <MessageSquare className="w-4 h-4 shrink-0" />
-              <span className="flex-1 truncate">{c.titulo}</span>
+              <MessageCircle size={16} className="text-muted-foreground shrink-0" />
+              <span className="flex-1 truncate text-sm text-foreground">{c.titulo}</span>
+              {/* Borrar no está en el diseño: se deja oculto hasta pasar el mouse */}
               <span
                 role="button"
                 onClick={(e) => handleEliminar(e, c.id)}
