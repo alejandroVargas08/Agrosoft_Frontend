@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { preferenciasNotificacionApi, type PreferenciasNotificacion } from '../api/preferenciasNotificacion';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, HelpCircle, Shield, LogOut, ChevronRight, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -8,14 +10,14 @@ import { usePerfil } from '../hooks/usePerfil';
 
 const BOT = 'AgroSoftSenaBot';
 
-// Las del diseño. Solo valen en este navegador: no hay tabla de preferencias
-// todavia, y nada en la app las consulta para decidir si avisa o no.
-const NOTIFICACIONES = [
-    { clave: 'notifSensores', label: 'Alertas de sensores' },
-    { clave: 'notifStock', label: 'Stock bajo' },
-    { clave: 'notifActividades', label: 'Actividades vencidas' },
-    { clave: 'notifIncidencias', label: 'Nuevas incidencias' },
-] as const;
+// Las del diseño. Se guardan en el backend y deciden qué avisos le llegan a
+// cada quien, en la campana de la app y en Telegram si lo vinculó.
+const NOTIFICACIONES: { clave: keyof PreferenciasNotificacion; label: string }[] = [
+    { clave: 'alertasSensores', label: 'Alertas de sensores' },
+    { clave: 'stockBajo', label: 'Stock bajo' },
+    { clave: 'actividadesVencidas', label: 'Actividades vencidas' },
+    { clave: 'nuevasIncidencias', label: 'Nuevas incidencias' },
+];
 
 function Switch({ checked, onChange, disabled = false }: {
     checked: boolean; onChange: (v: boolean) => void; disabled?: boolean;
@@ -66,25 +68,30 @@ export default function Configuracion() {
     const [expiraEn, setExpiraEn] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const [preferencias, setPreferencias] = useState<Record<string, boolean>>({});
+    const queryClient = useQueryClient();
+    const preferenciasQuery = useQuery({
+        queryKey: ['preferencias-notificacion'],
+        queryFn: async () => (await preferenciasNotificacionApi.obtener()).data,
+    });
+    const preferencias = preferenciasQuery.data;
 
-    useEffect(() => {
-        try {
-            setPreferencias(JSON.parse(localStorage.getItem('agrosoft_notificaciones') ?? '{}'));
-        } catch {
-            setPreferencias({});
-        }
-    }, []);
+    // Se guarda al tocar el interruptor; si falla, vuelve a como estaba
+    const guardarPreferencia = useMutation({
+        mutationFn: (cambio: Partial<PreferenciasNotificacion>) => preferenciasNotificacionApi.guardar(cambio),
+        onMutate: async (cambio) => {
+            await queryClient.cancelQueries({ queryKey: ['preferencias-notificacion'] });
+            const antes = queryClient.getQueryData<PreferenciasNotificacion>(['preferencias-notificacion']);
+            if (antes) queryClient.setQueryData(['preferencias-notificacion'], { ...antes, ...cambio });
+            return { antes };
+        },
+        onError: (_e, _c, contexto) => {
+            if (contexto?.antes) queryClient.setQueryData(['preferencias-notificacion'], contexto.antes);
+        },
+        onSuccess: (respuesta) => queryClient.setQueryData(['preferencias-notificacion'], respuesta.data),
+    });
 
-    const cambiarPreferencia = (clave: string, valor: boolean) => {
-        const siguiente = { ...preferencias, [clave]: valor };
-        setPreferencias(siguiente);
-        try {
-            localStorage.setItem('agrosoft_notificaciones', JSON.stringify(siguiente));
-        } catch {
-            // Modo privado: la preferencia simplemente no se recuerda
-        }
-    };
+    const cambiarPreferencia = (clave: keyof PreferenciasNotificacion, valor: boolean) =>
+        guardarPreferencia.mutate({ [clave]: valor });
 
     const pedirCodigo = async () => {
         setError(null);
@@ -186,8 +193,9 @@ export default function Configuracion() {
                                 <div key={n.clave} className="flex items-center justify-between gap-4 py-1">
                                     <span className="text-sm text-foreground">{n.label}</span>
                                     <Switch
-                                        checked={preferencias[n.clave] ?? true}
+                                        checked={preferencias?.[n.clave] ?? true}
                                         onChange={(v) => cambiarPreferencia(n.clave, v)}
+                                        disabled={!preferencias}
                                     />
                                 </div>
                             ))}
