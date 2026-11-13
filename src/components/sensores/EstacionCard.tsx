@@ -111,10 +111,8 @@ export default function EstacionCard({ estacion, onClick }: Props) {
                 <StatusBadge status={estacion.estado === 'conectada' ? 'connected' : estacion.estado === 'alerta' ? 'alert' : 'disconnected'} />
             </div>
 
-            <p className="mb-0.5 text-sm font-semibold text-foreground">{estacion.nombreLote}</p>
-            <p className="mb-3 text-xs text-muted-foreground">
-                {estacion.sensores.length} sensor{estacion.sensores.length === 1 ? '' : 'es'}
-            </p>
+            <p className="mb-0.5 text-sm font-semibold text-foreground">{estacion.nombre}</p>
+            <p className="mb-3 text-xs text-muted-foreground">{estacion.nombreLote}</p>
 
             {desconectada ? (
                 <div className="flex items-center gap-2 rounded-lg bg-muted p-2 text-sm text-muted-foreground">

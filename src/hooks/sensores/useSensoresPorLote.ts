@@ -8,6 +8,8 @@ export type EstadoEstacion = "conectada" | "alerta" | "desconectada";
 
 export interface EstacionLote {
     loteId: number | null;
+    /** Como la nombra el diseño: "Estación <lote>" */
+    nombre: string;
     nombreLote: string;
     sensores: Sensor[];
     estado: EstadoEstacion;
@@ -51,8 +53,11 @@ export function useSensoresPorLote(intervaloMs = 10_000) {
                 const estado: EstadoEstacion =
                     enLinea === 0 ? "desconectada" : alertas > 0 ? "alerta" : "conectada";
 
+                const nombreLote =
+                    loteId === null ? "Sin lote asignado" : nombrePorLote.get(loteId) ?? `Lote ${loteId}`;
                 return {
                     loteId,
+                    nombre: loteId === null ? "Sensores sin lote" : `Estación ${nombreLote}`,
                     nombreLote:
                         loteId === null
                             ? "Sin lote asignado"
