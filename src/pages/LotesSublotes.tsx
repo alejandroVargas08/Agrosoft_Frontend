@@ -4,7 +4,9 @@ import { Map as MapIcon, Plus } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, PageHeader, StatusBadge, Tab } from '../components/ui/AgroUI';
 import { useTerritorio } from '../hooks/useTerritorio';
-import type { Lote, Punto, SubLote } from '../types/territorio';
+import type { Lote, SubLote } from '../types/territorio';
+import { MapaSatelital } from '../components/mapa/MapaSatelital';
+import { AjustarVista, Poligono } from '../components/mapa/FigurasMapa';
 import { usePermisos } from '../hooks/permisos/usePermisos';
 
 // Colores de los polígonos (se asignan en orden)
@@ -16,42 +18,6 @@ const ALTO = 200;
 
 const fmt = (n: number) => n.toLocaleString('es-CO', { maximumFractionDigits: 2 });
 const fmtM2 = (n: number) => n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
-
-/**
- * Proyecta lat/lng al viewBox del SVG, encuadrando los puntos que se le pasen.
- * El lote y sus sublotes comparten la misma proyección para que encajen.
- */
-function crearProyeccion(puntos: Punto[]) {
-    if (puntos.length === 0) {
-        return (_p: Punto) => ({ x: ANCHO / 2, y: ALTO / 2 });
-    }
-    const lats = puntos.map((p) => p.lat);
-    const lngs = puntos.map((p) => p.lng);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    const rangoLng = maxLng - minLng || 0.0001;
-    const rangoLat = maxLat - minLat || 0.0001;
-    const escala = Math.min((ANCHO - 40) / rangoLng, (ALTO - 40) / rangoLat);
-    const offX = 20 + (ANCHO - 40 - rangoLng * escala) / 2;
-    const offY = 20 + (ALTO - 40 - rangoLat * escala) / 2;
-    return (p: Punto) => ({
-        x: offX + (p.lng - minLng) * escala,
-        y: offY + (maxLat - p.lat) * escala, // la latitud crece hacia arriba
-    });
-}
-
-const puntosSvg = (vertices: Punto[], proyectar: (p: Punto) => { x: number; y: number }) =>
-    vertices.map(proyectar).map((q) => `${q.x},${q.y}`).join(' ');
-
-const centro = (vertices: Punto[], proyectar: (p: Punto) => { x: number; y: number }) => {
-    const pts = vertices.map(proyectar);
-    return {
-        x: pts.reduce((a, q) => a + q.x, 0) / pts.length,
-        y: pts.reduce((a, q) => a + q.y, 0) / pts.length,
-    };
-};
 
 const LotesSublotes = () => {
     const navigate = useNavigate();
@@ -69,11 +35,10 @@ const LotesSublotes = () => {
         ? PALETA[lotes.findIndex((l) => l.id === loteActivo.id) % PALETA.length]
         : PALETA[0];
 
-    // El lote y sus sublotes se encuadran juntos para que no se salgan del marco
-    const proyectar = crearProyeccion([
+    const puntosVista = [
         ...(loteActivo?.vertices ?? []),
         ...hijos.flatMap((s) => s.vertices ?? []),
-    ]);
+    ];
 
     const accionNuevo = puede('lotes.gestionar') ? (
         <Btn onClick={() => navigate('/territorio/nuevo')}><Plus size={16} />Nuevo Lote</Btn>
@@ -117,55 +82,45 @@ const LotesSublotes = () => {
                                 {/* Los dos mapas */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {/* Izquierda: el lote completo con sus sublotes encima */}
-                                    <Card className="p-0 overflow-hidden">
+                                    <Card className="p-0 overflow-hidden flex flex-col">
                                         <div className="p-3 bg-muted text-[13px] font-semibold flex items-center gap-2">
                                             <MapIcon size={13} className="text-primary" />Lote: {loteActivo?.nombre}
                                             <span className="ml-auto text-[11px] font-normal text-muted-foreground">
                                                 {fmt(loteActivo?.areaHa ?? 0)} ha{hijos.length > 0 ? ' · Haz clic en un sublote' : ''}
                                             </span>
                                         </div>
-                                        <svg viewBox={`0 0 ${ANCHO} ${ALTO}`} className="w-full" style={{ background: '#e8f5e9' }}>
-                                            <defs>
-                                                <pattern id="gridA" width="20" height="20" patternUnits="userSpaceOnUse">
-                                                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#c8e6c9" strokeWidth="0.5" />
-                                                </pattern>
-                                            </defs>
-                                            <rect width={ANCHO} height={ALTO} fill="url(#gridA)" />
+                                        <MapaSatelital className="flex-1 min-h-80">
+                                            <AjustarVista puntos={puntosVista} />
+                                            {lotes
+                                                .filter((l) => l.id !== loteActivo?.id && (l.vertices?.length ?? 0) >= 3)
+                                                .map((l) => (
+                                                    <Poligono
+                                                        key={l.id}
+                                                        vertices={l.vertices}
+                                                        color="#ffffff"
+                                                        opacidad={0.08}
+                                                        grosor={1}
+                                                        onClick={() => { setLoteSeleccionadoId(String(l.id)); setSubloteResaltado(null); }}
+                                                    />
+                                                ))}
                                             {loteActivo && (loteActivo.vertices?.length ?? 0) >= 3 && (
-                                                <polygon
-                                                    points={puntosSvg(loteActivo.vertices, proyectar)}
-                                                    fill={colorLote + '25'}
-                                                    stroke={colorLote}
-                                                    strokeWidth={2}
-                                                />
+                                                <Poligono vertices={loteActivo.vertices} color={colorLote} opacidad={0.2} grosor={3} zIndex={2} />
                                             )}
                                             {hijos.filter((s) => (s.vertices?.length ?? 0) >= 3).map((s, i) => {
-                                                const col = PALETA[(i + 1) % PALETA.length];
                                                 const resaltado = subloteResaltado === s.id;
-                                                const c = centro(s.vertices, proyectar);
                                                 return (
-                                                    <g
+                                                    <Poligono
                                                         key={s.id}
+                                                        vertices={s.vertices}
+                                                        color={PALETA[(i + 1) % PALETA.length]}
+                                                        opacidad={resaltado ? 0.6 : 0.3}
+                                                        grosor={resaltado ? 3 : 1.5}
+                                                        zIndex={3}
                                                         onClick={() => setSubloteResaltado(resaltado ? null : s.id)}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        <polygon
-                                                            points={puntosSvg(s.vertices, proyectar)}
-                                                            fill={col + (resaltado ? 'bb' : '55')}
-                                                            stroke={col}
-                                                            strokeWidth={resaltado ? 3 : 1.5}
-                                                            strokeDasharray="5,3"
-                                                        />
-                                                        <text
-                                                            x={c.x} y={c.y} textAnchor="middle" dominantBaseline="middle"
-                                                            fontSize="8" fontWeight="600" fill={col}
-                                                        >
-                                                            {s.nombre.split(' ').slice(0, 2).join(' ')}
-                                                        </text>
-                                                    </g>
+                                                    />
                                                 );
                                             })}
-                                        </svg>
+                                        </MapaSatelital>
                                     </Card>
 
                                     {/* Derecha: cada sublote en su propia celda */}
