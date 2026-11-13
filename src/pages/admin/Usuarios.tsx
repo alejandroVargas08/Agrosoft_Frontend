@@ -1,12 +1,13 @@
-import { useState } from 'react';
-import { Check, Clock, GraduationCap, Key, Shield, ToggleLeft, Trash2, Users, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Clock, Edit2, GraduationCap, Key, MoreVertical, Plus, Shield, ToggleLeft, Trash2, Users, X } from 'lucide-react';
+import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { Badge, Btn, Card, EmptyState, Modal, PageHeader, SearchBar, Select, StatusBadge, Textarea } from '../../components/ui/AgroUI';
+import { Badge, Btn, Card, EmptyState, Input, Modal, PageHeader, SearchBar, Select, StatusBadge, Textarea } from '../../components/ui/AgroUI';
 import { useFichasACargo, useUsuarios } from '../../hooks/admin/useUsuarios';
 import type { Usuario } from '../../api/usuarios/usuarios';
 import type { ProgramaFormacion } from '../../api/programa_formacion/programasFormacion';
 
-type Accion = 'rol' | 'fichas' | 'estado' | 'contrasena' | 'rechazar' | 'eliminar';
+type Accion = 'perfil' | 'rol' | 'fichas' | 'estado' | 'contrasena' | 'rechazar' | 'eliminar';
 
 const ESTADOS = [
     { value: '', label: 'Todos los estados' },
@@ -17,8 +18,38 @@ const ESTADOS = [
     { value: 'rechazado', label: 'Rechazado' },
 ];
 
-const fecha = (valor: string | null) =>
-    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Nunca';
+/** El diseño muestra el último ingreso en tiempo relativo, no como fecha. */
+const hace = (valor: string | null) => {
+    if (!valor) return 'Nunca';
+    const ms = Date.now() - new Date(valor).getTime();
+    const horas = Math.floor(ms / 3_600_000);
+    if (horas < 1) return 'Hace un momento';
+    if (horas < 24) return 'Hace ' + horas + 'h';
+    return 'Hace ' + Math.floor(ms / 86_400_000) + 'd';
+};
+
+/** El diseño pinta el chip del rol de distinto color según cuál sea. */
+const COLOR_ROL: Record<string, 'danger' | 'primary' | 'success'> = {
+    Administrador: 'danger',
+    Instructor: 'primary',
+    Aprendiz: 'success',
+};
+
+/** Una opción del menú de tres puntos. */
+const Opcion = ({ icono: Icono, children, onClick, peligro = false }: {
+    icono: typeof Shield; children: React.ReactNode; onClick: () => void; peligro?: boolean;
+}) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className={
+            'w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ' +
+            (peligro ? 'text-destructive hover:bg-red-50' : 'text-foreground hover:bg-muted')
+        }
+    >
+        <Icono size={14} />{children}
+    </button>
+);
 
 /** El panel para asignar o quitar fichas a cargo de un instructor.
  *  Recibe todo por props: llamar a useUsuarios() aquí crearía una segunda
@@ -81,13 +112,68 @@ const Usuarios = () => {
         usuarios, total, roles, programas, filtros, ponerFiltro,
         nombreRol, fichaDe, nombrePrograma,
         cargando, error, errorAccion, procesando,
-        cambiarEstado, cambiarRol, aprobar, rechazar, eliminar, cambiarFicha,
+        cambiarEstado, editarPerfil, cambiarRol, aprobar, rechazar, eliminar, cambiarFicha,
         restablecerContrasena, contrasenaGenerada, limpiarContrasena,
+        crearUsuario, creando, contrasenaDelNuevo, limpiarNuevo,
     } = useUsuarios();
 
     const [abierto, setAbierto] = useState<{ usuario: Usuario; accion: Accion } | null>(null);
     const [rolElegido, setRolElegido] = useState('');
     const [motivo, setMotivo] = useState('');
+    const [perfil, setPerfil] = useState({ nombre: '', apellido: '', correo: '', telefono: '' });
+    const ponerPerfil = (clave: keyof typeof perfil) => (valor: string) =>
+        setPerfil((p) => ({ ...p, [clave]: valor }));
+
+    // El menú de tres puntos del diseño: uno abierto a la vez
+    const [menuDe, setMenuDe] = useState<number | null>(null);
+    const listaRef = useRef<HTMLDivElement | null>(null);
+
+    // Sin esto el menú se queda abierto para siempre: ni el clic por fuera ni
+    // Escape lo cierran, y queda asomado detrás de cualquier modal que se abra.
+    useEffect(() => {
+        if (menuDe === null) return;
+        const porFuera = (evento: MouseEvent) => {
+            if (!listaRef.current?.contains(evento.target as Node)) setMenuDe(null);
+        };
+        const porEscape = (evento: KeyboardEvent) => {
+            if (evento.key === 'Escape') setMenuDe(null);
+        };
+        document.addEventListener('mousedown', porFuera);
+        document.addEventListener('keydown', porEscape);
+        return () => {
+            document.removeEventListener('mousedown', porFuera);
+            document.removeEventListener('keydown', porEscape);
+        };
+    }, [menuDe]);
+
+    const [nuevoAbierto, setNuevoAbierto] = useState(false);
+    const NUEVO_VACIO = { nombre: '', apellido: '', correo: '', identificacion: '', telefono: '', rolId: '', programaId: '' };
+    const [nuevo, setNuevo] = useState(NUEVO_VACIO);
+    const ponerNuevo = (clave: keyof typeof NUEVO_VACIO) => (valor: string) =>
+        setNuevo((n) => ({ ...n, [clave]: valor }));
+
+    const nuevoCompleto =
+        nuevo.nombre.trim() !== '' && nuevo.apellido.trim() !== '' &&
+        nuevo.correo.includes('@') && nuevo.identificacion.trim() !== '' && nuevo.rolId !== '';
+
+    const cerrarNuevo = () => {
+        setNuevoAbierto(false);
+        setNuevo(NUEVO_VACIO);
+        limpiarNuevo();
+    };
+
+    const guardarNuevo = () => {
+        if (!nuevoCompleto) return;
+        crearUsuario({
+            nombre: nuevo.nombre.trim(),
+            apellido: nuevo.apellido.trim(),
+            correo: nuevo.correo.trim(),
+            identificacion: nuevo.identificacion.trim(),
+            ...(nuevo.telefono.trim() ? { telefono: nuevo.telefono.trim() } : {}),
+            rolId: Number(nuevo.rolId),
+            ...(nuevo.programaId ? { programaFormacionId: Number(nuevo.programaId) } : {}),
+        }, () => toast.success('Usuario creado'));
+    };
 
     const cerrar = () => {
         setAbierto(null);
@@ -99,11 +185,18 @@ const Usuarios = () => {
         setAbierto({ usuario, accion });
         setRolElegido(String(usuario.rolId));
         setMotivo('');
+        setPerfil({
+            nombre: usuario.nombre,
+            apellido: usuario.apellido,
+            correo: usuario.correo,
+            telefono: usuario.telefono ?? '',
+        });
         limpiarContrasena();
         if (accion === 'contrasena') restablecerContrasena(usuario.id);
     };
 
     const TITULOS: Record<Accion, string> = {
+        perfil: 'Editar perfil',
         rol: 'Cambiar rol',
         fichas: 'Fichas a cargo',
         estado: 'Cambiar estado',
@@ -116,8 +209,13 @@ const Usuarios = () => {
         <DashboardLayout>
             <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <PageHeader
-                    title="Usuarios"
+                    title="Gestión de Usuarios"
                     subtitle={total === 1 ? '1 usuario registrado' : total + ' usuarios registrados'}
+                    action={
+                        <Btn onClick={() => setNuevoAbierto(true)}>
+                            <Plus size={16} />Nuevo Usuario
+                        </Btn>
+                    }
                 />
 
                 {(error || errorAccion) && (
@@ -130,7 +228,7 @@ const Usuarios = () => {
                     <SearchBar
                         value={filtros.texto}
                         onChange={(v) => ponerFiltro('texto', v)}
-                        placeholder="Nombre, correo o documento..."
+                        placeholder="Buscar por nombre o correo..."
                     />
                     <Select
                         value={filtros.rolId}
@@ -160,7 +258,7 @@ const Usuarios = () => {
                         description="Ningún usuario coincide con los filtros."
                     />
                 ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-2" ref={listaRef}>
                         {usuarios.map((u) => {
                             const ficha = fichaDe(u.programaFormacionId);
                             const programa = nombrePrograma(u.programaFormacionId);
@@ -175,7 +273,7 @@ const Usuarios = () => {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <p className="font-semibold text-foreground">{u.nombre} {u.apellido}</p>
-                                                <Badge color="primary">{rol}</Badge>
+                                                <Badge color={COLOR_ROL[rol] ?? 'primary'}>{rol}</Badge>
                                                 <StatusBadge status={u.estado} />
                                             </div>
                                             <p className="text-xs text-muted-foreground">{u.correo}</p>
@@ -191,7 +289,7 @@ const Usuarios = () => {
                                                     </span>
                                                 )}
                                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                    <Clock size={10} />Último ingreso: {fecha(u.ultimoIngreso)}
+                                                    <Clock size={10} />Último ingreso: {hace(u.ultimoIngreso)}
                                                 </span>
                                             </div>
                                             {u.solicitud && (
@@ -203,37 +301,60 @@ const Usuarios = () => {
                                             )}
                                         </div>
 
-                                        <div className="flex gap-1 flex-wrap shrink-0">
-                                            {u.estado === 'pendiente' && (
-                                                <>
-                                                    <Btn size="sm" disabled={procesando} onClick={() => aprobar(u.id)}>
-                                                        <Check size={12} />Aprobar
-                                                    </Btn>
-                                                    <Btn size="sm" variant="danger" onClick={() => abrir(u, 'rechazar')}>
-                                                        <X size={12} />Rechazar
-                                                    </Btn>
-                                                </>
+                                        <div className="relative shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => setMenuDe(menuDe === u.id ? null : u.id)}
+                                                aria-label={'Acciones de ' + u.nombre}
+                                                className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+                                            >
+                                                <MoreVertical size={16} />
+                                            </button>
+
+                                            {menuDe === u.id && (
+                                                <div className="absolute right-0 top-8 z-20 w-56 bg-white border border-border rounded-xl shadow-lg py-1">
+                                                    <Opcion icono={Edit2} onClick={() => { setMenuDe(null); abrir(u, 'perfil'); }}>
+                                                        Editar perfil
+                                                    </Opcion>
+
+                                                    {u.estado === 'pendiente' && (
+                                                        <>
+                                                            <Opcion icono={Check} onClick={() => { setMenuDe(null); aprobar(u.id); }}>
+                                                                Aprobar
+                                                            </Opcion>
+                                                            <Opcion icono={X} onClick={() => { setMenuDe(null); abrir(u, 'rechazar'); }}>
+                                                                Rechazar
+                                                            </Opcion>
+                                                        </>
+                                                    )}
+
+                                                    <Opcion icono={Shield} onClick={() => { setMenuDe(null); abrir(u, 'rol'); }}>
+                                                        Cambiar rol
+                                                    </Opcion>
+
+                                                    {rol === 'Instructor' && (
+                                                        <Opcion icono={GraduationCap} onClick={() => { setMenuDe(null); abrir(u, 'fichas'); }}>
+                                                            Asignar fichas
+                                                        </Opcion>
+                                                    )}
+
+                                                    {['activo', 'inactivo'].includes(u.estado) && (
+                                                        <Opcion icono={ToggleLeft} onClick={() => { setMenuDe(null); abrir(u, 'estado'); }}>
+                                                            {u.estado === 'activo' ? 'Desactivar' : 'Activar'}
+                                                        </Opcion>
+                                                    )}
+
+                                                    <Opcion icono={Key} onClick={() => { setMenuDe(null); abrir(u, 'contrasena'); }}>
+                                                        Restablecer contraseña
+                                                    </Opcion>
+
+                                                    <hr className="my-1 border-border" />
+
+                                                    <Opcion icono={Trash2} peligro onClick={() => { setMenuDe(null); abrir(u, 'eliminar'); }}>
+                                                        Eliminar usuario
+                                                    </Opcion>
+                                                </div>
                                             )}
-                                            <Btn size="sm" variant="outline" onClick={() => abrir(u, 'rol')}>
-                                                <Shield size={12} />Rol
-                                            </Btn>
-                                            {rol === 'Instructor' && (
-                                                <Btn size="sm" variant="outline" onClick={() => abrir(u, 'fichas')}>
-                                                    <GraduationCap size={12} />Fichas
-                                                </Btn>
-                                            )}
-                                            {['activo', 'inactivo'].includes(u.estado) && (
-                                                <Btn size="sm" variant="outline" onClick={() => abrir(u, 'estado')}>
-                                                    <ToggleLeft size={12} />
-                                                    {u.estado === 'activo' ? 'Desactivar' : 'Activar'}
-                                                </Btn>
-                                            )}
-                                            <Btn size="sm" variant="outline" onClick={() => abrir(u, 'contrasena')}>
-                                                <Key size={12} />Contraseña
-                                            </Btn>
-                                            <Btn size="sm" variant="ghost" onClick={() => abrir(u, 'eliminar')}>
-                                                <Trash2 size={12} />
-                                            </Btn>
                                         </div>
                                     </div>
                                 </Card>
@@ -255,6 +376,41 @@ const Usuarios = () => {
                                 </strong>{' '}
                                 · {abierto.usuario.correo}
                             </p>
+
+                            {abierto.accion === 'perfil' && (() => {
+                                const datos = {
+                                    nombre: perfil.nombre.trim(),
+                                    apellido: perfil.apellido.trim(),
+                                    correo: perfil.correo.trim(),
+                                    telefono: perfil.telefono.trim(),
+                                };
+                                const completo = datos.nombre !== '' && datos.apellido !== '' && datos.correo.includes('@');
+                                const u = abierto.usuario;
+                                const cambio =
+                                    datos.nombre !== u.nombre || datos.apellido !== u.apellido ||
+                                    datos.correo !== u.correo || datos.telefono !== (u.telefono ?? '');
+                                return (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Input label="Nombre" value={perfil.nombre} onChange={ponerPerfil('nombre')} required />
+                                            <Input label="Apellido" value={perfil.apellido} onChange={ponerPerfil('apellido')} required />
+                                        </div>
+                                        <Input label="Correo electrónico" type="email" value={perfil.correo} onChange={ponerPerfil('correo')} required autoComplete="off" />
+                                        <Input label="Teléfono" value={perfil.telefono} onChange={ponerPerfil('telefono')} autoComplete="off" />
+                                        {errorAccion && <p className="text-sm text-red-600">{errorAccion}</p>}
+                                        <div className="flex gap-3">
+                                            <Btn
+                                                disabled={procesando || !completo || !cambio}
+                                                onClick={() => editarPerfil(u.id, datos, () => { cerrar(); toast.success('Perfil actualizado'); })}
+                                                className="flex-1 justify-center"
+                                            >
+                                                {procesando ? 'Guardando...' : 'Guardar'}
+                                            </Btn>
+                                            <Btn variant="outline" onClick={cerrar} className="flex-1 justify-center">Cancelar</Btn>
+                                        </div>
+                                    </>
+                                );
+                            })()}
 
                             {abierto.accion === 'rol' && (
                                 <>
@@ -374,6 +530,81 @@ const Usuarios = () => {
                                     </div>
                                 </>
                             )}
+                        </div>
+                    )}
+                </Modal>
+
+                <Modal open={nuevoAbierto} onClose={cerrarNuevo} title="Nuevo Usuario">
+                    {contrasenaDelNuevo ? (
+                        <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground">
+                                Queda activo y puede entrar con esta contraseña.
+                            </p>
+                            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 text-center">
+                                <p className="text-2xl font-bold font-mono text-primary tracking-wider break-all">
+                                    {contrasenaDelNuevo}
+                                </p>
+                            </div>
+                            <p className="text-xs text-[#E65100]">
+                                Cópiala ahora: no se vuelve a mostrar. No se envía ningún correo.
+                            </p>
+                            <Btn onClick={cerrarNuevo} className="w-full justify-center">Listo</Btn>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <Input label="Nombre" value={nuevo.nombre} onChange={ponerNuevo('nombre')} required />
+                                <Input label="Apellido" value={nuevo.apellido} onChange={ponerNuevo('apellido')} required />
+                            </div>
+
+                            <Input
+                                label="Correo electrónico"
+                                type="email"
+                                value={nuevo.correo}
+                                onChange={ponerNuevo('correo')}
+                                required
+                            />
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <Input label="Documento" value={nuevo.identificacion} onChange={ponerNuevo('identificacion')} required />
+                                <Input label="Teléfono" value={nuevo.telefono} onChange={ponerNuevo('telefono')} />
+                            </div>
+
+                            <Select
+                                label="Rol"
+                                value={nuevo.rolId}
+                                onChange={ponerNuevo('rolId')}
+                                options={[
+                                    { value: '', label: 'Seleccionar rol...' },
+                                    ...roles.map((r) => ({ value: String(r.id), label: r.nombre })),
+                                ]}
+                            />
+
+                            <Select
+                                label="Ficha SENA"
+                                value={nuevo.programaId}
+                                onChange={ponerNuevo('programaId')}
+                                options={[
+                                    { value: '', label: 'Sin ficha asignada' },
+                                    ...programas.map((p) => ({
+                                        value: String(p.id),
+                                        label: 'Ficha ' + p.ficha + ' — ' + p.nombre,
+                                    })),
+                                ]}
+                            />
+
+                            <div className="flex gap-3 pt-1">
+                                <Btn
+                                    disabled={!nuevoCompleto || creando}
+                                    onClick={guardarNuevo}
+                                    className="flex-1 justify-center"
+                                >
+                                    {creando ? 'Creando...' : 'Crear Usuario'}
+                                </Btn>
+                                <Btn variant="outline" onClick={cerrarNuevo} className="flex-1 justify-center">
+                                    Cancelar
+                                </Btn>
+                            </div>
                         </div>
                     )}
                 </Modal>

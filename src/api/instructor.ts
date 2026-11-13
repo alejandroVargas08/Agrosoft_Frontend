@@ -1,11 +1,15 @@
 import { api } from './axios';
 import type {
+    ActividadDeFicha,
     Aprendiz,
+    AprobadasPorSemana,
+    CodigoInvitacion,
     ResumenAprendiz,
     AsignarActividadPayload,
     Asignacion,
     EntregarTareaPayload,
     Ficha,
+    ProximaFechaLimite,
 } from '../types/instructor';
 
 /** Las fichas a cargo del usuario que está en sesión.
@@ -60,4 +64,18 @@ export const asignacionesApi = {
         api.post<Asignacion[]>(`/actividades/${actividadId}/asignaciones`, data),
     quitar: (actividadId: number, id: number) =>
         api.delete(`/actividades/${actividadId}/asignaciones/${id}`),
+};
+
+/** Las dos agregaciones del panel: hablan del grupo, no de un aprendiz. */
+export const panelInstructorApi = {
+    proximasFechas: () => api.get<ProximaFechaLimite[]>('/instructor/panel/proximas-fechas'),
+    aprobadasPorSemana: () => api.get<AprobadasPorSemana[]>('/instructor/panel/aprobadas-por-semana'),
+    actividadesDeFicha: (programaFormacionId: number) =>
+        api.get<ActividadDeFicha[]>('/instructor/panel/actividades-de-ficha/' + programaFormacionId),
+};
+
+/** El codigo de invitacion de una ficha. Lo maneja quien la tiene a cargo. */
+export const codigoInvitacionApi = {
+    obtener: (fichaId: number) => api.get<CodigoInvitacion | null>('/mis-fichas/' + fichaId + '/codigo-invitacion'),
+    generar: (fichaId: number) => api.post<CodigoInvitacion>('/mis-fichas/' + fichaId + '/codigo-invitacion'),
 };

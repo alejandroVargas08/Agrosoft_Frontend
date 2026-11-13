@@ -30,8 +30,12 @@ type PestañaId = (typeof PESTAÑAS)[number]['id'];
 const ASIGNAR_ACTIVIDADES = 'actividades.asignar';
 
 const ActividadDetalle = () => {
-    const { actividadId } = useParams<{ actividadId: string }>();
-    const actividadIdNum = actividadId ? Number(actividadId) : undefined;
+    // La ruta es /actividades/:id, asi que el parametro se llama id. Buscarlo
+    // como actividadId lo dejaba siempre en undefined: la consulta al backend
+    // quedaba deshabilitada y la pagina solo servia si alguien pasaba la
+    // actividad por state al navegar.
+    const { id } = useParams<{ id: string }>();
+    const actividadIdNum = id ? Number(id) : undefined;
     const navigate = useNavigate();
 
     const location = useLocation();
@@ -84,7 +88,7 @@ const ActividadDetalle = () => {
 
                     <div>
                         <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">
-                            { actividad ? `${actividad?.tipo} ${actividad?.subtipo ? `— ${actividad.subtipo}`: ''}` : `Actividad #${actividadId}`}
+                            { actividad ? `${actividad?.tipo} ${actividad?.subtipo ? `— ${actividad.subtipo}`: ''}` : `Actividad #${id}`}
                         </h1>
                         <p className="text-sm text-neutral-400 mt-0.5">
                             { actividad?.fecha || 'Sin fecha registrada'}

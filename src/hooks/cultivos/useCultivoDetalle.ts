@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cultivosApi } from '../../api/cultivo/cultivos';
 import type { ActualizarCultivoPayload } from '../../types/cultivos';
-import { actividadesApi, productosAgroApi } from '../../api/actividades/actividades';
-import { loteProduccionApi, type CrearLoteProduccionPayload } from '../../api/ventas';
+import { actividadesApi } from '../../api/actividades/actividades';
+import { loteProduccionApi } from '../../api/ventas';
 import { lotesApi, sublotesApi } from '../../api/territorio';
 import { mensajeError } from '../../api/errores/errores';
 
@@ -26,7 +26,6 @@ export interface MetricasCultivo {
 
 export function useCultivoDetalle(cultivoId: number | undefined) {
     const queryClient = useQueryClient();
-    const [modalAbierto, setModalAbierto] = useState(false);
     const [modalEditar, setModalEditar] = useState(false);
     const habilitado = cultivoId !== undefined && !Number.isNaN(cultivoId);
 
@@ -54,51 +53,40 @@ export function useCultivoDetalle(cultivoId: number | undefined) {
         staleTime: 1000 * 60 * 5,
     });
 
-    const productosQuery = useQuery({
-        queryKey: ['productos-agro'],
-        queryFn: async () => (await productosAgroApi.listar()).data,
-        enabled: modalAbierto,
-        staleTime: 1000 * 60 * 5,
-    });
-
     const cultivo = cultivoQuery.data ?? null;
     const cosechas = cosechasQuery.data ?? [];
 
-    // Los sublotes solo hacen falta al editar: el cultivo se puede mover de
-    // sublote, pero no de lote (eso invalidaria sus cosechas y actividades)
+    // Los sublotes del lote: para mostrar la ubicación y para moverlo de sublote
+    // al editar (de lote no se mueve: invalidaría sus cosechas y actividades)
     const sublotesQuery = useQuery({
         queryKey: ['sublotes', cultivo?.loteId],
         queryFn: async () => (await sublotesApi.porLote(cultivo!.loteId)).data,
-        enabled: modalEditar && cultivo != null,
+        enabled: cultivo != null,
         staleTime: 1000 * 60 * 5,
     });
     const lote = (lotesQuery.data ?? []).find((l) => l.id === cultivo?.loteId) ?? null;
 
     const totalKg = cosechas.reduce((s, c) => s + (c.cantidadKg || 0), 0);
     const ingresoEstimado = cosechas.reduce((s, c) => s + (c.cantidadKg || 0) * (c.precioSugeridoKg || 0), 0);
-    const costoTotal = cultivo?.costoTotal || 0;
+    // Si todavía no hay gastos reales, el retorno se mide contra lo estimado
+    const costoTotal = cultivo?.costoTotal || cultivo?.costoEstimado || 0;
     const areaHa = lote?.areaHa && lote.areaHa > 0 ? lote.areaHa : null;
 
     const metricas: MetricasCultivo = {
         totalKg,
         cosechas: cosechas.length,
         stockDisponibleKg: cosechas.reduce((s, c) => s + (c.stockDisponibleKg || 0), 0),
-        // El backend no guarda fecha de cosecha aparte: la más reciente es la de mayor id
-        ultimaCosecha: cosechas.length > 0 ? String(Math.max(...cosechas.map((c) => c.id))) : null,
+        ultimaCosecha: cosechas
+            .map((c) => c.fechaCosecha)
+            .filter((f): f is string => !!f)
+            .sort()
+            .pop() ?? null,
         rendimientoKgHa: areaHa ? Math.round(totalKg / areaHa) : null,
         ingresoEstimado,
         precioReferencialKg: totalKg > 0 ? Math.round(ingresoEstimado / totalKg) : null,
         costoTotal,
         retornoPorcentaje: costoTotal > 0 ? Math.round(((ingresoEstimado - costoTotal) / costoTotal) * 100) : null,
     };
-
-    const registrarMutation = useMutation({
-        mutationFn: (data: CrearLoteProduccionPayload) => loteProduccionApi.crear(data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['cosechas-cultivo', cultivoId] });
-            queryClient.invalidateQueries({ queryKey: ['lotes-produccion'] });
-        },
-    });
 
     const editarMutation = useMutation({
         mutationFn: (data: ActualizarCultivoPayload) => cultivosApi.actualizar(cultivoId!, data),
@@ -110,25 +98,16 @@ export function useCultivoDetalle(cultivoId: number | undefined) {
     });
 
     const error = cultivoQuery.error || cosechasQuery.error;
+    // El registro de cosechas vive en components/cultivos/RegistrarCosechaModal
 
     return {
         cultivo,
         lote,
         cosechas,
         actividades: actividadesQuery.data ?? [],
-        productos: productosQuery.data ?? [],
         metricas,
         cargando: cultivoQuery.isLoading,
         error: error ? mensajeError(error, 'No se pudo cargar el cultivo.') : '',
-        modalAbierto,
-        abrirModal: () => setModalAbierto(true),
-        cerrarModal: () => { setModalAbierto(false); registrarMutation.reset(); },
-        registrando: registrarMutation.isPending,
-        errorRegistro: registrarMutation.error
-            ? mensajeError(registrarMutation.error, 'No se pudo registrar la cosecha.')
-            : '',
-        registrarCosecha: (data: CrearLoteProduccionPayload, alTerminar?: () => void) =>
-            registrarMutation.mutate(data, { onSuccess: () => alTerminar?.() }),
 
         sublotes: sublotesQuery.data ?? [],
         modalEditar,

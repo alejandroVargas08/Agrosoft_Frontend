@@ -14,7 +14,8 @@ const FILTROS = [
 
 const fmt = (n: number) => n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
 const fmtFecha = (iso: string) =>
-    new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+    new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+// timeZone UTC: la fecha de siembra llega a medianoche UTC y sin esto sale un día antes
 
 const UnidadesProductivas = () => {
     const navigate = useNavigate();

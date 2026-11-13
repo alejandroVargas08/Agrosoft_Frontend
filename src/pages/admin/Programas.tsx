@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GraduationCap, Plus, UserCheck, Users, X } from 'lucide-react';
+import { AlertTriangle, GraduationCap, Plus, UserCheck, Users, X, XCircle } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Badge, Btn, Card, EmptyState, Input, Modal, PageHeader, SearchBar, Select, StatusBadge } from '../../components/ui/AgroUI';
 import { useAprendicesDeFicha, useProgramas } from '../../hooks/admin/useProgramas';
@@ -60,11 +60,11 @@ const Programas = () => {
         <DashboardLayout>
             <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <PageHeader
-                    title="Programas de formación"
-                    subtitle={total === 1 ? '1 ficha registrada' : total + ' fichas registradas'}
+                    title="Programas de Formación"
+                    subtitle="Fichas SENA registradas"
                     action={
                         <Btn onClick={() => { setForm(FORM_VACIO); setFormAbierto(true); }}>
-                            <Plus size={16} />Nuevo programa
+                            <Plus size={16} />Nuevo Programa
                         </Btn>
                     }
                 />
@@ -98,7 +98,7 @@ const Programas = () => {
                         {programas.map((p) => (
                             <Card key={p.id}>
                                 <div className="flex items-start justify-between mb-3">
-                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                    <div className="p-2 bg-icon-bg rounded-lg">
                                         <GraduationCap size={20} className="text-primary" />
                                     </div>
                                     <StatusBadge status={p.estado} />
@@ -141,18 +141,23 @@ const Programas = () => {
 
                                 <div className="flex gap-2 flex-wrap">
                                     <Btn size="sm" variant="outline" onClick={() => setVerAprendices(p)}>
-                                        <Users size={12} />Aprendices
+                                        <Users size={12} />Ver aprendices
                                     </Btn>
                                     <Btn
                                         size="sm"
                                         variant="outline"
                                         onClick={() => { setInstructorElegido(''); setVerInstructores(p); }}
                                     >
-                                        <UserCheck size={12} />Instructores
+                                        <UserCheck size={12} />Instructor
                                     </Btn>
                                     {p.estado === 'activo' && (
-                                        <Btn size="sm" variant="ghost" onClick={() => setPorCerrar(p)}>
-                                            Cerrar ficha
+                                        <Btn
+                                            size="sm"
+                                            variant="ghost"
+                                            className="text-destructive hover:text-destructive"
+                                            onClick={() => setPorCerrar(p)}
+                                        >
+                                            <XCircle size={12} />Cerrar ficha
                                         </Btn>
                                     )}
                                 </div>
@@ -262,11 +267,14 @@ const Programas = () => {
                 <Modal open={!!porCerrar} onClose={() => setPorCerrar(null)} title="Cerrar ficha">
                     {porCerrar && (
                         <div className="space-y-4">
-                            <p className="text-sm text-muted-foreground">
-                                La ficha <strong className="text-foreground">#{porCerrar.ficha}</strong> queda marcada
-                                como finalizada. Deja de aparecer en el registro y en los selectores de ficha; los
-                                datos que ya tiene no se borran.
-                            </p>
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
+                                <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
+                                <p className="text-sm text-red-700">
+                                    La ficha <strong>#{porCerrar.ficha}</strong> queda marcada como finalizada. Deja de
+                                    aparecer en el registro y en los selectores de ficha; los datos que ya tiene no se
+                                    borran.
+                                </p>
+                            </div>
                             <div className="flex gap-3">
                                 <Btn
                                     variant="danger"

@@ -39,6 +39,9 @@ export interface CrearLoteProduccionPayload {
     destino?: string;
     responsable?: string;
     observaciones?: string;
+    fechaCosecha?: string;
+    cantidad?: number;
+    unidad?: string;
 }
 
 export const loteProduccionApi = {

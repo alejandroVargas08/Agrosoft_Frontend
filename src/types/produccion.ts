@@ -11,6 +11,8 @@ export interface UnidadProductiva {
     fechaFinalizacion?: string | null;  // ISO
     costoTotal: number;
     estado: EstadoCultivo;
+    /** Área propia de la unidad; si es null se usa la del lote o sublote */
+    areaM2?: number | null;
 }
 
 export interface CrearUnidadProductivaPayload {
@@ -19,6 +21,17 @@ export interface CrearUnidadProductivaPayload {
     loteId: number;
     subLoteId?: number;
     fechaSiembra: string; // ISO, ej. "2026-09-24"
+    areaM2?: number;
+}
+
+/** Lo que se puede cambiar de una unidad. El lote no: sus cosechas apuntan a él. */
+export interface ActualizarUnidadProductivaPayload {
+    nombreCultivo?: string;
+    tipoCultivo?: string;
+    fechaSiembra?: string;
+    areaM2?: number;
+    /** Queda en el historial de la unidad */
+    motivo?: string;
 }
 
 // Historial de cambios de una unidad productiva
@@ -27,5 +40,8 @@ export interface HistorialCultivo {
     cultivoId: number;
     usuarioId: number;
     motivo: string;
-    cambios: Record<string, unknown>;
+    /** Cada campo cambiado con su valor de antes y el de después */
+    cambios: Record<string, { antes: unknown; despues: unknown } | unknown>;
+    fecha: string | null;
+    usuarioNombre: string | null;
 }

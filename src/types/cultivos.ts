@@ -10,6 +10,10 @@ export interface Cultivo {
     fechaFinalizacion?: string | null;
     costoTotal: number; 
     estado: EstadoCultivo;
+    /** Área propia del cultivo; si es null se usa la del lote */
+    areaM2?: number | null;
+    /** Lo que se planeó invertir. costoTotal es lo gastado de verdad. */
+    costoEstimado?: number | null;
 }
 
 export interface CrearCultivoPayload {
@@ -18,6 +22,8 @@ export interface CrearCultivoPayload {
     loteId: number;
     subLoteId?: number | undefined;
     fechaSiembra: string;
+    fechaFinalizacion?: string;
+    costoEstimado?: number;
 }
 
 export interface CultivoFormState {
@@ -26,6 +32,8 @@ export interface CultivoFormState {
     loteId: string;
     subLoteId: string;
     fechaSiembra: string;
+    fechaFinalizacion: string;
+    costoEstimado: string;
 }
 
 export const ESTADO_INICIAL_CULTIVO_FORM: CultivoFormState = {
@@ -34,6 +42,8 @@ export const ESTADO_INICIAL_CULTIVO_FORM: CultivoFormState = {
     loteId: '',
     subLoteId: '',
     fechaSiembra: '',
+    fechaFinalizacion: '',
+    costoEstimado: '',
 };
 
 export interface ActualizarCultivoPayload {
@@ -41,4 +51,6 @@ export interface ActualizarCultivoPayload {
     tipoCultivo?: string;
     fechaSiembra?: string;
     subLoteId?: number;
+    fechaFinalizacion?: string;
+    costoEstimado?: number;
 }

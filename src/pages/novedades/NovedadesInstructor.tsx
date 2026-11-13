@@ -1,28 +1,45 @@
 import { useState } from 'react';
-import { AlertTriangle, Box, CheckCircle2, Inbox, Leaf, Wrench, XCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertCircle, Leaf, Package, Wrench } from 'lucide-react';
+import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { Btn, Card, EmptyState, Modal, PageHeader, StatusBadge, Tab, Textarea } from '../../components/ui/AgroUI';
+import { Badge, Btn, Card, EmptyState, Modal, PageHeader, Tab, Textarea } from '../../components/ui/AgroUI';
 import { useNovedadesInstructor } from '../../hooks/novedades/useNovedadesInstructor';
 import type { PestanaNovedad } from '../../hooks/novedades/useNovedadesInstructor';
-import type { Novedad, TipoNovedad } from '../../types/novedades';
+import type { Novedad, TipoNovedad, UrgenciaNovedad } from '../../types/novedades';
 
 const PESTANAS: PestanaNovedad[] = ['Pendientes', 'Atendidas', 'Descartadas'];
 
-const TIPOS: Record<TipoNovedad, { etiqueta: string; icono: typeof Box }> = {
-    insumo_bajo: { etiqueta: 'Insumo por acabarse', icono: Box },
+const TIPOS: Record<TipoNovedad, { etiqueta: string; icono: typeof Package }> = {
+    insumo_bajo: { etiqueta: 'Insumo por acabarse', icono: Package },
     herramienta_danada: { etiqueta: 'Herramienta dañada', icono: Wrench },
     problema_cultivo: { etiqueta: 'Problema en el cultivo', icono: Leaf },
-    otro: { etiqueta: 'Otro', icono: AlertTriangle },
+    otro: { etiqueta: 'Otro', icono: AlertCircle },
 };
 
-const fecha = (valor: string | null) =>
-    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+// El backend las guarda en ingles
+const URGENCIA: Record<UrgenciaNovedad, { chip: 'muted' | 'progress' | 'danger'; texto: string }> = {
+    low: { chip: 'muted', texto: 'Baja' },
+    medium: { chip: 'progress', texto: 'Media' },
+    high: { chip: 'danger', texto: 'Alta' },
+};
+
+/** "Hace 3h", "Hace 2d". Tal cual el fmtRelative del diseño. */
+const hace = (valor: string) => {
+    const diferencia = Date.now() - new Date(valor).getTime();
+    const horas = Math.floor(diferencia / 3600000);
+    const dias = Math.floor(diferencia / 86400000);
+    if (horas < 1) return 'Hace un momento';
+    if (horas < 24) return 'Hace ' + horas + 'h';
+    return 'Hace ' + dias + 'd';
+};
 
 type Accion = { novedad: Novedad; tipo: 'atender' | 'descartar' };
 
 const NovedadesInstructor = () => {
+    const navigate = useNavigate();
     const {
-        novedades, pestana, setPestana, conteos, insumo,
+        novedades, pestana, setPestana, conteos, insumo, ficha,
         cargando, error, errorAccion, procesando, atender, descartar,
     } = useNovedadesInstructor();
 
@@ -34,13 +51,15 @@ const NovedadesInstructor = () => {
         setRespuesta('');
     };
 
-    // El backend exige la respuesta en los dos casos: el aprendiz tiene que saber en qué quedó
-    const valida = respuesta.trim().length >= 3;
+    // Descartar obliga a explicar por qué; atender no, como en el diseño
+    const descarta = accion?.tipo === 'descartar';
+    const valida = !descarta || respuesta.trim().length >= 3;
 
     const confirmar = () => {
         if (!accion || !valida) return;
-        const guardar = accion.tipo === 'atender' ? atender : descartar;
-        guardar(accion.novedad.id, respuesta.trim(), cerrar);
+        const avisar = (mensaje: string) => () => { toast.success(mensaje); cerrar(); };
+        if (descarta) descartar(accion.novedad.id, respuesta.trim(), avisar('Novedad descartada'));
+        else atender(accion.novedad.id, respuesta.trim(), avisar('Novedad marcada como atendida'));
     };
 
     const etiquetas = PESTANAS.map((p) => p + ' (' + conteos[p] + ')');
@@ -49,25 +68,10 @@ const NovedadesInstructor = () => {
     const quien = (n: Novedad) =>
         n.reportadaPor ? n.reportadaPor.nombre + ' ' + n.reportadaPor.apellido : 'Aprendiz';
 
-    /** Lo que el aprendiz señaló, con el stock real cuando es un insumo. */
-    const detalle = (n: Novedad) => {
-        if (n.tipo === 'insumo_bajo') {
-            const item = insumo(n.insumoId);
-            if (!item) return n.insumoId !== null ? 'Insumo #' + n.insumoId : '';
-            return item.nombre + ' — quedan ' + item.stockDisponible + ' ' + item.unidadUso +
-                ' (mínimo ' + item.stockMinimo + ')';
-        }
-        if (n.tipo === 'herramienta_danada') return n.nombreHerramienta ?? '';
-        return '';
-    };
-
     return (
         <DashboardLayout>
-            <div className="max-w-5xl mx-auto p-4 sm:p-6">
-                <PageHeader
-                    title="Novedades"
-                    subtitle="Lo que reportan los aprendices de tus fichas"
-                />
+            <div className="max-w-7xl mx-auto p-4 sm:p-6">
+                <PageHeader title="Novedades" subtitle="Reportadas por tus aprendices" />
 
                 {(error || errorAccion) && (
                     <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -81,125 +85,129 @@ const NovedadesInstructor = () => {
                     onChange={(valor) => setPestana(valor.split(' ')[0] as PestanaNovedad)}
                 />
 
-                <div className="mt-4">
-                    {cargando ? (
-                        <Card className="p-6 text-sm text-muted-foreground">Cargando novedades...</Card>
-                    ) : novedades.length === 0 ? (
-                        <EmptyState
-                            icon={Inbox}
-                            title={
-                                pestana === 'Pendientes'
-                                    ? 'No hay novedades pendientes'
-                                    : 'No hay novedades ' + pestana.toLowerCase()
-                            }
-                            description={
-                                pestana === 'Pendientes'
-                                    ? 'Cuando un aprendiz reporte algo, te aparece aquí para que le respondas.'
-                                    : 'Las novedades que resuelvas quedan guardadas en esta pestaña.'
-                            }
-                        />
-                    ) : (
-                        <div className="space-y-3">
-                            {novedades.map((n) => {
-                                const meta = TIPOS[n.tipo];
-                                const Icono = meta.icono;
-                                const extra = detalle(n);
-                                return (
-                                    <Card key={n.id} className="p-4">
-                                        <div className="flex items-start gap-3">
-                                            <div className="shrink-0 w-10 h-10 rounded-xl bg-primary/10 grid place-items-center">
-                                                <Icono className="w-5 h-5 text-primary" />
+                {cargando ? (
+                    <p className="py-16 text-center text-sm text-muted-foreground">Cargando novedades...</p>
+                ) : novedades.length === 0 ? (
+                    <EmptyState
+                        icon={AlertCircle}
+                        title="Sin novedades en esta categoría"
+                        description="Aquí aparecerán las novedades reportadas por tus aprendices."
+                    />
+                ) : (
+                    <div className="space-y-3">
+                        {novedades.map((n) => {
+                            const meta = TIPOS[n.tipo];
+                            const Icono = meta.icono;
+                            const alta = n.urgencia === 'high';
+                            const item = n.tipo === 'insumo_bajo' ? insumo(n.insumoId) : null;
+                            const numeroFicha = ficha(n.reportadaPor?.id);
+
+                            return (
+                                <Card key={n.id} className={alta ? 'border-red-200' : ''}>
+                                    <div className="flex items-start justify-between gap-2 mb-2">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className={'p-2 rounded-lg shrink-0 ' + (alta ? 'bg-red-100' : 'bg-icon-bg')}>
+                                                <Icono size={16} className={alta ? 'text-red-600' : 'text-primary'} />
                                             </div>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <p className="font-bold text-foreground">{quien(n)}</p>
-                                                    <StatusBadge status={n.urgencia} />
-                                                    {n.estado !== 'pendiente' && <StatusBadge status={n.estado} />}
-                                                </div>
-                                                <p className="text-sm font-semibold text-muted-foreground">
-                                                    {meta.etiqueta}{extra && ' · ' + extra}
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold text-foreground">{meta.etiqueta}</p>
+                                                <p className="text-xs text-muted-foreground truncate">
+                                                    {quien(n)}{numeroFicha ? ' · Ficha ' + numeroFicha : ''}
                                                 </p>
-                                                <p className="mt-1.5 text-sm text-foreground/90">{n.descripcion}</p>
-                                                <p className="mt-1 text-xs text-muted-foreground">
-                                                    Reportada el {fecha(n.creadoEn)}
-                                                </p>
-
-                                                {n.respuestaInstructor && (
-                                                    <div className="mt-3 rounded-xl border border-border bg-muted/40 p-3">
-                                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                                                            Tu respuesta · {fecha(n.respondidaEn)}
-                                                        </p>
-                                                        <p className="mt-1 text-sm text-foreground/90">{n.respuestaInstructor}</p>
-                                                    </div>
-                                                )}
-
-                                                {n.estado === 'pendiente' && (
-                                                    <div className="mt-3 flex flex-wrap gap-2">
-                                                        <Btn size="sm" onClick={() => setAccion({ novedad: n, tipo: 'atender' })}>
-                                                            <CheckCircle2 className="w-4 h-4" /> Atender
-                                                        </Btn>
-                                                        <Btn
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={() => setAccion({ novedad: n, tipo: 'descartar' })}
-                                                        >
-                                                            <XCircle className="w-4 h-4" /> Descartar
-                                                        </Btn>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
-                                    </Card>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-            </div>
+                                        <Badge color={URGENCIA[n.urgencia].chip}>{URGENCIA[n.urgencia].texto}</Badge>
+                                    </div>
 
-            <Modal
-                open={accion !== null}
-                onClose={cerrar}
-                title={accion?.tipo === 'descartar' ? 'Descartar novedad' : 'Atender novedad'}
-            >
-                {accion && (
-                    <div className="space-y-4">
-                        <div className="rounded-xl border border-border bg-muted/40 p-3">
-                            <p className="text-sm font-bold text-foreground">
-                                {quien(accion.novedad)} · {TIPOS[accion.novedad.tipo].etiqueta}
-                            </p>
-                            <p className="mt-1 text-sm text-foreground/90">{accion.novedad.descripcion}</p>
-                        </div>
+                                    <p className="text-sm text-muted-foreground mb-2">{n.descripcion}</p>
 
-                        <Textarea
-                            label={accion.tipo === 'descartar' ? '¿Por qué la descartas?' : '¿Qué se hizo?'}
-                            value={respuesta}
-                            onChange={setRespuesta}
-                            placeholder={
-                                accion.tipo === 'descartar'
-                                    ? 'Explícale al aprendiz por qué no se va a atender'
-                                    : 'Cuéntale qué se hizo o qué sigue'
-                            }
-                            rows={4}
-                            required
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            La respuesta es obligatoria: el aprendiz tiene que saber en qué quedó lo que reportó.
-                        </p>
+                                    {item && (
+                                        <div className="flex items-center gap-3 p-2 bg-muted rounded-lg mb-2 text-xs">
+                                            <Package size={12} className="text-muted-foreground shrink-0" />
+                                            <span className="min-w-0">
+                                                Stock actual: <strong>{item.stockDisponible} {item.unidadUso}</strong>
+                                                {' / '}Mínimo: {item.stockMinimo} {item.unidadUso}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate('/inventario')}
+                                                className="ml-auto text-primary hover:underline font-medium shrink-0"
+                                            >
+                                                Ir al inventario
+                                            </button>
+                                        </div>
+                                    )}
 
-                        <div className="flex justify-end gap-2 pt-1">
-                            <Btn variant="ghost" onClick={cerrar} disabled={procesando}>Cancelar</Btn>
-                            <Btn
-                                variant={accion.tipo === 'descartar' ? 'danger' : 'primary'}
-                                onClick={confirmar}
-                                disabled={!valida || procesando}
-                            >
-                                {procesando ? 'Guardando...' : accion.tipo === 'descartar' ? 'Descartar' : 'Marcar atendida'}
-                            </Btn>
-                        </div>
+                                    <p className="text-xs text-muted-foreground mb-3">{hace(n.creadoEn)}</p>
+
+                                    {n.estado === 'pendiente' && (
+                                        <div className="flex gap-2">
+                                            <Btn
+                                                size="sm"
+                                                onClick={() => { setAccion({ novedad: n, tipo: 'atender' }); setRespuesta(''); }}
+                                                className="flex-1 justify-center"
+                                            >
+                                                Marcar atendida
+                                            </Btn>
+                                            <Btn
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => { setAccion({ novedad: n, tipo: 'descartar' }); setRespuesta(''); }}
+                                                className="flex-1 justify-center"
+                                            >
+                                                Descartar
+                                            </Btn>
+                                        </div>
+                                    )}
+
+                                    {n.respuestaInstructor && (
+                                        <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-lg mt-2">
+                                            <p className="text-xs text-emerald-700">{n.respuestaInstructor}</p>
+                                        </div>
+                                    )}
+                                </Card>
+                            );
+                        })}
                     </div>
                 )}
-            </Modal>
+
+                <Modal
+                    open={accion !== null}
+                    onClose={cerrar}
+                    title={accion?.tipo === 'descartar' ? 'Descartar novedad' : 'Marcar novedad como atendida'}
+                >
+                    {accion && (
+                        <div className="space-y-3">
+                            <Textarea
+                                label={descarta ? 'Motivo' : 'Respuesta (opcional)'}
+                                value={respuesta}
+                                onChange={setRespuesta}
+                                placeholder={
+                                    descarta
+                                        ? 'Indica por qué se descarta esta novedad...'
+                                        : 'Indica qué acciones se tomaron...'
+                                }
+                                rows={3}
+                                required={descarta}
+                            />
+
+                            <div className="flex gap-3">
+                                <Btn
+                                    variant={descarta ? 'danger' : 'primary'}
+                                    onClick={confirmar}
+                                    disabled={!valida || procesando}
+                                    className="flex-1 justify-center"
+                                >
+                                    {procesando ? 'Guardando...' : descarta ? 'Descartar' : 'Confirmar'}
+                                </Btn>
+                                <Btn variant="outline" onClick={cerrar} className="flex-1 justify-center">
+                                    Cancelar
+                                </Btn>
+                            </div>
+                        </div>
+                    )}
+                </Modal>
+            </div>
         </DashboardLayout>
     );
 };

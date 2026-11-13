@@ -30,6 +30,7 @@ export function useNuevaUnidadForm({ onSuccess }: { onSuccess: () => void }) {
                 tipoCultivo: form.type,
                 loteId: Number(form.plotId),
                 fechaSiembra: form.startDate,
+                ...(form.area.trim() !== '' ? { areaM2: Number(form.area) } : {}),
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['unidades-productivas'] });
@@ -44,6 +45,10 @@ export function useNuevaUnidadForm({ onSuccess }: { onSuccess: () => void }) {
 
         if (!form.type) {
             setErrorLocal('Selecciona el tipo de cultivo');
+            return;
+        }
+        if (form.area.trim() !== '' && !(Number(form.area) >= 0)) {
+            setErrorLocal('El área debe ser un número mayor o igual a 0');
             return;
         }
         if (!form.plotId) {

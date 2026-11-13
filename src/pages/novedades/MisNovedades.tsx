@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AlertCircle, Leaf, Package, Plus, Wrench } from 'lucide-react';
+import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Modal, PageHeader, Select, StatusBadge, Textarea } from '../../components/ui/AgroUI';
 import { useMisNovedades } from '../../hooks/novedades/useMisNovedades';
@@ -20,16 +21,16 @@ const URGENCIAS: { valor: UrgenciaNovedad; etiqueta: string }[] = [
     { valor: 'high', etiqueta: 'Alta' },
 ];
 
-/** El diseño muestra el tiempo relativo, no la fecha */
+/**
+ * El diseño muestra el tiempo relativo, no la fecha, y solo en tres formas:
+ * "Hace un momento" por debajo de la hora, "Hace Xh" el mismo día y "Hace Xd".
+ */
 const hace = (iso: string) => {
     const ms = Date.now() - new Date(iso).getTime();
-    const minutos = Math.floor(ms / 60_000);
-    if (minutos < 1) return 'Hace un momento';
-    if (minutos < 60) return 'Hace ' + minutos + ' min';
-    const horas = Math.floor(minutos / 60);
+    const horas = Math.floor(ms / 3_600_000);
+    if (horas < 1) return 'Hace un momento';
     if (horas < 24) return 'Hace ' + horas + 'h';
-    const dias = Math.floor(horas / 24);
-    return 'Hace ' + dias + (dias === 1 ? ' día' : ' días');
+    return 'Hace ' + Math.floor(ms / 86_400_000) + 'd';
 };
 
 const MisNovedades = () => {
@@ -86,7 +87,10 @@ const MisNovedades = () => {
             ...(tipo === 'insumo_bajo' ? { insumoId: Number(insumoId) } : {}),
             ...(tipo === 'herramienta_danada' ? { nombreHerramienta } : {}),
             ...(tareaId ? { actividadId: Number(tareaId) } : {}),
-        }, cerrarModal);
+        }, () => {
+            toast.success('Tu instructor recibió la novedad');
+            cerrarModal();
+        });
     };
 
     const botonReportar = (
@@ -148,6 +152,11 @@ const MisNovedades = () => {
                                                 Respuesta del instructor:
                                             </p>
                                             <p className="text-xs text-emerald-600">{n.respuestaInstructor}</p>
+                                            {n.respondidaEn && (
+                                                <p className="text-[10px] text-muted-foreground mt-1">
+                                                    {hace(n.respondidaEn)}
+                                                </p>
+                                            )}
                                         </div>
                                     )}
                                 </Card>

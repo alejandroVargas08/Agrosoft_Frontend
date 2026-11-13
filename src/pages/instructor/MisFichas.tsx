@@ -8,37 +8,39 @@ import type { FichaConResumen } from '../../hooks/instructor/useMisFichas';
 const fecha = (valor: string) =>
     new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
 
-const Dato = ({ titulo, valor, alerta = false }: { titulo: string; valor: number; alerta?: boolean }) => (
+const Dato = ({ titulo, valor, color = '' }: { titulo: string; valor: number; color?: string }) => (
     <div className="p-2 bg-muted rounded-lg text-center">
         <p className="text-muted-foreground">{titulo}</p>
-        <p className={'font-bold ' + (alerta && valor > 0 ? 'text-[#F16C07]' : 'text-foreground')}>{valor}</p>
+        <p className={'font-bold ' + (color && valor > 0 ? color : 'text-foreground')}>{valor}</p>
     </div>
 );
 
-const TarjetaFicha = ({ ficha, puedeRevisar }: { ficha: FichaConResumen; puedeRevisar: boolean }) => {
+const TarjetaFicha = ({ ficha }: { ficha: FichaConResumen }) => {
     const navigate = useNavigate();
 
     return (
         <Card>
             <div className="flex items-start justify-between mb-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
+                <div className="p-2 bg-icon-bg rounded-lg">
                     <GraduationCap size={20} className="text-primary" />
                 </div>
                 <StatusBadge status={ficha.estado} />
             </div>
 
             <p className="font-bold text-foreground text-lg font-mono">{ficha.ficha}</p>
-            <p className="text-sm text-muted-foreground mb-2">{ficha.nombre}</p>
+            <p className="text-sm text-muted-foreground mb-1">{ficha.nombre}</p>
             <Badge color="info">{ficha.tipo}</Badge>
 
-            <div className={'grid gap-2 mt-3 text-xs ' + (puedeRevisar ? 'grid-cols-2' : 'grid-cols-1')}>
+            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
                 <Dato titulo="Aprendices" valor={ficha.aprendices} />
-                {puedeRevisar && <Dato titulo="Por revisar" valor={ficha.porRevisar} alerta />}
+                <Dato titulo="Tareas activas" valor={ficha.tareasActivas} />
+                <Dato titulo="Por revisar" valor={ficha.porRevisar} color="text-[#F16C07]" />
+                <Dato titulo="Novedades" valor={ficha.novedades} color="text-red-600" />
             </div>
 
-            <p className="text-xs text-muted-foreground mt-3 mb-3">
-                {fecha(ficha.fechaInicio)} — {fecha(ficha.fechaFin)}
-            </p>
+            <div className="text-xs text-muted-foreground mt-2 mb-3">
+                <p>{fecha(ficha.fechaInicio)} — {fecha(ficha.fechaFin)}</p>
+            </div>
 
             <Btn className="w-full justify-center" onClick={() => navigate('/mis-fichas/' + ficha.id)}>
                 Ver ficha
@@ -48,7 +50,7 @@ const TarjetaFicha = ({ ficha, puedeRevisar }: { ficha: FichaConResumen; puedeRe
 };
 
 const MisFichas = () => {
-    const { fichas, total, cargando, error, puedeRevisar } = useMisFichas();
+    const { fichas, total, cargando, error } = useMisFichas();
 
     return (
         <DashboardLayout>
@@ -73,9 +75,9 @@ const MisFichas = () => {
                         description="Cuando el administrador te asigne fichas, aparecerán aquí."
                     />
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {fichas.map((ficha) => (
-                            <TarjetaFicha key={ficha.id} ficha={ficha} puedeRevisar={puedeRevisar} />
+                            <TarjetaFicha key={ficha.id} ficha={ficha} />
                         ))}
                     </div>
                 )}

@@ -27,8 +27,8 @@ const RolesPermisos = () => {
         <DashboardLayout>
             <div className="max-w-7xl mx-auto p-4 sm:p-6">
                 <PageHeader
-                    title="Roles y permisos"
-                    subtitle="Qué puede hacer cada rol"
+                    title="Roles y Permisos"
+                    subtitle="Gestión granular de accesos"
                     action={
                         <Btn size="sm" onClick={() => setFormAbierto(true)}>
                             <Plus size={14} />Nuevo rol

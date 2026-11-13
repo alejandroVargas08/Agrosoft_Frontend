@@ -1,10 +1,32 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ActividadEvidenciaApi } from "../../api/actividades/actividadEvidencias";
+import { misTareasApi } from "../../api/instructor";
+import { usePermisos } from "../permisos/usePermisos";
+import { PERMISO_EJECUTAR_ACTIVIDADES } from "../instructor/permisos";
 import type { CrearActividadEvidenciaPayload } from "../../types/actividadDetalle";
 import { isAxiosError } from "axios";
 
 export function useActividadEvidencias(actividadId: number | undefined) {
     const queryClient = useQueryClient();
+    const { puede } = usePermisos();
+
+    /**
+     * La entrega propia del aprendiz para esta actividad, si tiene una.
+     *
+     * Se usa para estampar lo que suba, de modo que en Por revisar el
+     * instructor vea las fotos de ese aprendiz y no las de todo el grupo.
+     * El instructor no tiene entrega: lo que sube el queda en la actividad.
+     */
+    const { data: misTareas } = useQuery({
+        queryKey: ['mis-tareas'],
+        queryFn: async () => (await misTareasApi.listar()).data,
+        enabled: puede(PERMISO_EJECUTAR_ACTIVIDADES),
+        staleTime: 1000 * 60,
+    });
+
+    const miEntregaId = (misTareas ?? []).find(
+        (t) => t.actividad?.id === actividadId,
+    )?.id;
 
     const {
         data: evidencias = [],
@@ -21,7 +43,10 @@ export function useActividadEvidencias(actividadId: number | undefined) {
 
     const registrarMutation = useMutation({
         mutationFn: (payload: CrearActividadEvidenciaPayload) =>
-            ActividadEvidenciaApi.registrar(actividadId!, payload),
+            ActividadEvidenciaApi.registrar(actividadId!, {
+                ...payload,
+                asignacionId: payload.asignacionId ?? miEntregaId,
+            }),
     onSuccess: invalidar,
     });
 

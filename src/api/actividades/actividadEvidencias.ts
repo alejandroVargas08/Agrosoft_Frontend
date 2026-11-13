@@ -3,8 +3,11 @@ import { api } from "../axios";
 
 
 export const ActividadEvidenciaApi = {
-    listar: (actividadId: number) =>
-        api.get<ActividadEvidencia[]>(`/actividades/${actividadId}/evidencias`),
+    /** Con asignacionId trae solo las de esa entrega; sin el, todas. */
+    listar: (actividadId: number, asignacionId?: number) =>
+        api.get<ActividadEvidencia[]>(`/actividades/${actividadId}/evidencias`, {
+            params: asignacionId === undefined ? undefined : { asignacionId },
+        }),
 
     registrar: (actividadId: number, data: CrearActividadEvidenciaPayload) =>
         api.post<ActividadEvidencia>(`/actividades/${actividadId}/evidencias`, data),

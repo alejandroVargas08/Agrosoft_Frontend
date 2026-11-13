@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Calendar, ClipboardList, Leaf, MapPin } from 'lucide-react';
+import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Input, Modal, PageHeader, StatusBadge, Tab, Textarea } from '../../components/ui/AgroUI';
 import { useMisTareas } from '../../hooks/instructor/useMisTareas';
@@ -10,7 +11,7 @@ import { ChecklistEntrega } from '../../components/instructor/ChecklistEntrega';
 const PESTANAS: PestanaTarea[] = ['Pendientes', 'Entregadas', 'Aprobadas'];
 
 const fecha = (valor: string | null) =>
-    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) : 'sin fecha';
+    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'sin fecha';
 
 /** El plazo en palabras, con el color según qué tan encima esté. */
 const plazo = (tarea: TareaPropia) => {
@@ -47,7 +48,10 @@ const MisTareas = () => {
 
     const confirmarEntrega = () => {
         if (!porEntregar || !horasValidas) return;
-        entregar(porEntregar.asignacion.id, Number(horas), comentario, cerrarEntrega);
+        entregar(porEntregar.asignacion.id, Number(horas), comentario, () => {
+            toast.success('Tarea entregada a tu instructor');
+            cerrarEntrega();
+        });
     };
 
     // Las pestañas llevan el conteo en la etiqueta, como en el diseño
@@ -173,7 +177,10 @@ const MisTareas = () => {
                             <div className="flex gap-3">
                                 <Btn
                                     disabled={procesando}
-                                    onClick={() => iniciar(porEmpezar.asignacion.id, () => setPorEmpezar(null))}
+                                    onClick={() => iniciar(porEmpezar.asignacion.id, () => {
+                                        toast.success('Tarea iniciada');
+                                        setPorEmpezar(null);
+                                    })}
                                     className="flex-1 justify-center"
                                 >
                                     {procesando ? 'Guardando...' : 'Empezar'}
@@ -189,7 +196,10 @@ const MisTareas = () => {
                 <Modal open={!!porEntregar} onClose={cerrarEntrega} title="Entregar tarea">
                     {porEntregar && (
                         <div className="space-y-4">
-                            <ChecklistEntrega actividadId={porEntregar.asignacion.actividad?.id} />
+                            <ChecklistEntrega
+                                actividadId={porEntregar.asignacion.actividad?.id}
+                                asignacionId={porEntregar.asignacion.id}
+                            />
 
                             <div className="p-3 bg-[#FFF3E0] border border-[#F16C07]/30 rounded-xl flex items-start gap-2">
                                 <AlertCircle size={14} className="text-[#F16C07] shrink-0 mt-0.5" />

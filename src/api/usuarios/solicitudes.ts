@@ -13,7 +13,9 @@ export interface RolBasico {
 
 export const solicitudesApi = {
     listar: () => api.get<SolicitudAcceso[]>('/usuarios/solicitudes'),
-    aprobar: (id: number) => api.patch<SolicitudAcceso>(`/usuarios/${id}/aprobar`),
+    // Con fichas, el instructor queda a cargo de esas y no de las que pidió
+    aprobar: (id: number, fichasACargo?: number[]) =>
+        api.patch<SolicitudAcceso>(`/usuarios/${id}/aprobar`, fichasACargo ? { fichasACargo } : {}),
     // El motivo es obligatorio: el backend lo guarda y se lo muestra a la
     // persona cuando intenta entrar.
     rechazar: (id: number, motivo: string) =>

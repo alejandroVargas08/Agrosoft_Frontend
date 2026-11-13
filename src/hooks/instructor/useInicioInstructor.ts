@@ -1,27 +1,32 @@
 import { useQuery } from '@tanstack/react-query';
 import { alertasApi } from '../../api/alertas';
-import { aprendicesApi, misFichasApi, revisionApi } from '../../api/instructor';
+import { vuelosApi, dronesApi } from '../../api/drones/drones';
+import { novedadesApi } from '../../api/novedades';
+import { panelInstructorApi, resumenAprendicesApi, revisionApi } from '../../api/instructor';
+import { lotesApi } from '../../api/territorio';
+import { useSensoresPorLote } from '../sensores/useSensoresPorLote';
 import { usePermisos } from '../permisos/usePermisos';
 import { PERMISO_REVISAR_ACTIVIDADES } from './permisos';
 
-/** Los indicadores del instructor. Solo lo que el backend puede responder de
- *  verdad: el mockup pide además novedades, tareas vencidas y gráficas
- *  semanales, y para eso no hay endpoints. */
+/** El último vuelo con análisis terminado, con los nombres ya resueltos. */
+export interface UltimoVuelo {
+    id: number;
+    nombre: string;
+    estado: string;
+    fecha: string;
+    dron: string;
+    lote: string;
+    salud: number | null;
+}
+
+/**
+ * Los indicadores y las tarjetas del panel del instructor, tal como los pide
+ * el diseño. Las dos agregaciones que no salían de ningún lado —las próximas
+ * fechas límite y las aprobadas por semana— ahora tienen endpoint propio.
+ */
 export function useInicioInstructor() {
     const { puede } = usePermisos();
     const puedeRevisar = puede(PERMISO_REVISAR_ACTIVIDADES);
-
-    const fichasQuery = useQuery({
-        queryKey: ['mis-fichas'],
-        queryFn: async () => (await misFichasApi.listar()).data,
-        staleTime: 1000 * 60 * 5,
-    });
-
-    const aprendicesQuery = useQuery({
-        queryKey: ['aprendices'],
-        queryFn: async () => (await aprendicesApi.listar()).data,
-        staleTime: 1000 * 60 * 5,
-    });
 
     const porRevisarQuery = useQuery({
         queryKey: ['asignaciones-por-revisar'],
@@ -29,40 +34,95 @@ export function useInicioInstructor() {
         enabled: puedeRevisar,
     });
 
+    // Las vencidas se suman del resumen por aprendiz: el backend ya las cuenta
+    // ahí con la misma regla que usa el guard, y así no se inventa una segunda
+    const resumenQuery = useQuery({
+        queryKey: ['aprendices-resumen'],
+        queryFn: async () => (await resumenAprendicesApi.listar()).data,
+        staleTime: 60_000,
+    });
+
+    const novedadesQuery = useQuery({
+        queryKey: ['novedades', 'pendiente'],
+        queryFn: async () => (await novedadesApi.listar('pendiente')).data,
+        staleTime: 60_000,
+    });
+
     const bajoStockQuery = useQuery({
         queryKey: ['insumos-bajo-stock'],
         queryFn: async () => (await alertasApi.insumosBajoStock()).data,
     });
 
-    const sensorAlertasQuery = useQuery({
-        queryKey: ['sensor-alertas'],
-        queryFn: async () => (await alertasApi.sensorAlertas()).data,
+    const proximasQuery = useQuery({
+        queryKey: ['panel-proximas-fechas'],
+        queryFn: async () => (await panelInstructorApi.proximasFechas()).data,
+        staleTime: 5 * 60_000,
     });
 
-    const porRevisar = porRevisarQuery.data ?? [];
-    const alertas = sensorAlertasQuery.data ?? [];
+    const semanalQuery = useQuery({
+        queryKey: ['panel-aprobadas-semana'],
+        queryFn: async () => (await panelInstructorApi.aprobadasPorSemana()).data,
+        staleTime: 5 * 60_000,
+    });
 
-    // Un sensor puede tener varias alertas; lo que importa es cuántos sensores
-    // están fuera de rango, no cuántas lecturas malas hay.
-    const sensoresConAlerta = new Set(alertas.map((a) => a.sensorId)).size;
+    const vuelosQuery = useQuery({
+        queryKey: ['vuelos'],
+        queryFn: async () => (await vuelosApi.listar()).data,
+        staleTime: 5 * 60_000,
+    });
 
-    // Las entregas más recientes primero, que es lo que el instructor atiende
-    const ultimasEntregas = [...porRevisar]
-        .sort((a, b) => {
-            const fa = a.entregadaEn ? new Date(a.entregadaEn).getTime() : 0;
-            const fb = b.entregadaEn ? new Date(b.entregadaEn).getTime() : 0;
-            return fb - fa;
-        })
-        .slice(0, 5);
+    const dronesQuery = useQuery({
+        queryKey: ['drones'],
+        queryFn: async () => (await dronesApi.listar()).data,
+        staleTime: 10 * 60_000,
+    });
+
+    const lotesQuery = useQuery({
+        queryKey: ['lotes'],
+        queryFn: async () => (await lotesApi.listar()).data,
+        staleTime: 5 * 60_000,
+    });
+
+    // Las estaciones las arma el mismo hook que la pantalla de Sensores, para
+    // que el panel y esa pantalla nunca digan cosas distintas
+    const { estaciones, resumen: resumenEstaciones } = useSensoresPorLote();
+
+    const resumen = resumenQuery.data ?? [];
+    const vencidas = resumen.reduce((total, aprendiz) => total + aprendiz.vencidas, 0);
+
+    // El diseño muestra el último vuelo ya analizado
+    const analizados = (vuelosQuery.data ?? [])
+        .filter((v) => v.estado === 'ANALIZADO')
+        .sort((a, b) => new Date(b.fechaVuelo).getTime() - new Date(a.fechaVuelo).getTime());
+
+    const vuelo = analizados[0];
+    const nombreDron = new Map((dronesQuery.data ?? []).map((d) => [d.id, d.nombre]));
+    const nombreLote = new Map((lotesQuery.data ?? []).map((l) => [l.id, l.nombre]));
+
+    const ultimoVuelo: UltimoVuelo | null = vuelo
+        ? {
+              id: vuelo.id,
+              nombre: vuelo.nombre,
+              estado: vuelo.estado,
+              fecha: vuelo.fechaVuelo,
+              dron: nombreDron.get(vuelo.dronId) ?? 'Dron #' + vuelo.dronId,
+              lote: nombreLote.get(vuelo.loteId) ?? 'Lote #' + vuelo.loteId,
+              salud: vuelo.ultimoAnalisis?.saludablePct ?? null,
+          }
+        : null;
 
     return {
-        fichas: fichasQuery.data?.length ?? 0,
-        aprendices: aprendicesQuery.data?.length ?? 0,
-        porRevisar: porRevisar.length,
-        insumosBajos: bajoStockQuery.data?.length ?? 0,
-        sensoresConAlerta,
-        ultimasEntregas,
+        porRevisar: (porRevisarQuery.data ?? []).length,
+        vencidas,
+        novedadesAbiertas: (novedadesQuery.data ?? []).length,
+        insumosBajos: (bajoStockQuery.data ?? []).length,
+        estacionesConAlerta: resumenEstaciones.conAlerta,
+        // El diseño solo lista las estaciones que están reportando
+        estaciones: estaciones.filter((e) => e.estado !== 'desconectada'),
+        proximasFechas: proximasQuery.data ?? [],
+        aprobadasPorSemana: semanalQuery.data ?? [],
+        ultimoVuelo,
         puedeRevisar,
-        cargando: fichasQuery.isLoading || aprendicesQuery.isLoading,
+        cargando: resumenQuery.isLoading || novedadesQuery.isLoading,
     };
 }

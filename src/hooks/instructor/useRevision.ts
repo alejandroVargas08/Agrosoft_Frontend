@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { aprendicesApi, misFichasApi, revisionApi } from '../../api/instructor';
+import { ActividadEvidenciaApi } from '../../api/actividades/actividadEvidencias';
 import { lotesApi } from '../../api/territorio';
 import { cultivosApi } from '../../api/cultivo/cultivos';
 import { mensajeError } from '../../api/errores/errores';
 import type { Asignacion } from '../../types/instructor';
+import type { FotoEvidencia } from '../../components/instructor/GaleriaEvidencias';
 
 /** Una entrega lista para mostrar: ya con el nombre de la ficha, del lote y
  *  del cultivo resueltos, en lugar de los ids que devuelve el backend. */
@@ -17,6 +19,8 @@ export interface EntregaPorRevisar {
     lote: string;
     cultivo: string;
     entregadaTarde: boolean;
+    /** Las fotos que subio el aprendiz en esta entrega, ya aplanadas. */
+    fotos: FotoEvidencia[];
 }
 
 export function useRevision() {
@@ -64,6 +68,40 @@ export function useRevision() {
     });
     const cultivos = cultivosPorLote.flatMap((c) => c.data ?? []);
 
+    // Las evidencias se piden por entrega, no por actividad: dos aprendices
+    // con la misma actividad suben fotos distintas y el instructor tiene que
+    // ver solo las del que esta revisando.
+    const entregasConActividad = useMemo(
+        () =>
+            (porRevisarQuery.data ?? [])
+                .filter((a) => a.actividad)
+                .map((a) => ({ asignacionId: a.id, actividadId: a.actividad!.id })),
+        [porRevisarQuery.data],
+    );
+
+    const evidenciasQueries = useQueries({
+        queries: entregasConActividad.map(({ asignacionId, actividadId }) => ({
+            queryKey: ['actividad-evidencias', actividadId, asignacionId],
+            queryFn: async () => (await ActividadEvidenciaApi.listar(actividadId, asignacionId)).data,
+            staleTime: 1000 * 60,
+        })),
+    });
+
+    const fotosPorEntrega = new Map<number, FotoEvidencia[]>();
+    evidenciasQueries.forEach((consulta, i) => {
+        const entrega = entregasConActividad[i];
+        if (!entrega) return;
+        // Una evidencia puede traer varias imagenes: la galeria las quiere planas
+        const fotos = (consulta.data ?? []).flatMap((evidencia) =>
+            evidencia.imagenes.map((url, n) => ({
+                id: evidencia.id + '-' + n,
+                url,
+                nombre: evidencia.descripcion?.trim() || 'Evidencia ' + (n + 1),
+            })),
+        );
+        fotosPorEntrega.set(entrega.asignacionId, fotos);
+    });
+
     const entregas: EntregaPorRevisar[] = (() => {
         const aprendices = aprendicesQuery.data ?? [];
         const fichas = fichasQuery.data ?? [];
@@ -101,6 +139,7 @@ export function useRevision() {
                     ? nombreCultivo.get(actividad.cultivoId) ?? 'Cultivo #' + actividad.cultivoId
                     : '—',
                 entregadaTarde,
+                fotos: fotosPorEntrega.get(asignacion.id) ?? [],
             };
         });
     })();

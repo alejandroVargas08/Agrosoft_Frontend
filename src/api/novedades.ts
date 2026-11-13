@@ -8,13 +8,13 @@ export const misNovedadesApi = {
     reportar: (data: ReportarNovedadPayload) => api.post<Novedad>('/mis-novedades', data),
 };
 
-/** La bandeja del instructor. La respuesta es obligatoria en los dos casos:
- *  el aprendiz tiene que saber en qué quedó lo que reportó. */
+/** La bandeja del instructor. Al descartar el motivo es obligatorio, porque el
+ *  aprendiz se queda sin solución; al atender la respuesta es opcional. */
 export const novedadesApi = {
     listar: (estado?: string) =>
         api.get<Novedad[]>('/novedades', { params: estado ? { estado } : undefined }),
-    atender: (id: number, respuesta: string) =>
-        api.patch<Novedad>(`/novedades/${id}/atender`, { respuesta }),
+    atender: (id: number, respuesta?: string) =>
+        api.patch<Novedad>(`/novedades/${id}/atender`, respuesta ? { respuesta } : {}),
     descartar: (id: number, respuesta: string) =>
         api.patch<Novedad>(`/novedades/${id}/descartar`, { respuesta }),
 };

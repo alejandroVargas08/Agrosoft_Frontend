@@ -77,6 +77,9 @@ export interface LoteProduccion {
     destino?: string | null;
     responsable?: string | null;
     observaciones?: string | null;
-    /** Fecha de registro de la cosecha (created_at en la tabla) */
+    /** Día de la cosecha (las viejas traen el día en que se registraron) */
     fechaCosecha?: string | null;
+    /** Lo que se anotó tal cual, ej. 12 bultos. cantidadKg es su equivalente. */
+    cantidad?: number | null;
+    unidad?: string | null;
 }

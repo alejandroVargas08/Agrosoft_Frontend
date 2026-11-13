@@ -1,5 +1,6 @@
 import './App.css'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { Register } from './pages/Register'
 import Login from './pages/Login'
 import InicioSegunRol from './pages/InicioSegunRol'
@@ -44,7 +45,6 @@ import SensoresPage from './pages/SensorPage'
 import Actividades from './pages/actividades/actividades'
 import ActividadDetalle from './pages/actividades/ActividadDetalle'
 import Cultivos from './pages/cultivos/cultivos'
-import CultivoDetalle from './pages/cultivos/CultivoDetalle'
 import Notificaciones from './pages/notificaciones/Notificaciones'
 import LayoutConNotificaciones from './components/layout/LayoutConNotificaciones'
 import Historial from './pages/historial/historial'
@@ -55,6 +55,18 @@ import ResultadoAnalisis from './pages/drones/ResultadoAnalisis'
 
 function App() {
   return (
+    <>
+      {/* Los avisos de confirmacion del diseño. Toma los colores del tema,
+          igual que el wrapper de sonner que trae el Figma. */}
+      <Toaster
+        position="bottom-right"
+        closeButton
+        style={{
+          '--normal-bg': 'var(--popover)',
+          '--normal-text': 'var(--popover-foreground)',
+          '--normal-border': 'var(--border)',
+        } as React.CSSProperties}
+      />
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -99,7 +111,7 @@ function App() {
         <Route path="/mis-novedades" element={<MisNovedades />} />
         <Route path="/novedades" element={<NovedadesInstructor />} />
         <Route path="/cultivos" element={<Cultivos />} />
-        <Route path="/cultivos/:id" element={<CultivoDetalle />} />
+        <Route path="/cultivos/:id" element={<Cultivos />} />
         <Route path="/historial" element={<Historial />} />
         <Route path="/unidades-productivas" element={<UnidadesProductivas />} />
         <Route path="/unidades-productivas/nueva" element={<NuevaUnidadProductiva />} />
@@ -130,6 +142,7 @@ function App() {
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
+    </>
   )
 }
 

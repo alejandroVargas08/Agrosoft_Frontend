@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { solicitudesApi } from '../api/usuarios/solicitudes';
+import { programasFormacionApi } from '../api/programa_formacion/programasFormacion';
 import { mensajeError } from '../api/errores/errores';
 
 export function useSolicitudes() {
@@ -17,16 +18,25 @@ export function useSolicitudes() {
         staleTime: 1000 * 60 * 10,
     });
 
+    // Para mostrar las fichas pedidas por su número y elegir las que quedan a cargo
+    const programasQuery = useQuery({
+        queryKey: ['programas-todos'],
+        queryFn: async () => (await programasFormacionApi.listarTodos()).data,
+        staleTime: 1000 * 60 * 5,
+    });
+
     const nombreRol = (rolId: number) =>
         rolesQuery.data?.find((rol) => rol.id === rolId)?.nombre ?? 'Rol #' + rolId;
 
     const refrescar = () => {
         queryClient.invalidateQueries({ queryKey: ['solicitudes-acceso'] });
         queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+        // El contador del menú lateral y el panel del administrador
+        queryClient.invalidateQueries({ queryKey: ['admin'] });
     };
 
     const aprobarMutation = useMutation({
-        mutationFn: (id: number) => solicitudesApi.aprobar(id),
+        mutationFn: ({ id, fichas }: { id: number; fichas?: number[] }) => solicitudesApi.aprobar(id, fichas),
         onSuccess: refrescar,
     });
 
@@ -48,8 +58,9 @@ export function useSolicitudes() {
         errorAccion: errorAccion ? mensajeError(errorAccion, 'No se pudo completar la acción.') : '',
         procesando: aprobarMutation.isPending || rechazarMutation.isPending,
         nombreRol,
-        aprobar: (id: number, alTerminar?: () => void) =>
-            aprobarMutation.mutate(id, { onSuccess: () => alTerminar?.() }),
+        programas: programasQuery.data ?? [],
+        aprobar: (id: number, fichas: number[] | undefined, alTerminar?: () => void) =>
+            aprobarMutation.mutate({ id, fichas }, { onSuccess: () => alTerminar?.() }),
         rechazar: (id: number, motivo: string, alTerminar?: () => void) =>
             rechazarMutation.mutate({ id, motivo }, { onSuccess: () => alTerminar?.() }),
     };

@@ -4,6 +4,7 @@ import { HardDrive, Info, Shield, Wifi } from 'lucide-react';
 import { Btn, Card, Input, PageHeader, Select, Tab } from '../../components/ui/AgroUI';
 import { Aviso, PaginaAdmin } from '../../components/admin/ComponentesAdmin';
 import { iotConfigApi, lotesAdminApi } from '../../api/admin/admin';
+import { sublotesApi } from '../../api/territorio';
 import { mensajeError } from '../../api/errores/errores';
 import type { ConfigIot } from '../../types/admin/admin';
 
@@ -96,7 +97,21 @@ const PestanaIot = () => {
     const [prefijo, setPrefijo] = useState('agrosoft');
     const [nombreEstacion, setNombreEstacion] = useState('');
     const [loteId, setLoteId] = useState('');
+    const [subLoteId, setSubLoteId] = useState('');
     const [mensaje, setMensaje] = useState<string | null>(null);
+
+    // Los sublotes dependen del lote: sin lote elegido no hay qué listar
+    const sublotes = useQuery({
+        queryKey: ['sublotes', Number(loteId)],
+        queryFn: async () => (await sublotesApi.porLote(Number(loteId))).data,
+        enabled: loteId !== '',
+    });
+
+    // Un sublote de otro lote no tiene sentido: al cambiar de lote se borra
+    const elegirLote = (valor: string) => {
+        setLoteId(valor);
+        setSubLoteId('');
+    };
 
     useEffect(() => {
         if (!broker) return;
@@ -133,11 +148,13 @@ const PestanaIot = () => {
             contrasena,
             prefijoTema: prefijo.trim(),
             loteId: Number(loteId),
+            ...(subLoteId ? { subLoteId: Number(subLoteId) } : {}),
         }),
         onSuccess: () => {
             setMensaje(`Estación "${nombreEstacion}" registrada`);
             setNombreEstacion('');
             setLoteId('');
+            setSubLoteId('');
             configs.refetch();
         },
     });
@@ -168,8 +185,8 @@ const PestanaIot = () => {
                         <Input label="Puerto" value={puerto} onChange={setPuerto} type="number" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <Input label="Usuario" value={usuario} onChange={setUsuario} />
-                        <Input label="Contraseña" value={contrasena} onChange={setContrasena} type="password" placeholder={broker ? 'Sin cambios' : ''} />
+                        <Input label="Usuario" value={usuario} onChange={setUsuario} autoComplete="off" />
+                        <Input label="Contraseña" value={contrasena} onChange={setContrasena} type="password" placeholder={broker ? 'Sin cambios' : ''} autoComplete="new-password" />
                     </div>
                     <Input label="Prefijo de temas" value={prefijo} onChange={setPrefijo} placeholder="agrosoft" />
                     <div className="p-3 bg-muted rounded-xl text-xs space-y-1">
@@ -197,12 +214,32 @@ const PestanaIot = () => {
                 </div>
                 <div className="space-y-3">
                     <Input label="Nombre de la estación" value={nombreEstacion} onChange={setNombreEstacion} placeholder="Ej. Estación Lote 4" />
-                    <Select
-                        label="Lote"
-                        value={loteId}
-                        onChange={setLoteId}
-                        options={[{ value: '', label: 'Seleccionar lote...' }, ...(lotes.data ?? []).map((l) => ({ value: String(l.id), label: l.nombre }))]}
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                        <Select
+                            label="Lote"
+                            value={loteId}
+                            onChange={elegirLote}
+                            options={[{ value: '', label: 'Seleccionar lote...' }, ...(lotes.data ?? []).map((l) => ({ value: String(l.id), label: l.nombre }))]}
+                        />
+                        {/* El diseño lo pide como texto libre; aquí es lista porque los
+                            sublotes existen con id y así no se escribe uno que no está */}
+                        <Select
+                            label="Sublote (opcional)"
+                            value={subLoteId}
+                            onChange={setSubLoteId}
+                            options={[
+                                {
+                                    value: '',
+                                    label: !loteId
+                                        ? 'Elige primero el lote'
+                                        : (sublotes.data ?? []).length === 0 && !sublotes.isLoading
+                                            ? 'Este lote no tiene sublotes'
+                                            : 'Sin sublote',
+                                },
+                                ...(sublotes.data ?? []).map((s) => ({ value: String(s.id), label: s.nombre })),
+                            ]}
+                        />
+                    </div>
                     <div>
                         <Input label="Tema MQTT" value={tema} onChange={() => {}} />
                         <p className="text-xs text-muted-foreground mt-1">Generado automáticamente a partir del prefijo y el nombre</p>

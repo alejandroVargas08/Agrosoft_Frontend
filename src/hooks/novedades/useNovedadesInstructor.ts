@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { novedadesApi } from '../../api/novedades';
 import { insumosApi } from '../../api/inventario';
+import { misFichasApi, resumenAprendicesApi } from '../../api/instructor';
 import { mensajeError } from '../../api/errores/errores';
 import type { EstadoNovedad } from '../../types/novedades';
 
@@ -28,6 +29,31 @@ export function useNovedadesInstructor() {
         queryFn: async () => (await insumosApi.listar()).data,
         staleTime: 1000 * 60 * 5,
     });
+
+    // El diseño muestra la ficha de quien reportó; la novedad no la trae,
+    // así que se resuelve por el aprendiz
+    const resumenQuery = useQuery({
+        queryKey: ['aprendices-resumen'],
+        queryFn: async () => (await resumenAprendicesApi.listar()).data,
+        staleTime: 60_000,
+    });
+
+    // La ficha sale del programa de formacion, no de usuarios.id_ficha: esa
+    // columna es texto que la persona escribio al registrarse y puede no
+    // coincidir. El resto de la aplicacion usa el programa, y aqui igual.
+    const fichasQuery = useQuery({
+        queryKey: ['mis-fichas'],
+        queryFn: async () => (await misFichasApi.listar()).data,
+        staleTime: 5 * 60_000,
+    });
+
+    const numeroDeFicha = new Map((fichasQuery.data ?? []).map((f) => [f.id, f.ficha]));
+    const fichaDeAprendiz = new Map(
+        (resumenQuery.data ?? []).map((a) => [
+            a.id,
+            a.programaFormacionId !== null ? numeroDeFicha.get(a.programaFormacionId) ?? null : null,
+        ]),
+    );
 
     const todas = novedadesQuery.data ?? [];
     const contar = (p: PestanaNovedad) => todas.filter((n) => n.estado === POR_PESTANA[p]).length;
@@ -60,6 +86,8 @@ export function useNovedadesInstructor() {
             Atendidas: contar('Atendidas'),
             Descartadas: contar('Descartadas'),
         } as Record<PestanaNovedad, number>,
+        ficha: (aprendizId: number | null | undefined) =>
+            aprendizId === undefined || aprendizId === null ? null : fichaDeAprendiz.get(aprendizId) ?? null,
         insumo: (id: number | null) =>
             id === null ? null : (insumosQuery.data ?? []).find((i) => i.id === id) ?? null,
         cargando: novedadesQuery.isLoading,
