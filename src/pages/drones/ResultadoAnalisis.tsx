@@ -1,14 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, BarChart3, Bot, Droplets, Images, Leaf, Lightbulb, MapPin, Sprout, TriangleAlert } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Badge, Btn, Card, EmptyState, PageHeader, StatCard } from '../../components/ui/AgroUI';
 import { BarraDistribucion, ImagenCaptura } from '../../components/drones/ComponentesDron';
+import { MapaVuelo } from '../../components/drones/MapaVuelo';
 import { analisisApi, vuelosApi } from '../../api/drones/drones';
+import { disenoTerrenoApi } from '../../api/disenoTerreno/disenoTerreno';
+import { sublotesApi } from '../../api/territorio';
+import { areaPoligonoM2, centroide } from '../../utils/geo/geo';
+import type { SubLote } from '../../types/territorio';
+import { usePermisos } from '../../hooks/permisos/usePermisos';
+import { PERMISOS_TERRENO } from '../../types/disenoTerreno/disenoTerreno';
 import { mensajeError } from '../../api/errores/errores';
 import { CAPAS, CLASE_VEGETACION, LEYENDA_CAPA, NIVEL_CLASES, NIVEL_TEXTO, TIPO_HALLAZGO, type CapaMapa, type ClaseVegetacion, type EstadisticasIndice, type ResultadoCaptura  } from '../../types/drones/drones';
 import { colorSalud, fechaCortaDron, fechaHoraDron } from '../../utils/drones/drones';
+
+const ALTURA_VUELO_POR_DEFECTO_M = 60;
+const FACTOR_HUELLA_CAMARA = 0.55;
 
 const ORDEN_CLASES: ClaseVegetacion[] = ['SALUDABLE', 'ESTRES_MODERADO', 'ESTRES_ALTO', 'SIN_VEGETACION'];
 
@@ -60,6 +70,7 @@ const ResultadoAnalisis = () => {
     const { id } = useParams();
     const analisisId = Number(id);
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [capa, setCapa] = useState<CapaMapa>('NDVI');
     const [soloCriticas, setSoloCriticas] = useState(false);
     const [seleccion, setSeleccion] = useState<number | null>(null);
@@ -89,6 +100,38 @@ const ResultadoAnalisis = () => {
         queryKey: ['analisis', analisisId, 'resultados'],
         queryFn: async () => (await analisisApi.resultados(analisisId)).data,
         enabled: datos?.estado === 'COMPLETADO',
+    });
+
+    const { puede } = usePermisos();
+    const puedeDisenar = puede(PERMISOS_TERRENO.EVALUAR);
+
+    const disenar = useMutation({
+        mutationFn: async () => {
+            const v = vuelo.data;
+            if (!v) throw new Error('El vuelo aún no carga');
+            const evaluacion = (await disenoTerrenoApi.solicitar({ loteId: v.loteId, vueloId: v.id, soloAreaVuelo: true, usarDron: true })).data;
+            if (puede('lotes.gestionar')) {
+                const nombre = `Vuelo ${v.nombre}`.slice(0, 100);
+                const existentes: SubLote[] = await sublotesApi.porLote(v.loteId).then((r) => r.data).catch(() => []);
+                if (!existentes.some((s) => s.nombre === nombre)) {
+                    await sublotesApi
+                        .crear({
+                            loteId: v.loteId,
+                            nombre,
+                            vertices: evaluacion.poligono,
+                            centroide: centroide(evaluacion.poligono),
+                            areaM2: Math.round(areaPoligonoM2(evaluacion.poligono)),
+                            descripcion: `Área sobrevolada por el dron el ${fechaCortaDron(v.fechaVuelo)} (vuelo #${v.id})`,
+                        })
+                        .catch(() => null);
+                }
+            }
+            return evaluacion;
+        },
+        onSuccess: (evaluacion) => {
+            if (evaluacion.loteId) queryClient.invalidateQueries({ queryKey: ['sublotes', evaluacion.loteId] });
+            navigate(`/territorio/evaluacion/${evaluacion.id}`);
+        },
     });
 
     const numeroCaptura = useMemo(() => new Map((capturas.data ?? []).map((c) => [c.id, c.numeroCaptura])), [capturas.data]);
@@ -173,7 +216,21 @@ const ResultadoAnalisis = () => {
                     title="Resultados del análisis"
                     subtitle={`${vuelo.data?.nombre ?? `Vuelo #${datos.vueloId}`} · ${fechaCortaDron(vuelo.data?.fechaVuelo)} · analizado ${fechaHoraDron(datos.finalizadoEn)}`}
                     onBack={volver}
+                    action={
+                        puedeDisenar && vuelo.data ? (
+                            <Btn onClick={() => disenar.mutate()} disabled={disenar.isPending}>
+                                <Sprout size={16} />
+                                {disenar.isPending ? 'Enviando...' : 'Diseñar terreno con este vuelo'}
+                            </Btn>
+                        ) : undefined
+                    }
                 />
+
+                {disenar.error && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                        {mensajeError(disenar.error, 'No se pudo iniciar el diseño del terreno')}
+                    </div>
+                )}
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     <StatCard icon={Leaf} label="Vegetación saludable" value={<span style={{ color: colorSalud(saludable) }}>{saludable.toFixed(0)} %</span>} color="emerald" />
@@ -308,6 +365,17 @@ const ResultadoAnalisis = () => {
                         <p className="text-sm text-muted-foreground py-6 text-center">{soloCriticas ? 'No hay capturas críticas. ¡Buen estado general!' : 'No hay resultados por captura.'}</p>
                     )}
 
+                    {lista.length > 0 && vuelo.data && (
+                        <MapaVuelo
+                            loteId={vuelo.data.loteId}
+                            subLoteId={vuelo.data.subLoteId}
+                            resultados={lista}
+                            seleccion={seleccion}
+                            onSeleccionar={setSeleccion}
+                            huellaM={Math.round((vuelo.data.alturaVueloM ?? ALTURA_VUELO_POR_DEFECTO_M) * FACTOR_HUELLA_CAMARA)}
+                        />
+                    )}
+
                     {lista.length > 0 && (
                         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4">
                             <ul className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-y-auto lg:max-h-[560px] pb-1">
@@ -422,4 +490,3 @@ const ResultadoAnalisis = () => {
 };
 
 export default ResultadoAnalisis;
-

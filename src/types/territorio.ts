@@ -30,6 +30,14 @@ export interface SubLote {
     estado: EstadoLote;
 }
 
+export interface ActualizarTerrenoPayload {
+    nombre?: string;
+    descripcion?: string;
+    vertices?: Punto[];
+    centroide?: Punto;
+    areaM2?: number;
+}
+
 export interface CrearLotePayload {
     nombre: string;
     vertices: Punto[];

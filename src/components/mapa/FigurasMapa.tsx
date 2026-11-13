@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import type { Punto } from '../../types/territorio';
 
@@ -41,6 +41,55 @@ export const Poligono = ({ vertices, color, opacidad = 0.25, grosor = 2, zIndex 
             poligono.setMap(null);
         };
     }, [map, maps, vertices, color, opacidad, grosor, zIndex, onClick]);
+
+    return null;
+};
+
+interface PoligonoEditableProps {
+    vertices: Punto[];
+    color: string;
+    onChange: (vertices: Punto[]) => void;
+}
+
+interface PuntoGoogle {
+    lat: () => number;
+    lng: () => number;
+}
+
+export const PoligonoEditable = ({ vertices, color, onChange }: PoligonoEditableProps) => {
+    const map = useMap();
+    const maps = useMapsLibrary('maps');
+    const alCambiar = useRef(onChange);
+    const iniciales = useRef(vertices);
+    alCambiar.current = onChange;
+
+    useEffect(() => {
+        if (!map || !maps || iniciales.current.length < 3) return;
+        const poligono = new maps.Polygon({
+            map,
+            paths: iniciales.current,
+            strokeColor: color,
+            strokeWeight: 3,
+            fillColor: color,
+            fillOpacity: 0.25,
+            editable: true,
+            zIndex: 10,
+        });
+        const path = poligono.getPath();
+        const emitir = () => alCambiar.current(path.getArray().map((p: PuntoGoogle) => ({ lat: p.lat(), lng: p.lng() })));
+        const listeners = [
+            path.addListener('set_at', emitir),
+            path.addListener('insert_at', emitir),
+            path.addListener('remove_at', emitir),
+            poligono.addListener('contextmenu', (e: { vertex?: number }) => {
+                if (e.vertex != null && path.getLength() > 3) path.removeAt(e.vertex);
+            }),
+        ];
+        return () => {
+            listeners.forEach((l) => l.remove());
+            poligono.setMap(null);
+        };
+    }, [map, maps, color]);
 
     return null;
 };
