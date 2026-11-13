@@ -46,7 +46,7 @@ export function useInventario() {
     const nombreAlmacen = (id?: number) =>
         almacenes.find((a) => a.id === id)?.nombre ?? (id ? `#${id}` : '—');
     const nombreCategoria = (id: number) => categorias.find((c) => c.id === id)?.nombre ?? `#${id}`;
-    const nombreProveedor = (id?: number) => proveedores.find((p) => p.id === id)?.nombre;
+    const nombreProveedor = (id?: number | null) => proveedores.find((p) => p.id === id)?.nombre;
     const nombreInsumo = (id: number) => insumos.find((i) => i.id === id)?.nombre ?? `#${id}`;
 
     const insumosFiltrados = insumos.filter((i) =>
@@ -91,6 +91,7 @@ export function useInventario() {
             setFormMovimiento(FORM_MOVIMIENTO_INICIAL);
             queryClient.invalidateQueries({ queryKey: ['insumos'] });
             queryClient.invalidateQueries({ queryKey: ['movimientos'] });
+            queryClient.invalidateQueries({ queryKey: ['insumos-bajo-stock'] });
         },
     });
 
