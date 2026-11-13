@@ -20,12 +20,24 @@ const MAX_BYTES = 5 * 1024 * 1024;
 type Mensaje = MensajeIA & { imagenesLocales?: string[] };
 
 // Las respuestas traen **negritas** en markdown, como en el diseño
-const conNegritas = (texto: string) =>
+const negritas = (texto: string) =>
   texto.split(/(\*\*[^*]+\*\*)/g).map((parte, i) =>
     parte.startsWith('**') && parte.endsWith('**')
       ? <strong key={i}>{parte.slice(2, -2)}</strong>
       : <span key={i}>{parte}</span>,
   );
+
+// El modelo también manda títulos (### ...) y viñetas (* ...): sin esto se
+// verían los símbolos tal cual
+const conNegritas = (texto: string) =>
+  texto.split('\n').map((linea, i, todas) => {
+    const salto = i < todas.length - 1 ? '\n' : '';
+    const titulo = linea.match(/^\s*#{1,6}\s+(.*)$/);
+    if (titulo) return <strong key={i} className="block mt-1">{negritas(titulo[1])}{salto}</strong>;
+    const vineta = linea.match(/^(\s*)[*-]\s+(.*)$/);
+    if (vineta) return <span key={i}>{vineta[1]}• {negritas(vineta[2])}{salto}</span>;
+    return <span key={i}>{negritas(linea)}{salto}</span>;
+  });
 
 const hora = (iso: string) =>
   new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
@@ -101,9 +113,10 @@ export function ConversacionChat({
     setArchivos((prev) => prev.filter((_, i) => i !== index));
   }
 
-  async function asegurarConversacion(): Promise<number> {
+  // El título es el primer mensaje: el escrito o la sugerencia que se tocó
+  async function asegurarConversacion(primerMensaje: string): Promise<number> {
     if (conversacionId) return conversacionId;
-    const primerTexto = texto.trim();
+    const primerTexto = primerMensaje.trim();
     const titulo = primerTexto ? primerTexto.slice(0, 40) : 'Nueva conversación';
     const nueva = await crearConversacion(usuarioId, titulo);
     conversacionIdRef.current = nueva.id;
@@ -139,7 +152,7 @@ export function ConversacionChat({
     // La conversación de este envío: en una nueva, la que se acaba de crear
     let idEnvio: number | null = conversacionOrigen;
     try {
-      const id = await asegurarConversacion();
+      const id = await asegurarConversacion(textoFinal);
       idEnvio = id;
       let respuesta: string;
       if (archivosAEnviar.length > 0) {
