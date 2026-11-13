@@ -32,3 +32,16 @@ export interface ReporteGeneral {
     distribucion: FilaDistribucion[];
     finanzas: FilaFinanzas[];
 }
+export interface FilaClima {
+    periodo: string;
+    temperatura: number | null;
+    humedad: number | null;
+    uv: number | null;
+}
+
+/** GET /reportes/clima: promedios de las estaciones y la luz de hoy */
+export interface ReporteClima {
+    periodo: PeriodoReporte;
+    clima: FilaClima[];
+    luz: { promedioLux: number | null; horasLuz: number };
+}
