@@ -8,7 +8,7 @@ import { Badge, Btn, Card, Modal, PageHeader } from '../components/ui/AgroUI';
 import { useTelegram } from '../hooks/useTelegram';
 import { usePerfil } from '../hooks/usePerfil';
 
-const BOT = 'AgroSoftSenaBot';
+const BOT = 'ArGros_bot';
 
 // Las del diseño. Se guardan en el backend y deciden qué avisos le llegan a
 // cada quien, en la campana de la app y en Telegram si lo vinculó.
