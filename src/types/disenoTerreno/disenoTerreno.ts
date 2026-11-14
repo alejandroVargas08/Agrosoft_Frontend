@@ -52,7 +52,7 @@ export interface CultivoExistente {
 }
 
 export type TipoObjeto = 'CONSTRUCCION' | 'VIA' | 'AGUA' | 'BOSQUE' | 'ARBOL';
-export type FuenteObjeto = 'OSM' | 'MICROSOFT' | 'IA_DRON';
+export type FuenteObjeto = 'OSM' | 'MICROSOFT' | 'IA_DRON' | 'IA_SATELITE';
 
 export interface ObjetoTerreno {
     tipo: TipoObjeto;
@@ -61,6 +61,7 @@ export interface ObjetoTerreno {
     anchoM: number;
     nombre: string | null;
     fuente?: FuenteObjeto;
+    confirmadoIa?: boolean;
 }
 
 export interface ResumenObjetos {

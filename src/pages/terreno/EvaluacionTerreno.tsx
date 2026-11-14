@@ -10,7 +10,19 @@ import { AjustarVista, Circulo, Lineas, Poligono } from '../../components/mapa/F
 import { disenoTerrenoApi } from '../../api/disenoTerreno/disenoTerreno';
 import { mensajeError } from '../../api/errores/errores';
 import { usePermisos } from '../../hooks/permisos/usePermisos';
-import { PERMISOS_TERRENO, type AptitudCultivo, type ClaseAptitud, type EtapaEvaluacion, type FuenteObjeto, type ObjetoTerreno, type PerfilTerreno, type SistemaTrazado, type TipoObjeto, type TipoZona, type ZonaExcluida } from '../../types/disenoTerreno/disenoTerreno';
+import {
+    PERMISOS_TERRENO,
+    type AptitudCultivo,
+    type ClaseAptitud,
+    type EtapaEvaluacion,
+    type FuenteObjeto,
+    type ObjetoTerreno,
+    type PerfilTerreno,
+    type SistemaTrazado,
+    type TipoObjeto,
+    type TipoZona,
+    type ZonaExcluida,
+} from '../../types/disenoTerreno/disenoTerreno';
 
 const ETAPAS: Record<EtapaEvaluacion, string> = {
     TOPOGRAFIA: 'Midiendo altitud y pendiente',
@@ -60,9 +72,11 @@ const FUENTES_OBJETO: Record<FuenteObjeto, string> = {
     OSM: 'OpenStreetMap',
     MICROSOFT: 'Microsoft (edificios)',
     IA_DRON: 'IA en las fotos del dron',
+    IA_SATELITE: 'IA en la imagen satelital',
 };
 
 const fuenteDe = (o: ObjetoTerreno): FuenteObjeto => o.fuente ?? 'OSM';
+const esIa = (o: ObjetoTerreno) => fuenteDe(o) === 'IA_DRON' || fuenteDe(o) === 'IA_SATELITE';
 
 const CapaObjetos = ({ objetos }: { objetos: ObjetoTerreno[] }) => (
     <>
@@ -71,9 +85,9 @@ const CapaObjetos = ({ objetos }: { objetos: ObjetoTerreno[] }) => (
                 key={`p${i}`}
                 vertices={o.puntos}
                 color={OBJETOS[o.tipo].color}
-                opacidad={fuenteDe(o) === 'IA_DRON' ? 0.3 : 0.45}
-                grosor={fuenteDe(o) === 'IA_DRON' ? 0.5 : 1.5}
-                zIndex={fuenteDe(o) === 'IA_DRON' ? 3 : 4}
+                opacidad={esIa(o) ? 0.3 : 0.5}
+                grosor={esIa(o) ? 0.5 : o.confirmadoIa ? 3 : 1.5}
+                zIndex={esIa(o) ? 3 : 4}
             />
         ))}
         {ORDEN_OBJETOS.map((tipo) => {
@@ -92,19 +106,21 @@ const ObjetosCard = ({ objetos, perfil }: { objetos: ObjetoTerreno[]; perfil: Pe
     const fuentes = (Object.keys(FUENTES_OBJETO) as FuenteObjeto[])
         .map((f) => ({ fuente: f, cantidad: objetos.filter((o) => fuenteDe(o) === f).length }))
         .filter((f) => f.cantidad > 0);
+    const confirmadas = objetos.filter((o) => o.confirmadoIa).length;
     return (
         <Card>
-            <h3 className="font-semibold text-sm mb-1 flex items-center gap-2"><Home size={14} className="text-red-600" />Casas, vías, agua y árboles del terreno</h3>
+            <h3 className="font-semibold text-sm mb-1 flex items-center gap-2"><Home size={14} className="text-red-600" />Donde no se puede sembrar: casas, vías, agua y bosque</h3>
             <p className="text-xs text-muted-foreground mb-3">
                 Detectado con {fuentes.map((f) => FUENTES_OBJETO[f.fuente]).join(', ')}
                 {resumen ? `: ocupan el ${resumen.porcentajeOcupado} % del terreno` : ''}. El diseño de siembra no pasa por estas zonas.
             </p>
             <div className="flex flex-wrap gap-2 mb-3">
                 {fuentes.map((f) => (
-                    <Badge key={f.fuente} color={f.fuente === 'IA_DRON' ? 'info' : 'muted'}>
-                        {FUENTES_OBJETO[f.fuente]}: {f.cantidad} {f.fuente === 'IA_DRON' ? (f.cantidad === 1 ? 'zona' : 'zonas') : f.cantidad === 1 ? 'objeto' : 'objetos'}
+                    <Badge key={f.fuente} color={f.fuente.startsWith('IA') ? 'info' : 'muted'}>
+                        {FUENTES_OBJETO[f.fuente]}: {f.cantidad} {f.fuente.startsWith('IA') ? (f.cantidad === 1 ? 'zona' : 'zonas') : f.cantidad === 1 ? 'objeto' : 'objetos'}
                     </Badge>
                 ))}
+                {confirmadas > 0 && <Badge color="success">{confirmadas} {confirmadas === 1 ? 'casa confirmada' : 'casas confirmadas'} por la IA</Badge>}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {ORDEN_OBJETOS.map((tipo) => {
@@ -117,9 +133,9 @@ const ObjetosCard = ({ objetos, perfil }: { objetos: ObjetoTerreno[]; perfil: Pe
                                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: OBJETOS[tipo].color }} />
                                 {OBJETOS[tipo].plural}
                             </p>
-                            <p className="text-lg font-bold">{delTipo.filter((o) => fuenteDe(o) !== 'IA_DRON').length}</p>
-                            {delTipo.some((o) => fuenteDe(o) === 'IA_DRON') && (
-                                <p className="text-[11px] text-muted-foreground">+ {delTipo.filter((o) => fuenteDe(o) === 'IA_DRON').length} zonas vistas por la IA</p>
+                            <p className="text-lg font-bold">{delTipo.filter((o) => !esIa(o)).length}</p>
+                            {delTipo.some(esIa) && (
+                                <p className="text-[11px] text-muted-foreground">+ {delTipo.filter(esIa).length} zonas vistas por la IA</p>
                             )}
                             {resumen?.porcentajes[tipo] != null && <p className="text-[11px] text-muted-foreground">{resumen.porcentajes[tipo]} % del terreno</p>}
                             {nombres.length > 0 && <p className="text-[11px] text-muted-foreground truncate">{nombres.join(', ')}</p>}
@@ -340,7 +356,7 @@ const EvaluacionTerreno = () => {
                             <div className="h-full bg-primary transition-all" style={{ width: `${Math.max(evaluacion.progreso, 5)}%` }} />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Puede tardar varios minutos si la IA revisa las fotos del dron. La página se actualiza sola.
+                            Puede tardar varios minutos si la IA revisa la imagen satelital y las fotos del dron. La página se actualiza sola.
                         </p>
                     </Card>
                 )}
@@ -394,7 +410,7 @@ const EvaluacionTerreno = () => {
                                     {objetosMapa.length > 0 && (
                                         <label className="ml-auto flex items-center gap-1.5 cursor-pointer">
                                             <input type="checkbox" checked={verObjetos} onChange={(e) => setVerObjetos(e.target.checked)} className="accent-[#2D7A3E]" />
-                                            Casas, vías y árboles
+                                            Casas, vías, agua y bosque
                                         </label>
                                     )}
                                     {zonasMapa.length > 0 && (
