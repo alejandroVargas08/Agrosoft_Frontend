@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    AlertCircle, AlertTriangle, BarChart3, Bot, Check, CheckCircle, ChevronDown, ChevronUp, Cpu, Download, Droplets, Images, Info, Loader2, Plane,
+    AlertCircle, AlertTriangle, BarChart3, Bot, Check, CheckCircle, ChevronDown, ChevronUp, Cpu, Download, Droplets, Images, Info, Loader2, MapPin, Plane,
     RotateCcw, Sparkles, Thermometer, Trash2,
 } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -449,6 +449,12 @@ const DetalleVuelo = () => {
                                                 {sintesis.recomendaciones.map((r) => (
                                                     <div key={r} className="flex items-start gap-2"><Info size={14} className="text-blue-500 mt-0.5 shrink-0" /><p className="text-sm">{r}</p></div>
                                                 ))}
+                                                {sintesis.zonasCandidatasSiembra && (
+                                                    <div className="flex items-start gap-2">
+                                                        <MapPin size={14} className="text-emerald-600 mt-0.5 shrink-0" />
+                                                        <p className="text-sm"><span className="font-semibold">Zonas candidatas para siembra: </span>{sintesis.zonasCandidatasSiembra}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </>
                                     ) : (
