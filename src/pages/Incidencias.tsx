@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AlertTriangle, Plus } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Badge, Btn, Card, Input, Modal, PageHeader, Select, StatusBadge } from '../components/ui/AgroUI';
@@ -50,6 +51,20 @@ const Incidencias = () => {
 
     const { unidades } = useUnidadesProductivas();
     const { puede } = usePermisos();
+
+    // El análisis de un vuelo de dron llega aquí para crear la incidencia con datos ya puestos
+    const location = useLocation();
+    const navigate = useNavigate();
+    const desdeDron = (location.state as { nuevaIncidencia?: { cultivoId?: number | null; descripcion?: string } } | null)?.nuevaIncidencia;
+    useEffect(() => {
+        if (!desdeDron || !puede('incidencias.gestionar')) return;
+        if (desdeDron.cultivoId) set('cultivoId')(String(desdeDron.cultivoId));
+        if (desdeDron.descripcion) set('descripcion')(desdeDron.descripcion);
+        setShowNew(true);
+        // Se limpia el estado para que al recargar no se vuelva a abrir
+        navigate(location.pathname, { replace: true, state: null });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [desdeDron]);
 
     return (
         <DashboardLayout>

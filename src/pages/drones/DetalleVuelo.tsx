@@ -2,11 +2,14 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    AlertTriangle, BarChart3, Bot, Calendar, Check, ChevronDown, ChevronUp, Images, Info, Loader2, MapPin, Mountain, Plane, Play, Sprout, Trash2,
+    AlertCircle, AlertTriangle, BarChart3, Bot, Check, CheckCircle, ChevronDown, ChevronUp, Cpu, Download, Droplets, Images, Info, Loader2, Plane,
+    RotateCcw, Sparkles, Thermometer, Trash2,
 } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { Badge, Btn, Card, EmptyState, Input, Modal, PageHeader, Tab, Textarea } from '../../components/ui/AgroUI';
+import { Badge, Btn, Card, EmptyState, Input, Modal, PageHeader, Tab } from '../../components/ui/AgroUI';
 import { BarraDistribucion, EstadoVueloBadge, ImagenCaptura } from '../../components/drones/ComponentesDron';
+import { nivelUV } from '../../components/sensores/medidas';
+import { reportesApi } from '../../api/reportes';
 import CargaImagenes from '../../components/drones/CargarImagenes';
 import { dronesApi, vuelosApi } from '../../api/drones/drones';
 import { lotesApi, sublotesApi } from '../../api/territorio';
@@ -16,7 +19,9 @@ import { usePermisos } from '../../hooks/permisos/usePermisos';
 import { PERMISOS_DRONES, type Analisis, type Banda, type Captura } from '../../types/drones/drones';
 import { colorSalud, fechaCortaDron, fechaHoraDron } from '../../utils/drones/drones';
 
-const PESTANAS = ['Imágenes', 'Análisis'];
+const PASOS = ['Registrar', 'Subir imágenes', 'Analizar', 'Resultados'];
+
+const PESTANAS = ['Imágenes', 'Análisis', 'Historial del lote'];
 const BANDAS: Banda[] = ['RGB', 'G', 'R', 'RE', 'NIR'];
 const EN_CURSO = (a: Analisis) => a.estado === 'PENDIENTE' || a.estado === 'PROCESANDO';
 
@@ -33,7 +38,8 @@ const DetalleVuelo = () => {
     const puedeAnalizar = puede(PERMISOS_DRONES.SOLICITAR_ANALISIS);
     const puedeGestionar = puede(PERMISOS_DRONES.GESTIONAR_VUELOS);
 
-    const pestana = params.get('tab') === 'analisis' ? 'Análisis' : 'Imágenes';
+    const tabParam = params.get('tab');
+    const pestana = tabParam === 'analisis' ? 'Análisis' : tabParam === 'historial' ? 'Historial del lote' : 'Imágenes';
     const [filtroCapturas, setFiltroCapturas] = useState<'todas' | 'completas' | 'incompletas'>('todas');
     const [visor, setVisor] = useState<Captura | null>(null);
     const [bandaVisor, setBandaVisor] = useState<Banda>('RGB');
@@ -79,6 +85,19 @@ const DetalleVuelo = () => {
         queryKey: ['cultivos', 'lote', String(datos?.loteId ?? '')],
         queryFn: async () => (await cultivosApi.listarPorLote(datos!.loteId)).data,
         enabled: !!datos?.cultivoId,
+    });
+
+    // Lo que midieron las estaciones del lote el día del vuelo
+    const condiciones = useQuery({
+        queryKey: ['clima-dia', datos?.loteId, datos?.fechaVuelo],
+        queryFn: async () => (await reportesApi.climaDelDia(datos!.loteId, datos!.fechaVuelo.slice(0, 10))).data,
+        enabled: !!datos,
+    });
+
+    const vuelosDelLote = useQuery({
+        queryKey: ['vuelos', 'lote', datos?.loteId],
+        queryFn: async () => (await vuelosApi.listar({ loteId: datos!.loteId })).data,
+        enabled: !!datos && pestana === 'Historial del lote',
     });
 
     const listaAnalisis = useMemo(() => [...(analisis.data ?? [])].sort((a, b) => b.id - a.id), [analisis.data]);
@@ -188,12 +207,8 @@ const DetalleVuelo = () => {
     const cultivo = cultivos.data?.find((c) => c.id === datos.cultivoId);
     const resumen = ultimoCompletado?.resumen ?? null;
 
-    const pasos = [
-        { titulo: 'Vuelo registrado', hecho: true },
-        { titulo: 'Imágenes cargadas', hecho: datos.totalCapturas > 0 },
-        { titulo: 'Análisis', hecho: !!ultimoCompletado, activo: analizando },
-        { titulo: 'Resultados', hecho: !!ultimoCompletado },
-    ];
+    const pasoActual =
+        datos.estado === 'REGISTRADO' ? 0 : datos.estado === 'CON_IMAGENES' ? 1 : datos.estado === 'ANALIZADO' ? 3 : 2;
 
     const motivoNoAnalizar =
         completas === 0
@@ -202,127 +217,117 @@ const DetalleVuelo = () => {
               ? 'Ya hay un análisis en curso.'
               : null;
 
+    const clima = condiciones.data;
+    const hayClima = !!clima && (clima.temperatura !== null || clima.humedad !== null || clima.uv !== null);
+    const sintesis = resumen?.ia.sintesis ?? null;
+    const otrosVuelos = (vuelosDelLote.data ?? []).filter((v) => v.id !== datos.id).sort((a, b) => (a.fechaVuelo < b.fechaVuelo ? 1 : -1));
+
     return (
         <DashboardLayout>
             <div className="max-w-6xl mx-auto p-4 sm:p-6">
                 <PageHeader
                     title={datos.nombre}
-                    subtitle={`${dron?.nombre ?? `Dron #${datos.dronId}`} · ${fechaCortaDron(datos.fechaVuelo)}`}
+                    subtitle={`${dron?.nombre ?? '—'} · ${lote?.nombre ?? '—'}${sublote ? ` · ${sublote.nombre}` : ''}`}
                     onBack={() => navigate('/drones/vuelos')}
                     action={
-                        <div className="flex flex-wrap gap-2">
-                            {ultimoCompletado && (
-                                <Btn variant="outline" onClick={() => navigate(`/drones/analisis/${ultimoCompletado.id}`)}><BarChart3 size={16} />Ver resultados</Btn>
-                            )}
-                            {puedeAnalizar && (
-                                <Btn onClick={abrirAnalisis} disabled={!!motivoNoAnalizar}>
-                                    <Play size={16} />{ultimoCompletado ? 'Analizar de nuevo' : 'Analizar'}
-                                </Btn>
-                            )}
+                        <div className="flex items-center gap-2">
+                            <EstadoVueloBadge estado={datos.estado} />
                             {puedeGestionar && (
-                                <Btn variant="ghost" className="text-red-600" disabled={analizando} onClick={() => setConfirmarEliminar(true)}>
-                                    <Trash2 size={16} />
+                                <Btn variant="ghost" size="sm" className="text-red-600" disabled={analizando} onClick={() => setConfirmarEliminar(true)} title="Eliminar vuelo">
+                                    <Trash2 size={14} />
                                 </Btn>
                             )}
                         </div>
                     }
                 />
 
-                <Card className="mb-4">
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-                        <EstadoVueloBadge estado={datos.estado} />
-                        <span className="flex items-center gap-1.5 text-muted-foreground"><Calendar size={14} />{fechaCortaDron(datos.fechaVuelo)}</span>
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                            <MapPin size={14} />{lote?.nombre ?? `Lote #${datos.loteId}`}{sublote && ` · ${sublote.nombre}`}
-                        </span>
-                        {cultivo && <span className="flex items-center gap-1.5 text-muted-foreground"><Sprout size={14} />{cultivo.nombreCultivo}</span>}
-                        {datos.alturaVueloM && <span className="flex items-center gap-1.5 text-muted-foreground"><Mountain size={14} />{datos.alturaVueloM} m</span>}
-                        <span className="flex items-center gap-1.5 text-muted-foreground"><Images size={14} />{datos.totalCapturas} capturas · {completas} completas</span>
-                        {dron && <Badge color={dron.tipoCamara === 'MULTIESPECTRAL' ? 'primary' : 'info'}>{dron.tipoCamara === 'MULTIESPECTRAL' ? 'Multiespectral' : 'RGB'}</Badge>}
-                    </div>
-                    {datos.observaciones && <p className="text-sm text-muted-foreground mt-3 pt-3 border-t border-border">{datos.observaciones}</p>}
+                {/* Datos del vuelo */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                    <div className="p-3 bg-card border border-border rounded-xl"><p className="text-xs text-muted-foreground">Fecha</p><p className="font-semibold text-sm">{fechaCortaDron(datos.fechaVuelo)}</p></div>
+                    <div className="p-3 bg-card border border-border rounded-xl"><p className="text-xs text-muted-foreground">Altura</p><p className="font-semibold text-sm">{datos.alturaVueloM ? `${datos.alturaVueloM} m` : '—'}</p></div>
+                    <div className="p-3 bg-card border border-border rounded-xl"><p className="text-xs text-muted-foreground">Capturas</p><p className="font-semibold text-sm">{datos.totalCapturas}</p></div>
+                    <div className="p-3 bg-card border border-border rounded-xl"><p className="text-xs text-muted-foreground">Cultivo</p><p className="font-semibold text-sm">{cultivo?.nombreCultivo ?? '—'}</p></div>
+                </div>
+                {datos.observaciones && <p className="text-sm text-muted-foreground -mt-3 mb-6">{datos.observaciones}</p>}
 
-                    <div className="flex items-center mt-4 pt-4 border-t border-border">
-                        {pasos.map((paso, i) => (
-                            <div key={paso.titulo} className="flex items-center flex-1 last:flex-none">
-                                <div className="flex flex-col items-center gap-1 min-w-[64px]">
-                                    <div
-                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                                            paso.hecho ? 'bg-primary text-primary-foreground' : paso.activo ? 'bg-amber-100 text-amber-700' : 'bg-muted text-muted-foreground'
-                                        }`}
-                                    >
-                                        {paso.hecho ? <Check size={16} /> : paso.activo ? <Loader2 size={16} className="animate-spin" /> : i + 1}
-                                    </div>
-                                    <span className="text-[11px] text-center text-muted-foreground leading-tight">{paso.titulo}</span>
-                                </div>
-                                {i < pasos.length - 1 && <div className={`flex-1 h-0.5 mx-1 mb-5 ${pasos[i + 1].hecho || pasos[i + 1].activo ? 'bg-primary' : 'bg-border'}`} />}
+                {/* Pasos */}
+                <div className="flex items-center gap-1 mb-6 overflow-x-auto">
+                    {PASOS.map((paso, i) => (
+                        <div key={paso} className="flex items-center gap-1">
+                            <div
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap ${
+                                    i === pasoActual ? 'bg-primary text-white' : i < pasoActual ? 'bg-chip-bg text-chip-fg' : 'bg-muted text-muted-foreground'
+                                }`}
+                            >
+                                {i < pasoActual ? <Check size={12} /> : i === pasoActual && analizando ? <Loader2 size={12} className="animate-spin" /> : <span className="text-xs">{i + 1}</span>}
+                                {paso}
                             </div>
-                        ))}
-                    </div>
-                </Card>
+                            {i < PASOS.length - 1 && <div className="w-6 h-0.5 bg-border shrink-0" />}
+                        </div>
+                    ))}
+                </div>
 
-                {!puedeAnalizar && puedeCargar && !ultimoCompletado && (
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800 flex items-start gap-2">
-                        <Info size={16} className="shrink-0 mt-0.5" />
-                        <span className="flex-1">
-                            {completas > 0
-                                ? 'Las imágenes ya están cargadas. Tu instructor iniciará el análisis y aquí verás los resultados.'
-                                : 'Sube las imágenes del vuelo. Cuando estén completas, tu instructor iniciará el análisis.'}
-                        </span>
-                        <Btn size="sm" variant="outline" onClick={() => navigate('/incidencias')}><AlertTriangle size={14} />Reportar novedad</Btn>
-                    </div>
-                )}
-
-                {resumen && (
-                    <Card className="mb-4 cursor-pointer" onClick={() => navigate(`/drones/analisis/${ultimoCompletado!.id}`)}>
-                        <div className="flex flex-wrap items-center gap-4">
-                            <div className="text-center">
-                                <p className="text-3xl font-bold" style={{ color: colorSalud(resumen.distribucionNdvi.SALUDABLE) }}>
-                                    {resumen.distribucionNdvi.SALUDABLE.toFixed(0)}%
-                                </p>
-                                <p className="text-xs text-muted-foreground">saludable</p>
-                            </div>
-                            <div className="flex-1 min-w-[200px] space-y-2">
-                                <BarraDistribucion distribucion={resumen.distribucionNdvi} alta />
-                                <p className="text-xs text-muted-foreground">
-                                    NDVI promedio {resumen.ndvi?.promedio.toFixed(2) ?? '—'} · {resumen.capturasCriticas} capturas críticas · analizado {fechaHoraDron(ultimoCompletado!.finalizadoEn)}
-                                </p>
-                            </div>
-                            <span className="text-sm font-semibold text-primary">Ver resultados →</span>
+                {/* Condiciones del día del vuelo, según las estaciones del lote */}
+                {hayClima && (
+                    <Card className="mb-4">
+                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><Thermometer size={16} className="text-primary" />Condiciones del día del vuelo</h3>
+                        <div className="flex items-center gap-4 flex-wrap text-sm">
+                            {clima!.temperatura !== null && <span className="flex items-center gap-1 text-muted-foreground"><Thermometer size={12} />{clima!.temperatura}°C</span>}
+                            {clima!.humedad !== null && <span className="flex items-center gap-1 text-muted-foreground"><Droplets size={12} />{clima!.humedad}%</span>}
+                            {clima!.uv !== null && (
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${nivelUV(clima!.uv).bg} ${nivelUV(clima!.uv).color}`}>
+                                    UV {clima!.uv} · {nivelUV(clima!.uv).label}
+                                </span>
+                            )}
                         </div>
                     </Card>
                 )}
 
-                <Tab tabs={PESTANAS} active={pestana} onChange={(t) => setParams(t === 'Análisis' ? { tab: 'analisis' } : { tab: 'imagenes' }, { replace: true })} />
+                <Tab
+                    tabs={PESTANAS}
+                    active={pestana}
+                    onChange={(t) => setParams({ tab: t === 'Análisis' ? 'analisis' : t === 'Historial del lote' ? 'historial' : 'imagenes' }, { replace: true })}
+                />
 
                 {pestana === 'Imágenes' && (
                     <div className="space-y-4">
-                        {puedeCargar && (
-                            <Card>
-                                <h3 className="font-semibold text-foreground mb-3">Subir imágenes</h3>
-                                <CargaImagenes
-                                    vueloId={vueloId}
-                                    bloqueado={analizando}
-                                    motivoBloqueo="El vuelo se está analizando. Espera a que termine para cargar más imágenes."
-                                    alTerminar={refrescar}
-                                />
-                            </Card>
+                        {analizando && (
+                            <div className="p-4 bg-muted border border-border rounded-xl flex items-center gap-3 opacity-70">
+                                <AlertCircle size={16} className="text-muted-foreground shrink-0" />
+                                <p className="text-sm text-muted-foreground">No puedes subir imágenes mientras se analiza el vuelo.</p>
+                            </div>
+                        )}
+                        {datos.estado === 'ANALIZADO' && (
+                            <div className="p-3 bg-[#FFF3E0] border border-[#F16C07]/30 rounded-xl flex items-start gap-2">
+                                <AlertCircle size={14} className="text-[#F16C07] shrink-0 mt-0.5" />
+                                <p className="text-xs text-[#E65100]">Si subes más imágenes tendrás que volver a analizar el vuelo.</p>
+                            </div>
+                        )}
+                        {puedeCargar && !analizando && (
+                            <CargaImagenes
+                                vueloId={vueloId}
+                                bloqueado={analizando}
+                                motivoBloqueo="El vuelo se está analizando. Espera a que termine para cargar más imágenes."
+                                alTerminar={refrescar}
+                            />
                         )}
 
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="font-semibold text-foreground">Capturas ({listaCapturas.length})</h3>
-                            <div className="flex gap-1 bg-muted p-1 rounded-lg text-xs">
-                                {(['todas', 'completas', 'incompletas'] as const).map((f) => (
-                                    <button
-                                        key={f}
-                                        onClick={() => setFiltroCapturas(f)}
-                                        className={`px-3 py-1 rounded-md font-semibold capitalize ${filtroCapturas === f ? 'bg-white text-primary shadow-sm' : 'text-muted-foreground'}`}
-                                    >
-                                        {f}
-                                    </button>
-                                ))}
+                        {listaCapturas.length > 0 && (
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-foreground">Capturas ({listaCapturas.length}) · {completas} completas</p>
+                                <div className="flex gap-1 bg-muted p-1 rounded-lg text-xs">
+                                    {(['todas', 'completas', 'incompletas'] as const).map((f) => (
+                                        <button
+                                            key={f}
+                                            onClick={() => setFiltroCapturas(f)}
+                                            className={`px-3 py-1 rounded-md font-semibold capitalize ${filtroCapturas === f ? 'bg-white text-primary shadow-sm' : 'text-muted-foreground'}`}
+                                        >
+                                            {f}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {capturas.isLoading && (
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -336,8 +341,8 @@ const DetalleVuelo = () => {
                             </div>
                         )}
 
-                        {!capturas.isLoading && listaCapturas.length === 0 && (
-                            <EmptyState icon={Images} title="Sin imágenes" description={puedeCargar ? 'Sube las fotos que tomó el dron en este vuelo.' : 'Aún no se han cargado imágenes.'} />
+                        {!capturas.isLoading && listaCapturas.length === 0 && !puedeCargar && (
+                            <EmptyState icon={Images} title="Sin imágenes" description="Aún no se han cargado imágenes." />
                         )}
 
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -367,6 +372,19 @@ const DetalleVuelo = () => {
                                 </button>
                             ))}
                         </div>
+
+                        {!puedeAnalizar && datos.estado !== 'ANALIZADO' && (
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2">
+                                <Info size={14} className="text-blue-600 shrink-0 mt-0.5" />
+                                <p className="text-xs text-blue-700 flex-1">Tu instructor iniciará el análisis cuando estén todas las imágenes.</p>
+                            </div>
+                        )}
+                        {puedeAnalizar && (
+                            <div className="space-y-1">
+                                <Btn onClick={abrirAnalisis} disabled={!!motivoNoAnalizar} className="w-full justify-center"><Cpu size={14} />Analizar con IA</Btn>
+                                {motivoNoAnalizar && <p className="text-xs text-muted-foreground text-center">{motivoNoAnalizar}</p>}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -397,50 +415,135 @@ const DetalleVuelo = () => {
 
                         {analisis.isLoading && <div className="h-24 rounded-xl bg-muted animate-pulse" />}
 
-                        {!analisis.isLoading && listaAnalisis.length === 0 && (
+                        {!analisis.isLoading && resumen && ultimoCompletado && (
+                            <>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <div className="p-4 bg-primary/5 border border-primary/15 rounded-xl text-center">
+                                        <p className="text-3xl font-bold text-primary">{resumen.distribucionNdvi.SALUDABLE.toFixed(0)}%</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Vegetación saludable</p>
+                                    </div>
+                                    {[
+                                        { label: 'NDVI prom.', val: resumen.ndvi ? resumen.ndvi.promedio.toFixed(2) : '—' },
+                                        { label: 'NDRE prom.', val: resumen.ndre ? resumen.ndre.promedio.toFixed(2) : '—' },
+                                        { label: 'Cobertura', val: resumen.cobertura ? `${resumen.cobertura.VEGETACION.toFixed(0)}%` : '—' },
+                                    ].map((dato) => (
+                                        <div key={dato.label} className="p-4 bg-muted rounded-xl text-center">
+                                            <p className="text-2xl font-bold text-foreground">{dato.val}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">{dato.label}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <Card>
+                                    <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><Sparkles size={16} className="text-primary" />Interpretación de la IA</h3>
+                                    {sintesis ? (
+                                        <>
+                                            <p className="text-sm text-muted-foreground mb-3">{sintesis.resumen}</p>
+                                            <div className="space-y-2">
+                                                {sintesis.hallazgosPrincipales.map((h) => (
+                                                    <div key={h} className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" /><p className="text-sm">{h}</p></div>
+                                                ))}
+                                                {sintesis.advertencias.map((a) => (
+                                                    <div key={a} className="flex items-start gap-2"><AlertTriangle size={14} className="text-[#F16C07] mt-0.5 shrink-0" /><p className="text-sm">{a}</p></div>
+                                                ))}
+                                                {sintesis.recomendaciones.map((r) => (
+                                                    <div key={r} className="flex items-start gap-2"><Info size={14} className="text-blue-500 mt-0.5 shrink-0" /><p className="text-sm">{r}</p></div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">
+                                            {resumen.ia.mensaje ?? 'Este análisis se hizo sin interpretación de IA. Puedes volver a analizar el vuelo activándola.'}
+                                        </p>
+                                    )}
+                                </Card>
+
+                                <div className="flex flex-wrap gap-2">
+                                    <Btn onClick={() => navigate(`/drones/analisis/${ultimoCompletado.id}`)}><BarChart3 size={14} />Ver análisis completo</Btn>
+                                    <Btn variant="outline" onClick={() => navigate(`/drones/analisis/${ultimoCompletado.id}?imprimir=1`)}><Download size={14} />Descargar PDF</Btn>
+                                    {puedeAnalizar && (
+                                        <Btn variant="ghost" onClick={abrirAnalisis} disabled={!!motivoNoAnalizar}><RotateCcw size={14} />Volver a analizar</Btn>
+                                    )}
+                                </div>
+                            </>
+                        )}
+
+                        {!analisis.isLoading && !resumen && !enCurso && (
                             <EmptyState
                                 icon={BarChart3}
-                                title="Este vuelo aún no se ha analizado"
+                                title="Análisis no disponible"
                                 description={
                                     puedeAnalizar
-                                        ? motivoNoAnalizar ?? 'Inicia el análisis para conocer la salud del cultivo.'
+                                        ? motivoNoAnalizar ?? 'Sube imágenes y luego inicia el análisis para ver los resultados.'
                                         : 'Tu instructor iniciará el análisis cuando las imágenes estén completas.'
                                 }
-                                action={puedeAnalizar && !motivoNoAnalizar ? <Btn onClick={abrirAnalisis}><Play size={16} />Analizar</Btn> : undefined}
+                                action={puedeAnalizar && !motivoNoAnalizar ? <Btn onClick={abrirAnalisis}>Analizar vuelo</Btn> : undefined}
                             />
                         )}
 
-                        {listaAnalisis.map((a) => {
-                            const saludable = a.resumen?.distribucionNdvi.SALUDABLE ?? null;
-                            return (
-                                <Card
-                                    key={a.id}
-                                    onClick={a.estado === 'COMPLETADO' ? () => navigate(`/drones/analisis/${a.id}`) : undefined}
-                                    className="flex flex-wrap items-center gap-3"
-                                >
-                                    <div className="flex-1 min-w-[180px]">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-semibold text-foreground">Análisis #{a.id}</p>
-                                            {a.estado === 'COMPLETADO' && <Badge color="success">Completado</Badge>}
-                                            {a.estado === 'ERROR' && <Badge color="danger">Error</Badge>}
-                                            {EN_CURSO(a) && <Badge color="warning">{a.progreso}%</Badge>}
-                                            {a.usarIa && <Badge color="info"><Bot size={12} className="mr-1" />IA</Badge>}
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-0.5">
-                                            {fechaHoraDron(a.finalizadoEn ?? a.iniciadoEn)} · {a.capturasTotales} capturas
-                                            {a.contexto && ` · "${a.contexto}"`}
-                                        </p>
-                                        {a.estado === 'ERROR' && a.mensajeError && <p className="text-xs text-red-600 mt-1">{a.mensajeError}</p>}
-                                    </div>
-                                    {a.estado === 'COMPLETADO' && a.resumen && (
-                                        <div className="w-full sm:w-64 space-y-1">
-                                            <div className="flex justify-between text-xs">
-                                                <span className="text-muted-foreground">Saludable</span>
-                                                <span className="font-bold" style={{ color: colorSalud(saludable) }}>{saludable?.toFixed(0)}%</span>
+                        {listaAnalisis.length > 1 && (
+                            <div className="space-y-2">
+                                <p className="text-sm font-semibold text-foreground pt-2">Análisis anteriores de este vuelo</p>
+                                {listaAnalisis.map((a) => {
+                                    const saludable = a.resumen?.distribucionNdvi.SALUDABLE ?? null;
+                                    return (
+                                        <Card
+                                            key={a.id}
+                                            onClick={a.estado === 'COMPLETADO' ? () => navigate(`/drones/analisis/${a.id}`) : undefined}
+                                            className="flex flex-wrap items-center gap-3"
+                                        >
+                                            <div className="flex-1 min-w-[180px]">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-semibold text-foreground">Análisis #{a.id}</p>
+                                                    {a.estado === 'COMPLETADO' && <Badge color="success">Completado</Badge>}
+                                                    {a.estado === 'ERROR' && <Badge color="danger">Error</Badge>}
+                                                    {EN_CURSO(a) && <Badge color="warning">{a.progreso}%</Badge>}
+                                                    {a.usarIa && <Badge color="info"><Bot size={12} className="mr-1" />IA</Badge>}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                    {fechaHoraDron(a.finalizadoEn ?? a.iniciadoEn)} · {a.capturasTotales} capturas
+                                                    {a.contexto && ` · "${a.contexto}"`}
+                                                </p>
+                                                {a.estado === 'ERROR' && a.mensajeError && <p className="text-xs text-red-600 mt-1">{a.mensajeError}</p>}
                                             </div>
-                                            <BarraDistribucion distribucion={a.resumen.distribucionNdvi} />
+                                            {a.estado === 'COMPLETADO' && a.resumen && (
+                                                <div className="w-full sm:w-64 space-y-1">
+                                                    <div className="flex justify-between text-xs">
+                                                        <span className="text-muted-foreground">Saludable</span>
+                                                        <span className="font-bold" style={{ color: colorSalud(saludable) }}>{saludable?.toFixed(0)}%</span>
+                                                    </div>
+                                                    <BarraDistribucion distribucion={a.resumen.distribucionNdvi} />
+                                                </div>
+                                            )}
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {pestana === 'Historial del lote' && (
+                    <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">Vuelos anteriores en el mismo lote.</p>
+                        {vuelosDelLote.isLoading && <div className="h-16 rounded-xl bg-muted animate-pulse" />}
+                        {!vuelosDelLote.isLoading && otrosVuelos.length === 0 && (
+                            <EmptyState icon={Plane} title="Sin otros vuelos" description="Este es el único vuelo registrado en el lote." />
+                        )}
+                        {otrosVuelos.map((v) => {
+                            const salud = v.ultimoAnalisis?.estado === 'COMPLETADO' ? v.ultimoAnalisis.saludablePct : null;
+                            return (
+                                <Card key={v.id} onClick={() => navigate(`/drones/vuelos/${v.id}`)}>
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="font-semibold text-foreground">{v.nombre}</p>
+                                            <p className="text-xs text-muted-foreground">{fechaCortaDron(v.fechaVuelo)} · {v.totalCapturas} capturas</p>
                                         </div>
-                                    )}
+                                        <div className="flex items-center gap-2">
+                                            {salud != null && <span className={`text-sm font-bold ${salud >= 70 ? 'text-primary' : 'text-[#F59E0B]'}`}>{salud.toFixed(0)}%</span>}
+                                            <EstadoVueloBadge estado={v.estado} />
+                                        </div>
+                                    </div>
                                 </Card>
                             );
                         })}
@@ -506,44 +609,62 @@ const DetalleVuelo = () => {
                         </div>
                     )}
                     <p className="text-sm text-muted-foreground">
-                        Se analizarán <span className="font-semibold text-foreground">{completas}</span> capturas completas.
+                        Se analizarán <strong>{completas} capturas</strong>.
                         {listaCapturas.length > completas && ` ${listaCapturas.length - completas} incompletas se omitirán.`}
                     </p>
-                    <label className="flex items-center justify-between gap-3 rounded-xl border border-border p-3 cursor-pointer">
-                        <span>
-                            <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><Bot size={16} />Interpretación con IA</span>
-                            <span className="block text-xs text-muted-foreground">Describe hallazgos y recomendaciones. Tarda más.</span>
-                        </span>
-                        <input type="checkbox" checked={usarIa} onChange={(e) => setUsarIa(e.target.checked)} className="w-5 h-5 accent-[#2D7A3E]" />
-                    </label>
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-xl">
+                        <div>
+                            <p className="text-sm font-medium text-foreground">Usar inteligencia artificial</p>
+                            <p className="text-xs text-muted-foreground">Tarda más, pero da hallazgos y recomendaciones</p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={usarIa}
+                            onClick={() => setUsarIa(!usarIa)}
+                            className={`w-11 h-6 rounded-full relative transition-colors ${usarIa ? 'bg-primary' : 'bg-muted border border-border'}`}
+                        >
+                            <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${usarIa ? 'left-5' : 'left-0.5'}`} />
+                        </button>
+                    </div>
                     {usarIa && (
-                        <Textarea
-                            label="Contexto para la IA (opcional)"
-                            value={contexto}
-                            onChange={(v) => setContexto(v.slice(0, 500))}
-                            placeholder="Ej: cultivo de maíz de 45 días, se aplicó fertilizante la semana pasada"
-                        />
-                    )}
-                    <button type="button" onClick={() => setAvanzado(!avanzado)} className="flex items-center gap-1 text-sm font-semibold text-primary">
-                        {avanzado ? <ChevronUp size={16} /> : <ChevronDown size={16} />}Umbrales avanzados
-                    </button>
-                    {avanzado && (
-                        <div className="grid grid-cols-2 gap-3">
-                            <Input label="Sin vegetación (NDVI <)" type="number" step="0.01" value={umbrales.sinVegetacion} onChange={(v) => setUmbrales({ ...umbrales, sinVegetacion: v })} />
-                            <Input label="Estrés alto (NDVI <)" type="number" step="0.01" value={umbrales.estresAlto} onChange={(v) => setUmbrales({ ...umbrales, estresAlto: v })} />
-                            <Input label="Saludable (NDVI ≥)" type="number" step="0.01" value={umbrales.saludable} onChange={(v) => setUmbrales({ ...umbrales, saludable: v })} />
-                            <Input label="% crítico de estrés" type="number" step="1" value={umbrales.porcentajeCritico} onChange={(v) => setUmbrales({ ...umbrales, porcentajeCritico: v })} />
-                            <button type="button" onClick={() => setUmbrales(UMBRALES_DEFECTO)} className="col-span-2 text-xs text-muted-foreground hover:text-foreground text-left">
-                                Restablecer valores por defecto
-                            </button>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-semibold text-foreground">Contexto para la IA (opcional)</label>
+                            <textarea
+                                rows={2}
+                                value={contexto}
+                                maxLength={500}
+                                onChange={(e) => setContexto(e.target.value)}
+                                placeholder="Ej: Maíz de 45 días, riego hace 3 días..."
+                                className="px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition resize-none"
+                            />
                         </div>
                     )}
-                    <div className="flex gap-3 pt-2">
-                        <Btn type="submit" disabled={solicitar.isPending} className="flex-1 justify-center">
-                            {solicitar.isPending ? 'Iniciando...' : <><Play size={16} />Iniciar análisis</>}
-                        </Btn>
-                        <Btn variant="outline" onClick={() => setModalAnalisis(false)}>Cancelar</Btn>
+                    <div>
+                        <button
+                            type="button"
+                            onClick={() => setAvanzado(!avanzado)}
+                            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition"
+                        >
+                            {avanzado ? <ChevronUp size={14} /> : <ChevronDown size={14} />} Configuración avanzada
+                        </button>
+                        {avanzado && (
+                            <div className="mt-3 p-3 border border-border rounded-xl space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Input label="NDVI sin veg." type="number" step="0.01" value={umbrales.sinVegetacion} onChange={(v) => setUmbrales({ ...umbrales, sinVegetacion: v })} />
+                                    <Input label="NDVI estrés" type="number" step="0.01" value={umbrales.estresAlto} onChange={(v) => setUmbrales({ ...umbrales, estresAlto: v })} />
+                                    <Input label="NDVI saludable" type="number" step="0.01" value={umbrales.saludable} onChange={(v) => setUmbrales({ ...umbrales, saludable: v })} />
+                                    <Input label="% crítico" type="number" step="1" value={umbrales.porcentajeCritico} onChange={(v) => setUmbrales({ ...umbrales, porcentajeCritico: v })} />
+                                </div>
+                                <button type="button" onClick={() => setUmbrales(UMBRALES_DEFECTO)} className="text-xs text-primary hover:underline">
+                                    Restaurar valores
+                                </button>
+                            </div>
+                        )}
                     </div>
+                    <Btn type="submit" disabled={solicitar.isPending} className="w-full justify-center">
+                        {solicitar.isPending ? 'Iniciando...' : 'Iniciar análisis'}
+                    </Btn>
                 </form>
             </Modal>
 

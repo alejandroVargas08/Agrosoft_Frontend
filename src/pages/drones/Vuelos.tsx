@@ -1,17 +1,22 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Calendar, Images, MapPin, Mountain, Plane, Plus, Upload } from 'lucide-react';
+import { Plane, Plus, Upload } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { Btn, Card, EmptyState, Input, Modal, PageHeader, SearchBar, Select, Textarea } from '../../components/ui/AgroUI';
+import { Btn, EmptyState, Input, Modal, PageHeader, SearchBar, Select, Textarea } from '../../components/ui/AgroUI';
 import { EstadoVueloBadge } from '../../components/drones/ComponentesDron';
 import { dronesApi, vuelosApi } from '../../api/drones/drones';
 import { lotesApi, sublotesApi } from '../../api/territorio';
 import { cultivosApi } from '../../api/cultivo/cultivos';
 import { mensajeError } from '../../api/errores/errores';
 import { usePermisos } from '../../hooks/permisos/usePermisos';
-import { ESTADO_VUELO, PERMISOS_DRONES, type EstadoVuelo, type Vuelo } from '../../types/drones/drones';
-import { colorSalud, fechaCortaDron } from '../../utils/drones/drones';
+import { ESTADO_VUELO, PERMISOS_DRONES, type EstadoVuelo } from '../../types/drones/drones';
+import { fechaCortaDron, hoyLocal } from '../../utils/drones/drones';
+
+// Mismos cortes del Figma para el punto de color de la columna Salud
+const colorPunto = (pct: number) => (pct >= 70 ? 'bg-emerald-500' : pct >= 50 ? 'bg-[#F59E0B]' : 'bg-red-500');
+
+const COLUMNAS = ['Vuelo', 'Dron', 'Lote / Cultivo', 'Fecha', 'Altura', 'Capturas', 'Estado', 'Salud', 'Acciones'];
 
 interface FormVuelo {
     dronId: string;
@@ -24,7 +29,7 @@ interface FormVuelo {
     observaciones: string;
 }
 
-const hoy = () => new Date().toISOString().slice(0, 10);
+const hoy = hoyLocal;
 
 const FORM_VACIO: FormVuelo = { dronId: '', nombre: '', fechaVuelo: hoy(), alturaVueloM: '', loteId: '', subLoteId: '', cultivoId: '', observaciones: '' };
 
@@ -65,6 +70,18 @@ const Vuelos = () => {
         queryFn: async () => (await cultivosApi.listarPorLote(Number(form.loteId))).data,
         enabled: modalAbierto && !!form.loteId,
     });
+
+    // El vuelo guarda solo el id del cultivo: se piden los cultivos de los lotes que aparecen en la lista
+    const lotesConCultivo = useMemo(
+        () => [...new Set((vuelos.data ?? []).filter((v) => v.cultivoId).map((v) => v.loteId))].sort((a, b) => a - b),
+        [vuelos.data],
+    );
+    const cultivosDeLotes = useQuery({
+        queryKey: ['cultivos', 'lotes', lotesConCultivo],
+        queryFn: async () => (await Promise.all(lotesConCultivo.map((id) => cultivosApi.listarPorLote(id)))).flatMap((r) => r.data),
+        enabled: lotesConCultivo.length > 0,
+    });
+    const nombreCultivo = useMemo(() => new Map((cultivosDeLotes.data ?? []).map((c) => [c.id, c.nombreCultivo])), [cultivosDeLotes.data]);
 
     const nombreDron = useMemo(() => new Map((drones.data ?? []).map((d) => [d.id, d.nombre])), [drones.data]);
     const nombreLote = useMemo(() => new Map((lotes.data ?? []).map((l) => [l.id, l.nombre])), [lotes.data]);
@@ -123,63 +140,6 @@ const Vuelos = () => {
         crear.mutate();
     };
 
-    const tarjeta = (vuelo: Vuelo) => {
-        const analisis = vuelo.ultimoAnalisis;
-        const completado = analisis?.estado === 'COMPLETADO';
-        return (
-            <Card key={vuelo.id} onClick={() => navigate(`/drones/vuelos/${vuelo.id}`)} className="flex flex-col gap-3">
-                <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                        <p className="font-semibold text-foreground truncate">{vuelo.nombre}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Plane size={12} />{nombreDron.get(vuelo.dronId) ?? `Dron #${vuelo.dronId}`}
-                        </p>
-                    </div>
-                    <EstadoVueloBadge estado={vuelo.estado} />
-                </div>
-
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Calendar size={12} />{fechaCortaDron(vuelo.fechaVuelo)}</span>
-                    <span className="flex items-center gap-1"><MapPin size={12} />{nombreLote.get(vuelo.loteId) ?? `Lote #${vuelo.loteId}`}</span>
-                    {vuelo.alturaVueloM && <span className="flex items-center gap-1"><Mountain size={12} />{vuelo.alturaVueloM} m</span>}
-                    <span className="flex items-center gap-1"><Images size={12} />{vuelo.totalCapturas} capturas</span>
-                </div>
-
-                {completado && analisis.saludablePct !== null ? (
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Vegetación saludable</span>
-                            <span className="font-bold" style={{ color: colorSalud(analisis.saludablePct) }}>{analisis.saludablePct.toFixed(0)} %</span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${analisis.saludablePct}%`, backgroundColor: colorSalud(analisis.saludablePct) }} />
-                        </div>
-                        {(analisis.capturasCriticas ?? 0) > 0 && (
-                            <p className="text-xs text-red-600 flex items-center gap-1">
-                                <AlertTriangle size={12} />{analisis.capturasCriticas} capturas críticas
-                            </p>
-                        )}
-                    </div>
-                ) : vuelo.estado === 'ANALIZANDO' && analisis ? (
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Analizando…</span><span>{analisis.progreso}%</span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full bg-amber-500 transition-all" style={{ width: `${analisis.progreso}%` }} />
-                        </div>
-                    </div>
-                ) : vuelo.estado === 'REGISTRADO' && puedeCargar ? (
-                    <div onClick={(e) => e.stopPropagation()}>
-                        <Btn size="sm" variant="outline" className="w-full justify-center" onClick={() => navigate(`/drones/vuelos/${vuelo.id}?tab=imagenes`)}>
-                            <Upload size={14} />Subir imágenes
-                        </Btn>
-                    </div>
-                ) : null}
-            </Card>
-        );
-    };
-
     const opcionesDron = [{ value: '', label: 'Todos los drones' }, ...(drones.data ?? []).map((d) => ({ value: String(d.id), label: d.nombre }))];
     const opcionesLote = [{ value: '', label: 'Todos los lotes' }, ...(lotes.data ?? []).map((l) => ({ value: String(l.id), label: l.nombre }))];
     const opcionesEstado = [{ value: '', label: 'Todos los estados' }, ...Object.entries(ESTADO_VUELO).map(([valor, info]) => ({ value: valor, label: info.texto }))];
@@ -189,7 +149,7 @@ const Vuelos = () => {
             <div className="max-w-6xl mx-auto p-4 sm:p-6">
                 <PageHeader
                     title="Vuelos"
-                    subtitle="Sobrevuelos de los lotes y su análisis de salud"
+                    subtitle="Registro de vuelos de dron"
                     onBack={() => navigate('/drones')}
                     action={puedeCrear ? <Btn onClick={abrirNuevo} disabled={dronesActivos.length === 0}><Plus size={16} />Nuevo vuelo</Btn> : undefined}
                 />
@@ -200,11 +160,11 @@ const Vuelos = () => {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-                    <SearchBar value={busqueda} onChange={setBusqueda} placeholder="Buscar por nombre o lote..." />
+                <div className="flex flex-wrap gap-3 mb-4">
+                    <div className="w-full sm:w-64"><SearchBar value={busqueda} onChange={setBusqueda} placeholder="Buscar por nombre o lote..." /></div>
                     <Select value={filtroDron} onChange={(v) => cambiarFiltro('dronId', v)} options={opcionesDron} />
-                    <Select value={filtroLote} onChange={(v) => cambiarFiltro('loteId', v)} options={opcionesLote} />
                     <Select value={filtroEstado} onChange={(v) => setFiltroEstado(v as EstadoVuelo | '')} options={opcionesEstado} />
+                    <Select value={filtroLote} onChange={(v) => cambiarFiltro('loteId', v)} options={opcionesLote} />
                 </div>
 
                 {vuelos.error && (
@@ -215,19 +175,19 @@ const Vuelos = () => {
                 )}
 
                 {vuelos.isLoading && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="h-40 rounded-xl bg-muted animate-pulse" />)}
+                    <div className="space-y-2">
+                        {[1, 2, 3, 4].map((i) => <div key={i} className="h-12 rounded-xl bg-muted animate-pulse" />)}
                     </div>
                 )}
 
                 {!vuelos.isLoading && !vuelos.error && lista.length === 0 && (
                     <EmptyState
                         icon={Plane}
-                        title={(vuelos.data ?? []).length === 0 ? 'Aún no hay vuelos' : 'Ningún vuelo coincide'}
+                        title={(vuelos.data ?? []).length === 0 ? 'Sin vuelos registrados' : 'Ningún vuelo coincide'}
                         description={
                             (vuelos.data ?? []).length === 0
                                 ? puedeCrear
-                                    ? 'Registra el primer vuelo y sube las imágenes que tomó el dron.'
+                                    ? 'Registra un vuelo para analizar tus lotes desde el aire.'
                                     : 'Cuando tu instructor registre un vuelo aparecerá aquí para que subas las imágenes.'
                                 : 'Prueba con otros filtros.'
                         }
@@ -235,11 +195,65 @@ const Vuelos = () => {
                     />
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{lista.map(tarjeta)}</div>
+                {lista.length > 0 && (
+                    <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm min-w-[750px]">
+                                <thead>
+                                    <tr className="bg-muted border-b border-border">
+                                        {COLUMNAS.map((col) => (
+                                            <th key={col} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground whitespace-nowrap">{col}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {lista.map((vuelo, i) => {
+                                        const analisis = vuelo.ultimoAnalisis;
+                                        const salud = analisis?.estado === 'COMPLETADO' ? analisis.saludablePct : null;
+                                        const cultivo = vuelo.cultivoId ? nombreCultivo.get(vuelo.cultivoId) : undefined;
+                                        return (
+                                            <tr key={vuelo.id} className={`border-b border-border last:border-0 hover:bg-muted/20 ${i % 2 === 0 ? 'bg-white' : 'bg-muted/10'}`}>
+                                                <td className="px-4 py-3 font-medium text-foreground">{vuelo.nombre}</td>
+                                                <td className="px-4 py-3 text-xs text-muted-foreground">{nombreDron.get(vuelo.dronId) ?? '—'}</td>
+                                                <td className="px-4 py-3 text-xs text-muted-foreground">{nombreLote.get(vuelo.loteId) ?? '—'}{cultivo ? ` · ${cultivo}` : ''}</td>
+                                                <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{fechaCortaDron(vuelo.fechaVuelo)}</td>
+                                                <td className="px-4 py-3 text-xs text-muted-foreground">{vuelo.alturaVueloM ? `${vuelo.alturaVueloM}m` : '—'}</td>
+                                                <td className="px-4 py-3 text-xs text-muted-foreground text-center">{vuelo.totalCapturas}</td>
+                                                <td className="px-4 py-3"><EstadoVueloBadge estado={vuelo.estado} /></td>
+                                                <td className="px-4 py-3">
+                                                    {salud != null ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-2 h-2 rounded-full ${colorPunto(salud)}`} />
+                                                            <span className="text-xs font-medium">{salud.toFixed(0)}%</span>
+                                                        </div>
+                                                    ) : vuelo.estado === 'ANALIZANDO' && analisis ? (
+                                                        <span className="text-xs text-muted-foreground">{analisis.progreso}%</span>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Btn variant="outline" size="sm" onClick={() => navigate(`/drones/vuelos/${vuelo.id}`)}>Ver</Btn>
+                                                        {puedeCargar && (
+                                                            <Btn variant="outline" size="sm" onClick={() => navigate(`/drones/vuelos/${vuelo.id}?tab=imagenes`)}>
+                                                                <Upload size={13} />Imágenes
+                                                            </Btn>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <Modal open={modalAbierto} onClose={() => setModalAbierto(false)} title="Nuevo vuelo">
-                <form className="space-y-4" onSubmit={enviar}>
+                <form className="space-y-3" onSubmit={enviar}>
                     {(errorLocal || crear.error) && (
                         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
                             {errorLocal ?? mensajeError(crear.error, 'No se pudo crear el vuelo')}
@@ -249,52 +263,48 @@ const Vuelos = () => {
                         label="Dron"
                         value={form.dronId}
                         onChange={(v) => setForm({ ...form, dronId: v })}
-                        options={[{ value: '', label: 'Selecciona un dron' }, ...dronesActivos.map((d) => ({ value: String(d.id), label: `${d.nombre} · ${d.modelo}` }))]}
+                        options={[{ value: '', label: 'Seleccionar dron...' }, ...dronesActivos.map((d) => ({ value: String(d.id), label: d.nombre }))]}
                     />
-                    <Input label="Nombre del vuelo" value={form.nombre} onChange={(v) => setForm({ ...form, nombre: v })} required placeholder="Ej: Monitoreo lote norte" />
+                    <Input label="Nombre del vuelo" value={form.nombre} onChange={(v) => setForm({ ...form, nombre: v })} required placeholder="Mínimo 3 caracteres" />
                     <div className="grid grid-cols-2 gap-3">
-                        <Input label="Fecha" type="date" value={form.fechaVuelo} onChange={(v) => setForm({ ...form, fechaVuelo: v })} required />
-                        <Input label="Altura (m)" type="number" step="0.1" value={form.alturaVueloM} onChange={(v) => setForm({ ...form, alturaVueloM: v })} placeholder="Ej: 60" />
+                        <Input label="Fecha del vuelo" type="date" value={form.fechaVuelo} onChange={(v) => setForm({ ...form, fechaVuelo: v })} required />
+                        <Input label="Altura (m, opcional)" type="number" step="0.1" value={form.alturaVueloM} onChange={(v) => setForm({ ...form, alturaVueloM: v })} placeholder="80" />
                     </div>
                     <Select
                         label="Lote"
                         value={form.loteId}
                         onChange={(v) => setForm({ ...form, loteId: v, subLoteId: '', cultivoId: '' })}
-                        options={[{ value: '', label: 'Selecciona un lote' }, ...(lotes.data ?? []).map((l) => ({ value: String(l.id), label: l.nombre }))]}
+                        options={[{ value: '', label: 'Seleccionar lote...' }, ...(lotes.data ?? []).map((l) => ({ value: String(l.id), label: l.nombre }))]}
                     />
-                    {form.loteId && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <Select
-                                label="Sublote (opcional)"
-                                value={form.subLoteId}
-                                onChange={(v) => setForm({ ...form, subLoteId: v })}
-                                options={[{ value: '', label: sublotes.isLoading ? 'Cargando...' : 'Todo el lote' }, ...(sublotes.data ?? []).map((s) => ({ value: String(s.id), label: s.nombre }))]}
-                            />
-                            <Select
-                                label="Cultivo (opcional)"
-                                value={form.cultivoId}
-                                onChange={(v) => setForm({ ...form, cultivoId: v })}
-                                options={[
-                                    { value: '', label: cultivos.isLoading ? 'Cargando...' : 'Sin cultivo' },
-                                    ...(cultivos.data ?? [])
-                                        .filter((c) => !form.subLoteId || c.subLoteId === null || String(c.subLoteId) === form.subLoteId)
-                                        .map((c) => ({ value: String(c.id), label: c.nombreCultivo })),
-                                ]}
-                            />
-                        </div>
+                    {form.loteId && (sublotes.data ?? []).length > 0 && (
+                        <Select
+                            label="Sublote (opcional)"
+                            value={form.subLoteId}
+                            onChange={(v) => setForm({ ...form, subLoteId: v, cultivoId: '' })}
+                            options={[{ value: '', label: 'Todo el lote' }, ...(sublotes.data ?? []).map((s) => ({ value: String(s.id), label: s.nombre }))]}
+                        />
                     )}
+                    <Select
+                        label="Cultivo"
+                        value={form.cultivoId}
+                        onChange={(v) => setForm({ ...form, cultivoId: v })}
+                        options={[
+                            { value: '', label: !form.loteId ? 'Primero elige el lote' : cultivos.isLoading ? 'Cargando...' : 'Seleccionar cultivo...' },
+                            ...(cultivos.data ?? [])
+                                .filter((c) => !form.subLoteId || c.subLoteId === null || String(c.subLoteId) === form.subLoteId)
+                                .map((c) => ({ value: String(c.id), label: c.nombreCultivo })),
+                        ]}
+                    />
                     <Textarea
-                        label="Observaciones (opcional)"
+                        label="Observaciones"
                         value={form.observaciones}
                         onChange={(v) => setForm({ ...form, observaciones: v })}
-                        placeholder="Clima, hora del vuelo, novedades..."
+                        rows={2}
+                        placeholder="Condiciones del vuelo, objetivos..."
                     />
-                    <div className="flex gap-3 pt-2">
-                        <Btn type="submit" disabled={crear.isPending} className="flex-1 justify-center">
-                            {crear.isPending ? 'Creando...' : 'Crear y subir imágenes'}
-                        </Btn>
-                        <Btn variant="outline" onClick={() => setModalAbierto(false)}>Cancelar</Btn>
-                    </div>
+                    <Btn type="submit" disabled={crear.isPending} className="w-full justify-center">
+                        {crear.isPending ? 'Registrando...' : 'Registrar vuelo'}
+                    </Btn>
                 </form>
             </Modal>
         </DashboardLayout>
