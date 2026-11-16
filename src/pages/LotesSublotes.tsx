@@ -1,57 +1,25 @@
 import { useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Map as MapIcon, Plus } from 'lucide-react';
+import { Map as MapIcon, Pencil, Plus, Sprout } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, PageHeader, StatusBadge, Tab } from '../components/ui/AgroUI';
 import { useTerritorio } from '../hooks/useTerritorio';
-import type { Lote, Punto, SubLote } from '../types/territorio';
+import type { Lote, SubLote } from '../types/territorio';
+import { MapaSatelital } from '../components/mapa/MapaSatelital';
+import { AjustarVista, Poligono } from '../components/mapa/FigurasMapa';
 import { usePermisos } from '../hooks/permisos/usePermisos';
+import { disenoTerrenoApi } from '../api/disenoTerreno/disenoTerreno';
+import { mensajeError } from '../api/errores/errores';
+import { PERMISOS_TERRENO } from '../types/disenoTerreno/disenoTerreno';
 
-// Colores de los polígonos (se asignan en orden)
 const PALETA = ['#2d7a3e', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'];
 
-// Tamaño de cada mapa (SVG)
 const ANCHO = 280;
 const ALTO = 200;
 
 const fmt = (n: number) => n.toLocaleString('es-CO', { maximumFractionDigits: 2 });
 const fmtM2 = (n: number) => n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
-
-/**
- * Proyecta lat/lng al viewBox del SVG, encuadrando los puntos que se le pasen.
- * El lote y sus sublotes comparten la misma proyección para que encajen.
- */
-function crearProyeccion(puntos: Punto[]) {
-    if (puntos.length === 0) {
-        return (_p: Punto) => ({ x: ANCHO / 2, y: ALTO / 2 });
-    }
-    const lats = puntos.map((p) => p.lat);
-    const lngs = puntos.map((p) => p.lng);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    const rangoLng = maxLng - minLng || 0.0001;
-    const rangoLat = maxLat - minLat || 0.0001;
-    const escala = Math.min((ANCHO - 40) / rangoLng, (ALTO - 40) / rangoLat);
-    const offX = 20 + (ANCHO - 40 - rangoLng * escala) / 2;
-    const offY = 20 + (ALTO - 40 - rangoLat * escala) / 2;
-    return (p: Punto) => ({
-        x: offX + (p.lng - minLng) * escala,
-        y: offY + (maxLat - p.lat) * escala, // la latitud crece hacia arriba
-    });
-}
-
-const puntosSvg = (vertices: Punto[], proyectar: (p: Punto) => { x: number; y: number }) =>
-    vertices.map(proyectar).map((q) => `${q.x},${q.y}`).join(' ');
-
-const centro = (vertices: Punto[], proyectar: (p: Punto) => { x: number; y: number }) => {
-    const pts = vertices.map(proyectar);
-    return {
-        x: pts.reduce((a, q) => a + q.x, 0) / pts.length,
-        y: pts.reduce((a, q) => a + q.y, 0) / pts.length,
-    };
-};
 
 const LotesSublotes = () => {
     const navigate = useNavigate();
@@ -69,11 +37,31 @@ const LotesSublotes = () => {
         ? PALETA[lotes.findIndex((l) => l.id === loteActivo.id) % PALETA.length]
         : PALETA[0];
 
-    // El lote y sus sublotes se encuadran juntos para que no se salgan del marco
-    const proyectar = crearProyeccion([
+    const puntosVista = [
         ...(loteActivo?.vertices ?? []),
         ...hijos.flatMap((s) => s.vertices ?? []),
-    ]);
+    ];
+
+    const subloteActivo = hijos.find((s) => s.id === subloteResaltado);
+    const puedeEvaluar = puede(PERMISOS_TERRENO.EVALUAR);
+    const puedeVerEvaluaciones = puede(PERMISOS_TERRENO.VER);
+
+    const { data: evaluaciones = [] } = useQuery({
+        queryKey: ['evaluaciones-terreno', loteActivo?.id],
+        queryFn: async () => (await disenoTerrenoApi.listar(loteActivo?.id)).data,
+        enabled: !!loteActivo && puedeVerEvaluaciones,
+    });
+
+    const evaluarMutation = useMutation({
+        mutationFn: async () => {
+            if (!loteActivo) throw new Error('Selecciona un lote');
+            const solicitud = subloteActivo
+                ? { poligono: subloteActivo.vertices, nombre: `${loteActivo.nombre} / ${subloteActivo.nombre}` }
+                : { loteId: loteActivo.id };
+            return (await disenoTerrenoApi.solicitar(solicitud)).data;
+        },
+        onSuccess: (evaluacion) => navigate(`/territorio/evaluacion/${evaluacion.id}`),
+    });
 
     const accionNuevo = puede('lotes.gestionar') ? (
         <Btn onClick={() => navigate('/territorio/nuevo')}><Plus size={16} />Nuevo Lote</Btn>
@@ -101,7 +89,6 @@ const LotesSublotes = () => {
 
                         {tab === 'Mapa' && (
                             <div className="space-y-4">
-                                {/* Selector de lote */}
                                 <div className="flex items-center gap-3">
                                     <MapIcon size={16} className="text-primary shrink-0" />
                                     <select
@@ -114,61 +101,48 @@ const LotesSublotes = () => {
                                     {loteActivo && <StatusBadge status={loteActivo.estado} />}
                                 </div>
 
-                                {/* Los dos mapas */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Izquierda: el lote completo con sus sublotes encima */}
-                                    <Card className="p-0 overflow-hidden">
+                                    <Card className="p-0 overflow-hidden flex flex-col">
                                         <div className="p-3 bg-muted text-[13px] font-semibold flex items-center gap-2">
                                             <MapIcon size={13} className="text-primary" />Lote: {loteActivo?.nombre}
                                             <span className="ml-auto text-[11px] font-normal text-muted-foreground">
                                                 {fmt(loteActivo?.areaHa ?? 0)} ha{hijos.length > 0 ? ' · Haz clic en un sublote' : ''}
                                             </span>
                                         </div>
-                                        <svg viewBox={`0 0 ${ANCHO} ${ALTO}`} className="w-full" style={{ background: '#e8f5e9' }}>
-                                            <defs>
-                                                <pattern id="gridA" width="20" height="20" patternUnits="userSpaceOnUse">
-                                                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#c8e6c9" strokeWidth="0.5" />
-                                                </pattern>
-                                            </defs>
-                                            <rect width={ANCHO} height={ALTO} fill="url(#gridA)" />
+                                        <MapaSatelital className="flex-1 min-h-80">
+                                            <AjustarVista puntos={puntosVista} />
+                                            {lotes
+                                                .filter((l) => l.id !== loteActivo?.id && (l.vertices?.length ?? 0) >= 3)
+                                                .map((l) => (
+                                                    <Poligono
+                                                        key={l.id}
+                                                        vertices={l.vertices}
+                                                        color="#ffffff"
+                                                        opacidad={0.08}
+                                                        grosor={1}
+                                                        onClick={() => { setLoteSeleccionadoId(String(l.id)); setSubloteResaltado(null); }}
+                                                    />
+                                                ))}
                                             {loteActivo && (loteActivo.vertices?.length ?? 0) >= 3 && (
-                                                <polygon
-                                                    points={puntosSvg(loteActivo.vertices, proyectar)}
-                                                    fill={colorLote + '25'}
-                                                    stroke={colorLote}
-                                                    strokeWidth={2}
-                                                />
+                                                <Poligono vertices={loteActivo.vertices} color={colorLote} opacidad={0.2} grosor={3} zIndex={2} />
                                             )}
                                             {hijos.filter((s) => (s.vertices?.length ?? 0) >= 3).map((s, i) => {
-                                                const col = PALETA[(i + 1) % PALETA.length];
                                                 const resaltado = subloteResaltado === s.id;
-                                                const c = centro(s.vertices, proyectar);
                                                 return (
-                                                    <g
+                                                    <Poligono
                                                         key={s.id}
+                                                        vertices={s.vertices}
+                                                        color={PALETA[(i + 1) % PALETA.length]}
+                                                        opacidad={resaltado ? 0.6 : 0.3}
+                                                        grosor={resaltado ? 3 : 1.5}
+                                                        zIndex={3}
                                                         onClick={() => setSubloteResaltado(resaltado ? null : s.id)}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        <polygon
-                                                            points={puntosSvg(s.vertices, proyectar)}
-                                                            fill={col + (resaltado ? 'bb' : '55')}
-                                                            stroke={col}
-                                                            strokeWidth={resaltado ? 3 : 1.5}
-                                                            strokeDasharray="5,3"
-                                                        />
-                                                        <text
-                                                            x={c.x} y={c.y} textAnchor="middle" dominantBaseline="middle"
-                                                            fontSize="8" fontWeight="600" fill={col}
-                                                        >
-                                                            {s.nombre.split(' ').slice(0, 2).join(' ')}
-                                                        </text>
-                                                    </g>
+                                                    />
                                                 );
                                             })}
-                                        </svg>
+                                        </MapaSatelital>
                                     </Card>
 
-                                    {/* Derecha: cada sublote en su propia celda */}
                                     <Card className="p-0 overflow-hidden">
                                         <div className="p-3 bg-muted text-[13px] font-semibold">Sublotes de {loteActivo?.nombre}</div>
                                         {hijos.length === 0 ? (
@@ -215,7 +189,6 @@ const LotesSublotes = () => {
                                                         );
                                                     })}
                                                 </svg>
-                                                {/* Leyenda de colores */}
                                                 <div className="p-2 flex flex-wrap gap-2 border-t border-border">
                                                     {hijos.map((s, i) => (
                                                         <div key={s.id} className="flex items-center gap-1 text-[11px]">
@@ -229,7 +202,6 @@ const LotesSublotes = () => {
                                     </Card>
                                 </div>
 
-                                {/* Fila de datos debajo de los mapas */}
                                 {loteActivo && (
                                     <Card className="p-3">
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -252,6 +224,57 @@ const LotesSublotes = () => {
                                         </div>
                                         {loteActivo.descripcion && (
                                             <p className="text-xs text-muted-foreground mt-2">{loteActivo.descripcion}</p>
+                                        )}
+                                        {puede('lotes.gestionar') && (
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <Btn size="sm" variant="outline" onClick={() => navigate(`/territorio/editar/lote/${loteActivo.id}`)}>
+                                                    <Pencil size={14} />Editar lote
+                                                </Btn>
+                                                {subloteActivo && (
+                                                    <Btn size="sm" variant="outline" onClick={() => navigate(`/territorio/editar/sublote/${subloteActivo.id}`)}>
+                                                        <Pencil size={14} />Editar sublote {subloteActivo.nombre}
+                                                    </Btn>
+                                                )}
+                                            </div>
+                                        )}
+                                        {(puedeEvaluar || puedeVerEvaluaciones) && (
+                                            <div className="mt-3 pt-3 border-t border-border space-y-2">
+                                                {puedeEvaluar && (
+                                                    <div className="flex flex-wrap items-center gap-3">
+                                                        <Btn size="sm" onClick={() => evaluarMutation.mutate()} disabled={evaluarMutation.isPending}>
+                                                            <Sprout size={14} />
+                                                            {evaluarMutation.isPending
+                                                                ? 'Enviando...'
+                                                                : subloteActivo ? `Evaluar sublote ${subloteActivo.nombre}` : 'Evaluar terreno'}
+                                                        </Btn>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            Recomienda qué sembrar según altitud, clima, suelo y lo que hay sobre el terreno.
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {evaluarMutation.error && (
+                                                    <p className="text-xs text-red-700">{mensajeError(evaluarMutation.error, 'No se pudo iniciar la evaluación')}</p>
+                                                )}
+                                                {puedeVerEvaluaciones && evaluaciones.length > 0 && (
+                                                    <div>
+                                                        <p className="text-[11px] text-muted-foreground mb-1">Evaluaciones anteriores</p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {evaluaciones.slice(0, 5).map((e) => (
+                                                                <button
+                                                                    key={e.id}
+                                                                    type="button"
+                                                                    onClick={() => navigate(`/territorio/evaluacion/${e.id}`)}
+                                                                    className="px-2.5 py-1 rounded-lg border border-border text-xs hover:bg-muted"
+                                                                >
+                                                                    {new Date(e.creadoEn).toLocaleDateString('es-CO')}
+                                                                    {' · '}
+                                                                    {e.mejorCultivo ? `${e.mejorCultivo.nombre} (${e.mejorCultivo.puntaje})` : e.estado.toLowerCase()}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         )}
                                     </Card>
                                 )}

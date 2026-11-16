@@ -17,6 +17,8 @@ import ConfiguracionSistema from './pages/admin/ConfiguracionSistema'
 import AgroBot from './pages/AgroBot'
 import LotesSublotes from './pages/LotesSublotes'
 import NuevoLote from './pages/NuevoLote'
+import EvaluacionTerreno from './pages/terreno/EvaluacionTerreno'
+import EditarTerreno from './pages/terreno/EditarTerreno'
 import Inventario from './pages/Inventario'
 import NuevoInsumo from './pages/NuevoInsumo'
 import UnidadesProductivas from './pages/UnidadesProductivas'
@@ -118,6 +120,8 @@ function App() {
         <Route path="/unidades-productivas/:id" element={<DetalleUnidadProductiva />} />
         <Route path="/territorio" element={<LotesSublotes />} />
         <Route path="/territorio/nuevo" element={<NuevoLote />} />
+        <Route path="/territorio/evaluacion/:id" element={<EvaluacionTerreno />} />
+        <Route path="/territorio/editar/:tipo/:id" element={<EditarTerreno />} />
         <Route path="/inventario" element={<Inventario />} />
         <Route path="/inventario/nuevo" element={<NuevoInsumo />} />
         <Route path="/sensores-iot" element={<SensoresPage />} />
@@ -147,4 +151,3 @@ function App() {
 }
 
 export default App
-
