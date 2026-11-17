@@ -13,5 +13,7 @@ export interface Epa {
     fotosSintomas: string[];
     fotosGenerales: string[];
     etiquetas: string[];
+    /** Tipos de cultivo de la wiki a los que afecta (Cafe, Mora...) */
+    cultivosSusceptibles?: { id: number; nombre: string }[];
     creadoPorUsuarioId: number;
 }
