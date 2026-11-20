@@ -1,4 +1,5 @@
 const API_URL = `${import.meta.env.VITE_API_URL}/ia`;
+const AGROBOT_URL = `${import.meta.env.VITE_API_URL}/agrobot`;
 
 export interface ConversacionIA {
   id: number;
@@ -79,7 +80,7 @@ export async function obtenerMensajes(conversacionId: number): Promise<MensajeIA
 
 export async function enviarMensaje(conversacionId: number, mensaje: string): Promise<string> {
   const data = await request<{ respuesta: string }>(
-    `${API_URL}/conversaciones/${conversacionId}/chat`,
+    `${AGROBOT_URL}/conversaciones/${conversacionId}/chat`,
     {
       method: 'POST',
       headers: getHeaders(),
