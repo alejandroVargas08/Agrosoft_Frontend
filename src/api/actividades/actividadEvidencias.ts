@@ -17,6 +17,14 @@ export const ActividadEvidenciaApi = {
             url,
         }),
 
+    /** Sube una foto (multipart) y la deja en la entrega del aprendiz. */
+    subirFoto: (actividadId: number, foto: File, asignacionId?: number) => {
+        const datos = new FormData();
+        datos.append("foto", foto);
+        if (asignacionId !== undefined) datos.append("asignacionId", String(asignacionId));
+        return api.post<ActividadEvidencia>(`/actividades/${actividadId}/evidencias/fotos`, datos);
+    },
+
     eliminar: (actividadId: number, id: number) =>
         api.delete<void>(`/actividades/${actividadId}/evidencias/${id}`),
 };
