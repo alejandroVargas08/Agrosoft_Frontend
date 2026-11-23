@@ -5,8 +5,14 @@ import { asignacionesApi, revisionApi } from '../../api/instructor';
 import { mensajeError } from '../../api/errores/errores';
 import { Btn, Card, EmptyState, Modal, StatusBadge, Textarea } from '../ui/AgroUI';
 
+/** "2026-10-30" es solo fecha: new Date() la lee en UTC y en Colombia sale un día antes. */
+const aFecha = (valor: string) => {
+    const solo = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
+    return solo ? new Date(Number(solo[1]), Number(solo[2]) - 1, Number(solo[3])) : new Date(valor);
+};
+
 const fecha = (valor: string | null) =>
-    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'sin fecha';
+    valor ? aFecha(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'sin fecha';
 
 /** Los aprendices asignados a la actividad, con aprobar y devolver ahí mismo. */
 export function TabAprendices({ actividadId }: { actividadId: number | undefined }) {

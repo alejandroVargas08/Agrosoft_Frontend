@@ -13,8 +13,14 @@ import type { PestanaTarea, TareaPropia } from '../../hooks/instructor/useMisTar
 
 const PESTANAS: PestanaTarea[] = ['Pendientes', 'Entregadas', 'Aprobadas'];
 
+/** "2026-10-30" es solo fecha: new Date() la lee en UTC y en Colombia sale un día antes. */
+const aFecha = (valor: string) => {
+    const solo = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
+    return solo ? new Date(Number(solo[1]), Number(solo[2]) - 1, Number(solo[3])) : new Date(valor);
+};
+
 const fecha = (valor: string | null) =>
-    valor ? new Date(valor).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/ de /g, ' ') : '—';
+    valor ? aFecha(valor).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/ de /g, ' ') : '—';
 
 const Dato = ({ titulo, valor }: { titulo: string; valor: string }) => (
     <div className="rounded-lg bg-muted px-3 py-2">
