@@ -22,6 +22,12 @@ const aFecha = (valor: string) => {
 const fecha = (valor: string | null) =>
     valor ? aFecha(valor).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/ de /g, ' ') : '—';
 
+const capital = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
+/** Igual que la app de escritorio: "Tipo · Subtipo", o solo el tipo. */
+const tipoDe = (a: { tipo: string; subtipo: string | null }) =>
+    a.subtipo?.trim() ? `${capital(a.tipo)} · ${capital(a.subtipo)}` : capital(a.tipo);
+
 const Dato = ({ titulo, valor }: { titulo: string; valor: string }) => (
     <div className="rounded-lg bg-muted px-3 py-2">
         <p className="text-[11px] text-muted-foreground">{titulo}</p>
@@ -219,9 +225,11 @@ const MisTareas = () => {
                                                         ? (asignacion.vencida ? 'Venció ' : 'Vence ') + fecha(asignacion.fechaLimite)
                                                         : 'Sin fecha límite'}
                                                 </span>
-                                                <span className="inline-flex items-center gap-1">
-                                                    <Leaf size={12} />{tarea.lote} · {tarea.cultivo}
-                                                </span>
+                                                {asignacion.actividad?.tipo && (
+                                                    <span className="inline-flex items-center gap-1">
+                                                        <Leaf size={12} />{tipoDe(asignacion.actividad)}
+                                                    </span>
+                                                )}
                                                 <span className="inline-flex items-center gap-1">
                                                     <Info size={12} />Asignó {tarea.asignadaPor}
                                                 </span>
