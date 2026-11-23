@@ -98,6 +98,8 @@ interface BtnProps {
     className?: string;
     disabled?: boolean;
     type?: 'button' | 'submit';
+    // Texto de ayuda al pasar el mouse; útil en los botones que solo tienen ícono
+    title?: string;
 }
 
 const BTN_VARIANTS = {
@@ -111,12 +113,14 @@ const BTN_VARIANTS = {
 const BTN_SIZES = { sm: 'px-3 py-1.5 text-sm', md: 'px-4 py-2 text-sm', lg: 'px-6 py-3 text-base' };
 
 export const Btn = ({
-    children, onClick, variant = 'primary', size = 'md', className = '', disabled = false, type = 'button',
+    children, onClick, variant = 'primary', size = 'md', className = '', disabled = false, type = 'button', title,
 }: BtnProps) => (
     <button
         type={type}
         onClick={onClick}
         disabled={disabled}
+        title={title}
+        aria-label={title}
         className={`inline-flex items-center gap-2 rounded-lg font-semibold transition-all ${BTN_VARIANTS[variant]} ${BTN_SIZES[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     >
         {children}

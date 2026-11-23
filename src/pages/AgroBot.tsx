@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { usePerfil } from '../hooks/usePerfil';
 import { ListaConversaciones } from '../components/Chatbot/ListaConversaciones';
@@ -45,17 +45,17 @@ export default function AgroBot() {
     <DashboardLayout mostrarChatFlotante={!mostrarChat}>
       <div className="p-4 sm:p-8 h-[calc(100vh-5rem)]">
         <div className="max-w-5xl mx-auto h-full flex flex-col">
-          <div className="flex items-center gap-3 mb-4">
+          <div className={`flex items-center gap-2 ${mostrarChat ? 'mb-4' : 'mb-6'}`}>
             {mostrarChat && (
               <button
                 onClick={handleVolver}
-                className="text-muted-foreground hover:text-foreground flex items-center gap-1"
+                className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
                 aria-label="Volver al historial"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ChevronLeft size={20} />
               </button>
             )}
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+            <h1 className={`${mostrarChat ? 'text-lg' : 'text-xl'} font-bold text-foreground`}>
               {mostrarChat ? 'AgroBot' : 'Tus consultas en AgroBot'}
             </h1>
           </div>

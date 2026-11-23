@@ -19,7 +19,7 @@ export interface DatosDeLaEntrega {
     fecha: string;
 }
 
-function Visor({
+export function VisorEvidencias({
     fotos, indiceInicial, datos, alCerrar,
 }: {
     fotos: FotoEvidencia[];
@@ -176,7 +176,7 @@ export function GaleriaEvidencias({ fotos, datos }: { fotos: FotoEvidencia[]; da
             </div>
 
             {enVisor !== null && (
-                <Visor
+                <VisorEvidencias
                     fotos={fotos}
                     indiceInicial={enVisor}
                     datos={datos}

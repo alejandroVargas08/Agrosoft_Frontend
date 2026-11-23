@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { HardDrive, Info, Shield, Wifi } from 'lucide-react';
 import { Btn, Card, Input, PageHeader, Select, Tab } from '../../components/ui/AgroUI';
@@ -25,7 +26,9 @@ const Fila = ({ etiqueta, valor, ultima = false }: { etiqueta: string; valor: st
 );
 
 const ConfiguracionSistema = () => {
-    const [pestana, setPestana] = useState('General');
+    // Desde Sensores IoT se llega directo a la pestaña de IoT
+    const pedida = (useLocation().state as { pestana?: string } | null)?.pestana;
+    const [pestana, setPestana] = useState(pedida && PESTANAS.includes(pedida) ? pedida : 'General');
     return (
         <PaginaAdmin>
             <PageHeader title="Configuración del Sistema" subtitle="Parámetros globales de AgroSoft" />

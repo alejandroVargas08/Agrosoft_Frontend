@@ -41,6 +41,9 @@ const ABIERTAS = ['Pendiente', 'En_progreso'];
 // Cuántos días antes del vencimiento empieza a avisar
 const AVISO_DIAS = 3;
 
+// Las normalizadas se siguen mostrando unos días, para ver que se resolvieron
+const DIAS_NORMALIZADAS = 7;
+
 export function useAlertas() {
     const queryClient = useQueryClient();
 
@@ -66,8 +69,16 @@ export function useAlertas() {
 
     const sensores = sensoresQuery.data ?? [];
 
+    // Activas, y las normalizadas de los últimos días. Las descartadas no salen.
+    const limiteNormalizadas = Date.now() - DIAS_NORMALIZADAS * 86400000;
+    const visibles = (sensorAlertasQuery.data ?? []).filter((a) => {
+        const estado = a.estado ?? 'activa';
+        if (estado === 'activa') return true;
+        return estado === 'normalizada' && !!a.resueltaEn && new Date(a.resueltaEn).getTime() >= limiteNormalizadas;
+    });
+
     // Alertas de sensores: alta si el valor se desvía más del 20% del umbral
-    const alertasSensor: Alerta[] = (sensorAlertasQuery.data ?? []).map((a) => {
+    const alertasSensor: Alerta[] = visibles.map((a) => {
         const sensor = sensores.find((s) => s.id === a.sensorId);
         const nombre = sensor?.nombreSensor ?? 'Sensor #' + a.sensorId;
         const desviacion = a.umbral ? Math.abs(a.valor - a.umbral) / Math.abs(a.umbral) : 0;
@@ -77,7 +88,9 @@ export function useAlertas() {
         // 'min'/'max' que guarda la alerta: eso va en el umbral.
         const unidad = sensor?.unidad ? ' ' + sensor.unidad : '';
         const medida = ETIQUETA_MEDIDA[detectarTipo(sensor?.tipo ?? nombre)];
-        const lado = a.tipo === 'min' ? 'mín ' : a.tipo === 'max' ? 'máx ' : '';
+        // El backend guarda MINIMO/MAXIMO; los datos de prueba viejos, min/max
+        const tipo = a.tipo.toLowerCase();
+        const lado = tipo.startsWith('min') ? 'mín ' : tipo.startsWith('max') ? 'máx ' : '';
 
         return {
             id: 'sensor-' + a.id,
@@ -91,6 +104,7 @@ export function useAlertas() {
             medicion: medida,
             valor: num(a.valor) + unidad,
             umbral: lado + num(a.umbral) + unidad,
+            estado: (a.estado ?? 'activa') === 'activa' ? 'Activa' : 'Normalizada',
         };
     });
 
@@ -107,6 +121,7 @@ export function useAlertas() {
         medicion: 'Stock',
         valor: num(i.stockDisponible) + ' ' + i.unidadUso,
         umbral: num(i.stockMinimo) + ' ' + i.unidadUso,
+        estado: 'Activa',
     }));
 
     // Alertas de tareas: vencidas en rojo, las de los próximos días en naranja
@@ -127,13 +142,17 @@ export function useAlertas() {
             valor: textoPlazo(dias),
             // El plazo no se compara contra un umbral numérico
             umbral: '',
+            estado: 'Activa' as const,
         }));
 
-    // Las más graves primero
+    // Primero las activas y, dentro de cada grupo, las más graves
     const PESO: Record<SeveridadAlerta, number> = { high: 0, medium: 1 };
     const alertas = [...alertasSensor, ...alertasStock, ...alertasTarea].sort(
-        (a, b) => PESO[a.severidad] - PESO[b.severidad],
+        (a, b) =>
+            Number(a.estado === 'Normalizada') - Number(b.estado === 'Normalizada') ||
+            PESO[a.severidad] - PESO[b.severidad],
     );
+    const activas = alertas.filter((a) => a.estado === 'Activa').length;
 
     const descartarMutation = useMutation({
         mutationFn: (id: number) => alertasApi.descartarSensorAlerta(id),
@@ -142,7 +161,7 @@ export function useAlertas() {
 
     return {
         alertas,
-        total: alertas.length,
+        total: activas,
         cargando: sensorAlertasQuery.isLoading || bajoStockQuery.isLoading || actividadesQuery.isLoading,
         error: sensorAlertasQuery.error || bajoStockQuery.error || actividadesQuery.error
             ? 'No se pudieron cargar las alertas.'

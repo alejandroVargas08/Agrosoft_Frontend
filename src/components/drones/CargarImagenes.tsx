@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { CheckCircle2, FileImage, Loader2, UploadCloud, X, XCircle } from 'lucide-react';
-import { Btn } from '../ui/AgroUI';
+import { Camera, CheckCircle2, Loader2, Upload, UploadCloud, X } from 'lucide-react';
+import { Badge, Btn } from '../ui/AgroUI';
 import { vuelosApi } from '../../api/drones/drones';
 import { mensajeError } from '../../api/errores/errores';
 import type { ResultadoCarga } from '../../types/drones/drones';
@@ -120,7 +120,6 @@ const CargaImagenes = ({ vueloId, bloqueado, motivoBloqueo, alTerminar }: Props)
     };
 
     const pendientes = cola.filter((a) => a.estado === 'pendiente');
-    const rechazados = cola.filter((a) => a.estado === 'rechazado');
     const bytesPendientes = pendientes.reduce((suma, a) => suma + a.archivo.size, 0);
 
     if (bloqueado) {
@@ -146,13 +145,16 @@ const CargaImagenes = ({ vueloId, bloqueado, motivoBloqueo, alTerminar }: Props)
                     agregar(e.dataTransfer.files);
                 }}
                 onClick={() => !subiendo && entrada.current?.click()}
-                className={`rounded-xl border-2 border-dashed p-6 text-center cursor-pointer transition-all ${arrastrando ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-muted/50'}`}
+                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${arrastrando ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
             >
-                <UploadCloud size={32} className="mx-auto mb-2 text-primary" />
-                <p className="font-semibold text-foreground text-sm">Arrastra aquí las imágenes del dron</p>
-                <p className="text-xs text-muted-foreground mt-1">JPG o TIF · máximo 60 MB por archivo · se suben por partes automáticamente</p>
-                <p className="text-xs text-muted-foreground">Para el análisis multiespectral sube las 5 bandas de cada captura (_D, _MS_G, _MS_R, _MS_RE, _MS_NIR)</p>
-                <Btn size="sm" variant="outline" className="mt-3" disabled={subiendo}>Elegir archivos</Btn>
+                <div className="p-4 bg-muted rounded-xl inline-flex mb-3"><Upload size={28} className="text-muted-foreground" /></div>
+                <p className="text-sm font-medium text-foreground mb-1">Arrastra las fotos del vuelo o haz clic para elegirlas</p>
+                <p className="text-xs text-muted-foreground mb-1">JPG o TIF · hasta 60 archivos por carga · máximo 60 MB cada uno</p>
+                <p className="text-xs text-muted-foreground mb-4">Para el análisis multiespectral sube las 5 bandas de cada captura (_D, _MS_G, _MS_R, _MS_RE, _MS_NIR)</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                    <Btn variant="outline" disabled={subiendo} className="hidden sm:inline-flex"><Upload size={14} />Elegir archivos</Btn>
+                    <Btn variant="outline" disabled={subiendo} className="sm:hidden"><Camera size={14} />Elegir de la galería o archivos</Btn>
+                </div>
                 <input
                     ref={entrada}
                     type="file"
@@ -187,47 +189,53 @@ const CargaImagenes = ({ vueloId, bloqueado, motivoBloqueo, alTerminar }: Props)
                         <span>Subiendo parte {loteActual.actual} de {loteActual.total}…</span>
                         <span>{progreso}%</span>
                     </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                        <div className="h-full bg-primary transition-all" style={{ width: `${progreso}%` }} />
+                    <div className="w-full bg-muted rounded-full h-2">
+                        <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${progreso}%` }} />
                     </div>
                 </div>
             )}
 
             {cola.length > 0 && (
-                <div className="rounded-xl border border-border overflow-hidden">
-                    <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/50 text-xs">
-                        <span className="text-muted-foreground">
-                            {pendientes.length} por subir ({tamanoLegible(bytesPendientes)}){rechazados.length > 0 && ` · ${rechazados.length} rechazados`}
-                        </span>
+                <div>
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                        <p className="text-sm font-semibold text-foreground">
+                            {cola.filter((a) => a.estado === 'aceptado').length} de {cola.length} archivos subidos
+                            {pendientes.length > 0 && <span className="font-normal text-muted-foreground"> · {tamanoLegible(bytesPendientes)} por subir</span>}
+                        </p>
                         {!subiendo && (
-                            <button className="text-muted-foreground hover:text-foreground" onClick={() => setCola([])}>Limpiar lista</button>
+                            <div className="flex gap-2">
+                                <Btn variant="outline" size="sm" onClick={() => setCola([])}>Limpiar</Btn>
+                                <Btn variant="outline" size="sm" onClick={() => entrada.current?.click()}><Upload size={13} />Subir más</Btn>
+                            </div>
                         )}
                     </div>
-                    <ul className="max-h-64 overflow-y-auto divide-y divide-border">
+                    <div className="space-y-2 max-h-80 overflow-y-auto">
                         {cola.map((item) => {
                             const banda = bandaDelArchivo(item.archivo.name);
                             return (
-                                <li key={item.clave} className="flex items-center gap-2 px-3 py-2 text-sm">
-                                    <FileImage size={16} className="text-muted-foreground shrink-0" />
-                                    <span className="flex-1 min-w-0">
-                                        <span className="block truncate text-foreground">{item.archivo.name}</span>
-                                        <span className="block text-xs text-muted-foreground">
-                                            {tamanoLegible(item.archivo.size)}{banda && ` · Banda ${banda}`}
-                                            {item.motivo && <span className="text-red-600"> · Rechazado: {item.motivo}</span>}
-                                        </span>
-                                    </span>
-                                    {item.estado === 'subiendo' && <Loader2 size={16} className="animate-spin text-primary" />}
-                                    {item.estado === 'aceptado' && <CheckCircle2 size={16} className="text-emerald-600" />}
-                                    {item.estado === 'rechazado' && <XCircle size={16} className="text-red-600" />}
+                                <div key={item.clave} className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                                    <div className="p-2 bg-white rounded-lg shrink-0"><Camera size={14} className="text-muted-foreground" /></div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-foreground truncate">{item.archivo.name}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {tamanoLegible(item.archivo.size)}
+                                            {item.motivo && <span className="text-red-600"> · {item.motivo}</span>}
+                                        </p>
+                                    </div>
+                                    {banda && <span className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{banda}</span>}
+                                    {item.estado === 'aceptado' && <Badge color="vivid">Listo</Badge>}
+                                    {item.estado === 'subiendo' && <Badge color="progress">Subiendo</Badge>}
+                                    {item.estado === 'pendiente' && <Badge color="muted">En cola</Badge>}
+                                    {item.estado === 'rechazado' && <Badge color="danger">Rechazado</Badge>}
                                     {(item.estado === 'pendiente' || item.estado === 'rechazado') && !subiendo && (
-                                        <button onClick={() => quitar(item.clave)} className="p-1 rounded hover:bg-muted text-muted-foreground" title="Quitar">
+                                        <button onClick={() => quitar(item.clave)} className="p-1 rounded hover:bg-white text-muted-foreground" title="Quitar">
                                             <X size={14} />
                                         </button>
                                     )}
-                                </li>
+                                </div>
                             );
                         })}
-                    </ul>
+                    </div>
                 </div>
             )}
 

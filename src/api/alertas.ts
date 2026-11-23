@@ -6,5 +6,6 @@ export const alertasApi = {
     sensores: () => api.get<Sensor[]>('/sensores'),
     insumosBajoStock: () => api.get<InsumoBajoStock[]>('/inventario/insumos/bajo-stock-minimo'),
     actividades: () => api.get<ActividadPendiente[]>('/actividades'),
-    descartarSensorAlerta: (id: number) => api.delete(`/sensor-alertas/${id}`),
+    // Cierra la alerta sin borrarla: queda en el historial como descartada
+    descartarSensorAlerta: (id: number) => api.patch(`/sensor-alertas/${id}/descartar`),
 };

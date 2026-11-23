@@ -1,15 +1,17 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Cpu, Edit2, Sun, Wifi, WifiOff } from 'lucide-react';
+import { AlertTriangle, Cpu, Edit2, Plus, Settings, Sun, Wifi, WifiOff } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Modal, PageHeader, StatCard, StatusBadge, Tab } from '../components/ui/AgroUI';
+import ConfigIotModal from '../components/sensores/ConfigIotModal';
+import EditarRangosEstacion from '../components/sensores/EditarRangosEstacion';
 import EstacionCard from '../components/sensores/EstacionCard';
 import HistorialSensor from '../components/sensores/HistorialSensor';
-import EditarRangoSensor from '../components/sensores/EditarRangoSensor';
 import { useSensoresPorLote, type EstacionLote } from '../hooks/sensores/useSensoresPorLote';
 import { usePermisos } from '../hooks/permisos/usePermisos';
 import {
-    COLOR_MEDIDA, ETIQUETA_MEDIDA, ICONO_MEDIDA, ORDEN_MEDIDAS, nivelUV, textoValor,
+    COLOR_MEDIDA, ETIQUETA_MEDIDA, ICONO_MEDIDA, ORDEN_MEDIDAS, fueraDeRango, nivelUV, textoValor,
     nivelLuz,
 } from '../components/sensores/medidas';
 import type { Sensor } from '../types/sensor';
@@ -25,11 +27,16 @@ export default function SensorPage() {
     const [seleccionadaId, setSeleccionadaId] = useState<number | null | undefined>(undefined);
     const [medidaActiva, setMedidaActiva] = useState<string>(ETIQUETA_MEDIDA.temperatura);
     const [editarRangos, setEditarRangos] = useState(false);
+    const [configAbierta, setConfigAbierta] = useState(false);
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const { puede } = usePermisos();
 
-    // El diseño solo le deja editar rangos al instructor y al admin.
+    // El diseño solo le deja editar rangos y crear tareas al instructor y al admin
     const puedeEditarRangos = puede('sensores.gestionar');
+    const puedeCrearTarea = puede('actividades.gestionar');
+    // La configuración del broker es del administrador
+    const puedeConfigurarIot = puede('usuarios.gestionar');
 
     // Se guarda el id y no la estacion, para que el refresco cada 10s no deje
     // la pantalla de detalle mirando datos viejos.
@@ -66,23 +73,37 @@ export default function SensorPage() {
             .filter((s): s is Sensor => s !== undefined);
 
         const sensorActivo = presentes.find((s) => ETIQUETA_MEDIDA[s.tipo] === medidaActiva) ?? presentes[0];
+        // El umbral de UV es el que se fija en "Editar rangos"
         const uvSensor = seleccionada.medida('uv');
-        const alertaUV = uvSensor?.valor !== null && uvSensor?.valor !== undefined && uvSensor.valor >= 8;
+        const alertaUV = uvSensor !== undefined && fueraDeRango(uvSensor);
 
         return (
             <DashboardLayout>
                 <div className="space-y-4 p-4 sm:p-6">
                     <PageHeader
-                        title={'Estación ' + seleccionada.nombreLote}
-                        subtitle={seleccionada.sensores.length + ' sensores'}
+                        title={seleccionada.nombre}
+                        subtitle={seleccionada.nombreLote}
                         onBack={volver}
                         action={<StatusBadge status={ESTADO_BADGE[seleccionada.estado]} />}
                     />
 
-                    {puedeEditarRangos && (
-                        <Btn variant="outline" size="sm" onClick={() => setEditarRangos(true)}>
-                            <Edit2 size={14} />Editar rangos
-                        </Btn>
+                    {(puedeEditarRangos || puedeCrearTarea) && (
+                        <div className="flex gap-2">
+                            {puedeEditarRangos && (
+                                <Btn variant="outline" size="sm" onClick={() => setEditarRangos(true)}>
+                                    <Edit2 size={14} />Editar rangos
+                                </Btn>
+                            )}
+                            {puedeCrearTarea && seleccionada.loteId !== null && (
+                                <Btn
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate('/actividades', { state: { nuevaEnLote: seleccionada.loteId } })}
+                                >
+                                    <Plus size={14} />Crear tarea
+                                </Btn>
+                            )}
+                        </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -148,24 +169,15 @@ export default function SensorPage() {
                     </div>
 
                     <Modal open={editarRangos && puedeEditarRangos} onClose={() => setEditarRangos(false)} title="Editar rangos de la estación">
-                        {sensorActivo ? (
-                            <div className="space-y-3">
-                                <p className="text-sm text-muted-foreground">
-                                    Rango de <strong className="text-foreground">{sensorActivo.nombre}</strong>. El
-                                    rango decide cuándo la estación entra en alerta.
-                                </p>
-                                <EditarRangoSensor
-                                    sensor={sensorActivo}
-                                    onGuardado={() => {
-                                        queryClient.invalidateQueries({ queryKey: ['sensor-lecturas'] });
-                                        recargar();
-                                        setEditarRangos(false);
-                                    }}
-                                />
-                            </div>
-                        ) : (
-                            <p className="text-sm text-muted-foreground">No hay sensores a los que ajustarles el rango.</p>
-                        )}
+                        <EditarRangosEstacion
+                            medida={seleccionada.medida}
+                            onCancelar={() => setEditarRangos(false)}
+                            onGuardado={() => {
+                                queryClient.invalidateQueries({ queryKey: ['sensor-lecturas'] });
+                                recargar();
+                                setEditarRangos(false);
+                            }}
+                        />
                     </Modal>
                 </div>
             </DashboardLayout>
@@ -176,7 +188,13 @@ export default function SensorPage() {
     return (
         <DashboardLayout>
             <div className="space-y-4 p-4 sm:p-6">
-                <PageHeader title="Sensores IoT" subtitle="Estaciones de monitoreo por lote" />
+                <PageHeader
+                    title="Sensores IoT"
+                    subtitle="Estaciones de monitoreo por lote"
+                    action={puedeConfigurarIot
+                        ? <Btn variant="outline" size="sm" onClick={() => setConfigAbierta(true)}><Settings size={14} />Config. IoT</Btn>
+                        : undefined}
+                />
 
                 {avisoError}
 
@@ -210,6 +228,10 @@ export default function SensorPage() {
                             />
                         ))}
                     </div>
+                )}
+
+                {puedeConfigurarIot && (
+                    <ConfigIotModal open={configAbierta} onClose={() => setConfigAbierta(false)} estaciones={estaciones} />
                 )}
             </div>
         </DashboardLayout>

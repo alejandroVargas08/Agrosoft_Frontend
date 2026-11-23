@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ClipboardList, Package, Plus, UserCheck } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, EmptyState, Input, Modal, PageHeader, Select, Textarea } from '../../components/ui/AgroUI';
@@ -157,6 +157,17 @@ const Actividades = () => {
     // El formulario del modal usa eventos, no valores sueltos
     const campo = (name: string) => (valor: string) =>
         handleFormChange({ target: { name, value: valor } } as React.ChangeEvent<HTMLInputElement>);
+
+    // "Crear tarea" desde una estación de Sensores llega con el lote elegido
+    const location = useLocation();
+    const loteDesdeSensores = (location.state as { nuevaEnLote?: number } | null)?.nuevaEnLote;
+    useEffect(() => {
+        if (!loteDesdeSensores || !puedeGestionar) return;
+        setModalNueva(true);
+        handleFormChange({ target: { name: 'loteId', value: String(loteDesdeSensores) } } as React.ChangeEvent<HTMLInputElement>);
+        navigate(location.pathname, { replace: true, state: null });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [loteDesdeSensores]);
 
     return (
         <DashboardLayout>

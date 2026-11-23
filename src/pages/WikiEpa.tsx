@@ -115,6 +115,17 @@ const WikiEpa = () => {
                                 )}
                             </Card>
 
+                            {(seleccionada.cultivosSusceptibles ?? []).length > 0 && (
+                                <Card>
+                                    <h3 className="font-semibold text-foreground mb-2">Cultivos susceptibles</h3>
+                                    <div className="flex flex-wrap gap-1">
+                                        {(seleccionada.cultivosSusceptibles ?? []).map((cultivo) => (
+                                            <Badge key={cultivo.id} color="warning">{cultivo.nombre}</Badge>
+                                        ))}
+                                    </div>
+                                </Card>
+                            )}
+
                             {seleccionada.etiquetas.length > 0 && (
                                 <Card>
                                     <h3 className="font-semibold text-foreground mb-2">Etiquetas</h3>
@@ -209,6 +220,19 @@ const WikiEpa = () => {
                                             </span>
                                         ))}
                                     </div>
+
+                                    {(epa.cultivosSusceptibles ?? []).length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                            {(epa.cultivosSusceptibles ?? []).slice(0, 2).map((cultivo) => (
+                                                <Badge key={cultivo.id} color="warning">{cultivo.nombre}</Badge>
+                                            ))}
+                                            {(epa.cultivosSusceptibles ?? []).length > 2 && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    +{(epa.cultivosSusceptibles ?? []).length - 2}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                 </Card>
                             );
                         })}

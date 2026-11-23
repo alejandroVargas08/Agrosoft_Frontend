@@ -50,7 +50,7 @@ export interface Insumo {
     estado: EstadoInsumo;
     tipoInsumo: TipoInsumo;
     almacenId: number;
-    proveedorId: number;
+    proveedorId: number | null;
     categoriaId: number;
     valorInventario: number;
     // Solo vienen con valor en las herramientas

@@ -19,7 +19,7 @@ const PREGUNTAS = [
     },
     {
         q: '¿Cómo vinculo mi cuenta con Telegram?',
-        a: 'En Configuración, sección Telegram, pulsa Vincular. AgroSoft genera un código de 10 minutos que envías al bot @AgroSoftSenaBot. Nunca escribas tu contraseña en el chat.',
+        a: 'En Configuración, sección Telegram, pulsa Vincular. AgroSoft genera un código de 10 minutos que envías al bot @ArGros_bot. Nunca escribas tu contraseña en el chat.',
     },
     {
         q: 'Cambiaron mis permisos y no veo las pantallas nuevas',

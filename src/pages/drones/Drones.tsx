@@ -1,20 +1,20 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Camera, Edit2, Plane, Plus, Power, Satellite, Trash2 } from 'lucide-react';
+import { Edit2, Plane, Plus, Power, Trash2 } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { Badge, Btn, Card, EmptyState, Input, Modal, PageHeader } from '../../components/ui/AgroUI';
+import { Badge, Btn, Card, EmptyState, Input, Modal, PageHeader, StatusBadge } from '../../components/ui/AgroUI';
 import { dronesApi, vuelosApi } from '../../api/drones/drones';
 import { mensajeError } from '../../api/errores/errores';
 import { usePermisos } from '../../hooks/permisos/usePermisos';
 import { PERMISOS_DRONES, type Dron, type DronPayload, type TipoCamara } from '../../types/drones/drones';
 import { fechaCortaDron } from '../../utils/drones/drones';
 
-const FORM_VACIO: DronPayload = { nombre: '', modelo: '', numeroSerie: '', tipoCamara: 'MULTIESPECTRAL', tieneRtk: false };
+const FORM_VACIO: DronPayload = { nombre: '', modelo: '', numeroSerie: '', tipoCamara: 'RGB', tieneRtk: false };
 
 const TIPOS_CAMARA: { valor: TipoCamara; titulo: string; descripcion: string }[] = [
-    { valor: 'MULTIESPECTRAL', titulo: 'Multiespectral', descripcion: 'Bandas G, R, RE y NIR. Permite calcular NDVI y la salud del cultivo.' },
-    { valor: 'RGB', titulo: 'RGB', descripcion: 'Solo fotos a color. Sirve para inspección visual.' },
+    { valor: 'RGB', titulo: 'RGB', descripcion: 'Fotografía estándar, ideal para mapeo visual' },
+    { valor: 'MULTIESPECTRAL', titulo: 'Multiespectral', descripcion: 'Índices NDVI/NDRE, análisis de salud vegetal' },
 ];
 
 const Drones = () => {
@@ -106,7 +106,7 @@ const Drones = () => {
             <div className="max-w-6xl mx-auto p-4 sm:p-6">
                 <PageHeader
                     title="Drones"
-                    subtitle="Equipos para el monitoreo aéreo de los lotes"
+                    subtitle="Gestión de drones de inspección"
                     action={
                         <div className="flex gap-2">
                             <Btn variant="outline" onClick={() => navigate('/drones/vuelos')}><Plane size={16} />Vuelos</Btn>
@@ -137,7 +137,7 @@ const Drones = () => {
                 {!drones.isLoading && !drones.error && lista.length === 0 && (
                     <EmptyState
                         icon={Plane}
-                        title="Todavía no hay drones"
+                        title="Sin drones registrados"
                         description="Registra tu primer dron para analizar tus lotes desde el aire."
                         action={puedeGestionar ? <Btn onClick={abrirNuevo}><Plus size={16} />Registrar dron</Btn> : undefined}
                     />
@@ -147,48 +147,33 @@ const Drones = () => {
                     {lista.map((dron) => {
                         const resumen = resumenPorDron.get(dron.id);
                         return (
-                            <Card key={dron.id} className={`flex flex-col gap-3 ${dron.activo ? '' : 'opacity-70'}`}>
-                                <div className="flex items-start gap-3">
-                                    <div className="p-3 rounded-xl bg-primary/10 text-primary shrink-0"><Plane size={22} /></div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-foreground truncate">{dron.nombre}</p>
-                                        <p className="text-sm text-muted-foreground truncate">{dron.modelo}</p>
-                                        {dron.numeroSerie && <p className="text-xs text-muted-foreground">Serie: {dron.numeroSerie}</p>}
+                            <Card key={dron.id} className={dron.activo ? '' : 'opacity-70'}>
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-icon-bg rounded-lg"><Plane size={20} className="text-primary" /></div>
+                                        <div className="flex gap-1 flex-wrap">
+                                            <Badge color={dron.tipoCamara === 'MULTIESPECTRAL' ? 'info' : 'muted'}>{dron.tipoCamara === 'MULTIESPECTRAL' ? 'Multiespectral' : 'RGB'}</Badge>
+                                            {dron.tieneRtk && <Badge color="primary">RTK</Badge>}
+                                        </div>
                                     </div>
-                                    <Badge color={dron.activo ? 'success' : 'muted'}>{dron.activo ? 'Activo' : 'Inactivo'}</Badge>
+                                    <StatusBadge status={dron.activo ? 'activo' : 'inactivo'} />
                                 </div>
-
-                                <div className="flex flex-wrap gap-1.5">
-                                    <Badge color={dron.tipoCamara === 'MULTIESPECTRAL' ? 'primary' : 'info'}>
-                                        <Camera size={12} className="mr-1" />{dron.tipoCamara === 'MULTIESPECTRAL' ? 'Multiespectral' : 'RGB'}
-                                    </Badge>
-                                    {dron.tieneRtk && <Badge color="secondary"><Satellite size={12} className="mr-1" />RTK</Badge>}
+                                <p className="font-semibold text-foreground mb-0.5">{dron.nombre}</p>
+                                <p className="text-xs text-muted-foreground mb-1">{dron.modelo}</p>
+                                {dron.numeroSerie && <p className="text-xs text-muted-foreground font-mono mb-3">{dron.numeroSerie}</p>}
+                                <div className="flex justify-between text-xs text-muted-foreground mb-3">
+                                    <span>{resumen?.total ?? 0} {resumen?.total === 1 ? 'vuelo' : 'vuelos'}</span>
+                                    {resumen?.ultimo && <span>Último: {fechaCortaDron(resumen.ultimo)}</span>}
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <div className="rounded-lg bg-muted p-2">
-                                        <p className="text-muted-foreground">Vuelos</p>
-                                        <p className="font-semibold text-foreground text-sm">{resumen?.total ?? 0}</p>
-                                    </div>
-                                    <div className="rounded-lg bg-muted p-2">
-                                        <p className="text-muted-foreground">Último vuelo</p>
-                                        <p className="font-semibold text-foreground text-sm">{fechaCortaDron(resumen?.ultimo)}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-                                    <Btn size="sm" variant="outline" onClick={() => navigate(`/drones/vuelos?dronId=${dron.id}`)}>
-                                        <Plane size={14} />Ver vuelos
-                                    </Btn>
+                                <div className="flex gap-2">
+                                    <Btn variant="outline" size="sm" onClick={() => navigate(`/drones/vuelos?dronId=${dron.id}`)} className="flex-1 justify-center">Ver vuelos</Btn>
                                     {puedeGestionar && (
                                         <>
-                                            <Btn size="sm" variant="ghost" onClick={() => abrirEditar(dron)}><Edit2 size={14} />Editar</Btn>
-                                            <Btn size="sm" variant="ghost" disabled={cambiarEstado.isPending} onClick={() => cambiarEstado.mutate(dron)}>
-                                                <Power size={14} />{dron.activo ? 'Desactivar' : 'Activar'}
+                                            <Btn variant="ghost" size="sm" onClick={() => abrirEditar(dron)} title="Editar"><Edit2 size={12} /></Btn>
+                                            <Btn variant="ghost" size="sm" disabled={cambiarEstado.isPending} onClick={() => cambiarEstado.mutate(dron)} title={dron.activo ? 'Desactivar' : 'Activar'}>
+                                                <Power size={12} />
                                             </Btn>
-                                            <Btn size="sm" variant="ghost" className="text-red-600" onClick={() => setEliminar(dron)}>
-                                                <Trash2 size={14} />
-                                            </Btn>
+                                            <Btn variant="ghost" size="sm" className="text-red-600" onClick={() => setEliminar(dron)} title="Eliminar"><Trash2 size={12} /></Btn>
                                         </>
                                     )}
                                 </div>
@@ -205,43 +190,43 @@ const Drones = () => {
                             {errorLocal ?? mensajeError(guardar.error, 'No se pudo guardar el dron')}
                         </div>
                     )}
-                    <Input label="Nombre" value={form.nombre} onChange={(v) => setForm({ ...form, nombre: v })} required placeholder="Ej: Dron SENA 1" />
-                    <Input label="Modelo" value={form.modelo} onChange={(v) => setForm({ ...form, modelo: v })} required placeholder="Ej: DJI Mavic 3 Multispectral" />
-                    <Input label="Número de serie (opcional)" value={form.numeroSerie ?? ''} onChange={(v) => setForm({ ...form, numeroSerie: v })} />
-                    <div className="space-y-2">
-                        <p className="text-sm font-semibold text-foreground">Tipo de cámara</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Input label="Nombre" value={form.nombre} onChange={(v) => setForm({ ...form, nombre: v })} required placeholder="Ej: Drone Alpha" />
+                    <Input label="Modelo" value={form.modelo} onChange={(v) => setForm({ ...form, modelo: v })} required placeholder="Ej: DJI Phantom 4 Multispectral" />
+                    <Input label="Número de serie (opcional)" value={form.numeroSerie ?? ''} onChange={(v) => setForm({ ...form, numeroSerie: v })} placeholder="Ej: DJI-PH4M-001" />
+                    <div>
+                        <label className="text-sm font-semibold text-foreground mb-2 block">Tipo de cámara</label>
+                        <div className="grid grid-cols-2 gap-2">
                             {TIPOS_CAMARA.map((tipo) => (
                                 <button
                                     key={tipo.valor}
                                     type="button"
                                     onClick={() => setForm({ ...form, tipoCamara: tipo.valor })}
-                                    className={`text-left rounded-xl border p-3 transition-all ${form.tipoCamara === tipo.valor ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border hover:bg-muted'}`}
+                                    className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all ${form.tipoCamara === tipo.valor ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'}`}
                                 >
-                                    <p className="font-semibold text-sm text-foreground">{tipo.titulo}</p>
+                                    <p className="text-sm font-semibold text-foreground">{tipo.titulo}</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">{tipo.descripcion}</p>
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <label className="flex items-center justify-between gap-3 rounded-xl border border-border p-3 cursor-pointer">
-                        <span>
-                            <span className="block text-sm font-semibold text-foreground">Tiene RTK</span>
-                            <span className="block text-xs text-muted-foreground">Posicionamiento de alta precisión</span>
-                        </span>
-                        <input
-                            type="checkbox"
-                            checked={form.tieneRtk}
-                            onChange={(e) => setForm({ ...form, tieneRtk: e.target.checked })}
-                            className="w-5 h-5 accent-[#2D7A3E]"
-                        />
-                    </label>
-                    <div className="flex gap-3 pt-2">
-                        <Btn type="submit" disabled={guardar.isPending} className="flex-1 justify-center">
-                            {guardar.isPending ? 'Guardando...' : editando ? 'Guardar cambios' : 'Registrar dron'}
-                        </Btn>
-                        <Btn variant="outline" onClick={cerrarModal}>Cancelar</Btn>
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-xl">
+                        <div>
+                            <p className="text-sm font-medium text-foreground">Tiene RTK</p>
+                            <p className="text-xs text-muted-foreground">Posicionamiento de alta precisión</p>
+                        </div>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={form.tieneRtk}
+                            onClick={() => setForm({ ...form, tieneRtk: !form.tieneRtk })}
+                            className={`w-11 h-6 rounded-full relative transition-colors ${form.tieneRtk ? 'bg-primary' : 'bg-muted border border-border'}`}
+                        >
+                            <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${form.tieneRtk ? 'left-5' : 'left-0.5'}`} />
+                        </button>
                     </div>
+                    <Btn type="submit" disabled={guardar.isPending} className="w-full justify-center">
+                        {guardar.isPending ? 'Guardando...' : editando ? 'Guardar cambios' : 'Registrar dron'}
+                    </Btn>
                 </form>
             </Modal>
 

@@ -8,6 +8,9 @@ import {
     Badge, Btn, Card, EmptyState, Input, Modal, PageHeader, SearchBar, Select, Tab,
 } from '../components/ui/AgroUI';
 import { useInventario } from '../hooks/useInventario';
+import { usePermisos } from '../hooks/permisos/usePermisos';
+import FormularioInsumo from '../components/inventario/FormularioInsumo';
+import { toast } from 'sonner';
 import type { TipoMovimiento } from '../types/inventario';
 
 const fmt = (n: number, moneda = false) =>
@@ -30,6 +33,11 @@ const Inventario = () => {
     const [tab, setTab] = useState('Insumos');
     const [modalAlmacen, setModalAlmacen] = useState(false);
     const [modalMovimiento, setModalMovimiento] = useState(false);
+    const [modalInsumo, setModalInsumo] = useState(false);
+
+    // Como en el diseño, el aprendiz consulta; registrar es del instructor y el admin
+    const { puede } = usePermisos();
+    const puedeGestionar = puede('inventario.gestionar');
 
     const {
         insumos, almacenes, movimientos, bajoStock, loading, error,
@@ -48,6 +56,9 @@ const Inventario = () => {
                 <PageHeader
                     title="Inventario"
                     subtitle="Insumos, herramientas y almacenes"
+                    action={puedeGestionar
+                        ? <Btn onClick={() => setModalInsumo(true)}><Plus size={16} />Nuevo Insumo</Btn>
+                        : undefined}
                 />
 
                 {bajoStock.length > 0 && (
@@ -170,9 +181,11 @@ const Inventario = () => {
                         {almacenes.length === 0 && (
                             <p className="text-sm text-muted-foreground">Aún no hay almacenes registrados.</p>
                         )}
-                        <Btn variant="outline" className="w-full justify-center" onClick={() => setModalAlmacen(true)}>
-                            <Plus size={16} />Nuevo Almacén
-                        </Btn>
+                        {puedeGestionar && (
+                            <Btn variant="outline" className="w-full justify-center" onClick={() => setModalAlmacen(true)}>
+                                <Plus size={16} />Nuevo Almacén
+                            </Btn>
+                        )}
                     </div>
                 )}
 
@@ -208,12 +221,21 @@ const Inventario = () => {
                         {movimientos.length === 0 && (
                             <p className="text-sm text-muted-foreground">Aún no hay movimientos registrados.</p>
                         )}
-                        <Btn variant="outline" className="w-full justify-center" onClick={() => setModalMovimiento(true)}>
-                            <Plus size={16} />Registrar Movimiento
-                        </Btn>
+                        {puedeGestionar && (
+                            <Btn variant="outline" className="w-full justify-center" onClick={() => setModalMovimiento(true)}>
+                                <Plus size={16} />Registrar Movimiento
+                            </Btn>
+                        )}
                     </div>
                 )}
             </div>
+
+            {/* Modal: nuevo insumo */}
+            <Modal open={modalInsumo} onClose={() => setModalInsumo(false)} title="Nuevo Insumo">
+                {modalInsumo && (
+                    <FormularioInsumo onGuardado={() => setModalInsumo(false)} onCancelar={() => setModalInsumo(false)} />
+                )}
+            </Modal>
 
             {/* Modal: nuevo almacén */}
             <Modal open={modalAlmacen} onClose={() => setModalAlmacen(false)} title="Nuevo Almacén">
@@ -225,7 +247,7 @@ const Inventario = () => {
                     {crearAlmacen.isError && <p className="text-sm text-red-600">No se pudo guardar el almacén</p>}
                     <div className="flex gap-3">
                         <Btn className="flex-1 justify-center" disabled={crearAlmacen.isPending || !formAlmacen.nombre}
-                            onClick={() => crearAlmacen.mutate(undefined, { onSuccess: () => setModalAlmacen(false) })}>
+                            onClick={() => crearAlmacen.mutate(undefined, { onSuccess: () => { setModalAlmacen(false); toast.success('Almacén registrado'); } })}>
                             {crearAlmacen.isPending ? 'Guardando...' : 'Guardar almacén'}
                         </Btn>
                         <Btn variant="outline" onClick={() => setModalAlmacen(false)}>Cancelar</Btn>
@@ -292,7 +314,7 @@ const Inventario = () => {
 
                     <div className="flex gap-3">
                         <Btn className="flex-1 justify-center" disabled={registrandoMovimiento}
-                            onClick={() => registrarMovimiento(() => setModalMovimiento(false))}>
+                            onClick={() => registrarMovimiento(() => { setModalMovimiento(false); toast.success('Movimiento registrado'); })}>
                             {registrandoMovimiento ? 'Registrando...' : 'Registrar'}
                         </Btn>
                         <Btn variant="outline" onClick={() => setModalMovimiento(false)}>Cancelar</Btn>

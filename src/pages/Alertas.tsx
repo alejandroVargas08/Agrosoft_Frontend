@@ -94,8 +94,12 @@ const Alertas = () => {
                                             </div>
                                         </div>
 
-                                        <span className="shrink-0 rounded-full bg-red-100 px-2 py-1 text-[11px] font-semibold text-red-700">
-                                            Activa
+                                        <span
+                                            className={`w-[84px] shrink-0 rounded-full px-2 py-1 text-center text-[11px] font-semibold ${
+                                                a.estado === 'Activa' ? 'bg-red-100 text-red-700' : 'bg-muted text-muted-foreground'
+                                            }`}
+                                        >
+                                            {a.estado}
                                         </span>
                                     </div>
                                 </div>

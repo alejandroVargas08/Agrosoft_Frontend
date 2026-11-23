@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Bell, Bug, CalendarDays, Check, Cpu, Package, UserCheck, type LucideIcon } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Bell, Bug, CalendarDays, Check, Cpu, Package, UserCheck, type LucideIcon } from 'lucide-react';
 import { useNotificacionesContext } from '../../context/NotificacionesContext';
 import { tiempoRelativo } from '../../utils/tiempoRelativo';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -23,6 +23,8 @@ const TIPOS: Record<string, EstiloTipo> = {
     stock_bajo: { icono: Package, color: 'text-[#F16C07]', fondo: 'bg-[#FFF3E0]', etiqueta: 'Stock', ruta: '/inventario' },
     novedad: { icono: AlertCircle, color: 'text-amber-600', fondo: 'bg-amber-100', etiqueta: 'Novedad', ruta: '/novedades' },
     diagnostico_completado: { icono: Bug, color: 'text-purple-500', fondo: 'bg-purple-100', etiqueta: 'Diagnóstico', ruta: '/wiki-epa' },
+    // Incidencia no tiene chip en el diseño: sale en "Todos los tipos"
+    incidencia: { icono: AlertTriangle, color: 'text-red-500', fondo: 'bg-red-100', etiqueta: 'Incidencia', ruta: '/incidencias' },
     // Solicitud no existe en el diseño: se le deja el cian que allá usan los drones
     solicitud: { icono: UserCheck, color: 'text-cyan-600', fondo: 'bg-cyan-100', etiqueta: 'Solicitud', ruta: '/solicitudes' },
 };

@@ -55,6 +55,8 @@ export function useNuevoInsumoForm({ onSuccess }: { onSuccess: () => void }) {
         onSuccess: () => {
             setForm(ESTADO_INICIAL_INSUMO_FORM);
             queryClient.invalidateQueries({ queryKey: ['insumos'] });
+            // El aviso de stock bajo del Inicio, el Dashboard y Alertas
+            queryClient.invalidateQueries({ queryKey: ['insumos-bajo-stock'] });
             onSuccess();
         },
     });

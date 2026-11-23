@@ -12,6 +12,10 @@ export interface SensorAlerta {
     fechaAlerta: string;
     loteId: number | null;
     subLoteId: number | null;
+    /** 'activa' hasta que una lectura vuelve al rango ('normalizada') o alguien la descarta */
+    estado?: 'activa' | 'normalizada' | 'descartada';
+    resueltaEn?: string | null;
+    valorNormalizado?: number | null;
 }
 
 export interface Sensor {
@@ -56,4 +60,6 @@ export interface Alerta {
     valor: string;
     /** Vacío cuando la alerta no se compara contra un umbral */
     umbral: string;
+    /** Como el diseño: las de sensor que ya volvieron al rango salen como Normalizada */
+    estado: 'Activa' | 'Normalizada';
 }

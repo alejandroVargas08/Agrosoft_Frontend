@@ -1,29 +1,123 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Calendar, ClipboardList, Leaf, MapPin } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Calendar, Check, CheckCircle2, ChevronDown, ClipboardList, Image as Imagen, Info, Leaf, Play, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Btn, Card, EmptyState, Input, Modal, PageHeader, StatusBadge, Tab, Textarea } from '../../components/ui/AgroUI';
+import { VisorEvidencias } from '../../components/instructor/GaleriaEvidencias';
+import { ActividadEvidenciaApi } from '../../api/actividades/actividadEvidencias';
+import { mensajeError } from '../../api/errores/errores';
 import { useMisTareas } from '../../hooks/instructor/useMisTareas';
 import type { PestanaTarea, TareaPropia } from '../../hooks/instructor/useMisTareas';
-import { ChecklistEntrega } from '../../components/instructor/ChecklistEntrega';
 
 const PESTANAS: PestanaTarea[] = ['Pendientes', 'Entregadas', 'Aprobadas'];
 
-const fecha = (valor: string | null) =>
-    valor ? new Date(valor).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'sin fecha';
+/** "2026-10-30" es solo fecha: new Date() la lee en UTC y en Colombia sale un día antes. */
+const aFecha = (valor: string) => {
+    const solo = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
+    return solo ? new Date(Number(solo[1]), Number(solo[2]) - 1, Number(solo[3])) : new Date(valor);
+};
 
-/** El plazo en palabras, con el color según qué tan encima esté. */
-const plazo = (tarea: TareaPropia) => {
-    const { asignacion, diasParaEntregar: dias } = tarea;
-    if (asignacion.vencida) {
-        return { texto: 'Vencida · ' + fecha(asignacion.fechaLimite), clase: 'text-red-600 font-bold' };
-    }
-    if (dias === null) return { texto: 'Sin fecha de entrega', clase: 'text-muted-foreground' };
-    return {
-        texto: 'Entrega: ' + fecha(asignacion.fechaLimite),
-        clase: dias <= 2 ? 'text-[#F16C07]' : 'text-muted-foreground',
-    };
+const fecha = (valor: string | null) =>
+    valor ? aFecha(valor).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/ de /g, ' ') : '—';
+
+const capital = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
+/** Igual que la app de escritorio: "Tipo · Subtipo", o solo el tipo. */
+const tipoDe = (a: { tipo: string; subtipo: string | null }) =>
+    a.subtipo?.trim() ? `${capital(a.tipo)} · ${capital(a.subtipo)}` : capital(a.tipo);
+
+const Dato = ({ titulo, valor }: { titulo: string; valor: string }) => (
+    <div className="rounded-lg bg-muted px-3 py-2">
+        <p className="text-[11px] text-muted-foreground">{titulo}</p>
+        <p className="text-sm font-semibold text-foreground">{valor}</p>
+    </div>
+);
+
+/** Fotos de la entrega: las que ya subió el aprendiz y el botón para subir más. */
+const FotosDeLaTarea = ({ tarea, puedeSubir }: { tarea: TareaPropia; puedeSubir: boolean }) => {
+    const queryClient = useQueryClient();
+    const entrada = useRef<HTMLInputElement>(null);
+    const [visor, setVisor] = useState<number | null>(null);
+    const actividadId = tarea.asignacion.actividad?.id;
+    const asignacionId = tarea.asignacion.id;
+    const clave = ['actividad-evidencias', actividadId, asignacionId];
+
+    const evidencias = useQuery({
+        queryKey: clave,
+        enabled: !!actividadId,
+        queryFn: async () => (await ActividadEvidenciaApi.listar(actividadId!, asignacionId)).data,
+    });
+
+    const subir = useMutation({
+        mutationFn: (foto: File) => ActividadEvidenciaApi.subirFoto(actividadId!, foto, asignacionId),
+        onSuccess: () => { toast.success('Foto subida'); queryClient.invalidateQueries({ queryKey: clave }); },
+        onError: (e) => toast.error(mensajeError(e, 'No se pudo subir la foto')),
+    });
+
+    const fotos = (evidencias.data ?? []).flatMap((ev) =>
+        ev.imagenes.map((url, n) => ({ id: `${ev.id}-${n}`, url, nombre: ev.descripcion ?? `Foto ${n + 1}` })),
+    );
+
+    return (
+        <div>
+            <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                    <Imagen size={14} />Fotos de evidencia ({fotos.length})
+                </p>
+                {puedeSubir && actividadId && (
+                    <>
+                        <Btn variant="outline" size="sm" disabled={subir.isPending} onClick={() => entrada.current?.click()}>
+                            <Upload size={14} />{subir.isPending ? 'Subiendo...' : 'Subir foto'}
+                        </Btn>
+                        <input
+                            ref={entrada}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                                const archivo = e.target.files?.[0];
+                                if (archivo) subir.mutate(archivo);
+                                e.target.value = '';
+                            }}
+                        />
+                    </>
+                )}
+            </div>
+
+            {evidencias.isLoading ? (
+                <p className="text-sm text-muted-foreground">Cargando fotos...</p>
+            ) : fotos.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                    Todavía no hay fotos. Sube fotos del trabajo para que tu instructor pueda revisarlo.
+                </p>
+            ) : (
+                <div className="flex flex-wrap gap-2">
+                    {fotos.map((foto, indice) => (
+                        <button
+                            key={foto.id}
+                            type="button"
+                            onClick={() => setVisor(indice)}
+                            aria-label={`Ver foto ${indice + 1}`}
+                            className="h-28 w-28 overflow-hidden rounded-lg bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                            <img src={foto.url} alt="" className="h-full w-full object-cover" />
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {visor !== null && (
+                <VisorEvidencias
+                    fotos={fotos}
+                    indiceInicial={visor}
+                    datos={{ aprendiz: 'Tu entrega', actividad: tarea.titulo, fecha: fecha(tarea.asignacion.entregadaEn) }}
+                    alCerrar={() => setVisor(null)}
+                />
+            )}
+        </div>
+    );
 };
 
 const MisTareas = () => {
@@ -33,10 +127,25 @@ const MisTareas = () => {
         iniciar, entregar,
     } = useMisTareas();
 
-    const [porEmpezar, setPorEmpezar] = useState<TareaPropia | null>(null);
+    const [abiertas, setAbiertas] = useState<Set<number>>(new Set());
+    const [iniciada, setIniciada] = useState<string | null>(null);
     const [porEntregar, setPorEntregar] = useState<TareaPropia | null>(null);
     const [horas, setHoras] = useState('');
     const [comentario, setComentario] = useState('');
+
+    const alternar = (id: number) =>
+        setAbiertas((prev) => {
+            const sig = new Set(prev);
+            if (sig.has(id)) sig.delete(id);
+            else sig.add(id);
+            return sig;
+        });
+
+    const empezar = (tarea: TareaPropia) =>
+        iniciar(tarea.asignacion.id, () => {
+            setIniciada(tarea.titulo);
+            setAbiertas((prev) => new Set(prev).add(tarea.asignacion.id));
+        });
 
     const cerrarEntrega = () => {
         setPorEntregar(null);
@@ -50,6 +159,7 @@ const MisTareas = () => {
         if (!porEntregar || !horasValidas) return;
         entregar(porEntregar.asignacion.id, Number(horas), comentario, () => {
             toast.success('Tarea entregada a tu instructor');
+            setIniciada(null);
             cerrarEntrega();
         });
     };
@@ -61,11 +171,18 @@ const MisTareas = () => {
     return (
         <DashboardLayout>
             <div className="max-w-7xl mx-auto p-4 sm:p-6">
-                <PageHeader title="Mis tareas" subtitle="Actividades asignadas por tu instructor" />
+                <PageHeader title="Mis tareas" subtitle={`Tienes ${conteos.Pendientes} tarea(s) pendiente(s)`} />
 
                 {(error || errorAccion) && (
                     <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                         {error || errorAccion}
+                    </div>
+                )}
+
+                {iniciada && (
+                    <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-[#2D7A3E]">
+                        <CheckCircle2 size={16} className="shrink-0" />
+                        Iniciaste "{iniciada}". Cuando termines, sube las fotos y entrégala.
                     </div>
                 )}
 
@@ -85,129 +202,106 @@ const MisTareas = () => {
                         action={<Btn variant="outline" onClick={() => navigate('/inicio')}>Ir al inicio</Btn>}
                     />
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-3">
                         {tareas.map((tarea) => {
                             const { asignacion } = tarea;
-                            const limite = plazo(tarea);
+                            const abierta = abiertas.has(asignacion.id);
+                            const descripcion = asignacion.actividad?.descripcion?.trim();
+                            const trabajando = ['EN_PROGRESO', 'DEVUELTA'].includes(asignacion.estado);
                             return (
-                                <Card key={asignacion.id} className={asignacion.vencida ? 'border-red-200' : ''}>
-                                    <div className="flex items-start justify-between mb-2 gap-2">
-                                        <div>
+                                <Card key={asignacion.id} className={'p-0 overflow-hidden ' + (asignacion.vencida ? 'border-red-200' : '')}>
+                                    <button
+                                        type="button"
+                                        onClick={() => alternar(asignacion.id)}
+                                        aria-expanded={abierta}
+                                        className="w-full flex items-start gap-3 p-4 text-left"
+                                    >
+                                        <div className="flex-1 min-w-0">
                                             <p className="font-semibold text-foreground text-[15px]">{tarea.titulo}</p>
-                                            {tarea.actividad && (
-                                                <p className="text-xs text-muted-foreground mt-0.5">{tarea.actividad}</p>
+                                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                                <span className={'inline-flex items-center gap-1 ' + (asignacion.vencida ? 'text-red-600 font-semibold' : '')}>
+                                                    <Calendar size={12} />
+                                                    {asignacion.fechaLimite
+                                                        ? (asignacion.vencida ? 'Venció ' : 'Vence ') + fecha(asignacion.fechaLimite)
+                                                        : 'Sin fecha límite'}
+                                                </span>
+                                                {asignacion.actividad?.tipo && (
+                                                    <span className="inline-flex items-center gap-1">
+                                                        <Leaf size={12} />{tipoDe(asignacion.actividad)}
+                                                    </span>
+                                                )}
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Info size={12} />Asignó {tarea.asignadaPor}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <StatusBadge status={asignacion.estado} />
+                                            <ChevronDown
+                                                size={18}
+                                                className={'text-muted-foreground transition-transform ' + (abierta ? 'rotate-180' : '')}
+                                            />
+                                        </div>
+                                    </button>
+
+                                    {abierta && (
+                                        <div className="px-4 pb-4 space-y-3">
+                                            <div className="border-t border-border" />
+                                            {descripcion && <p className="text-sm text-muted-foreground">{descripcion}</p>}
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                <Dato titulo="Asignada por" valor={tarea.asignadaPor} />
+                                                <Dato titulo="Fecha límite" valor={fecha(asignacion.fechaLimite)} />
+                                                <Dato
+                                                    titulo="Horas trabajadas"
+                                                    valor={asignacion.horasTrabajadas !== null ? `${asignacion.horasTrabajadas} h` : '—'}
+                                                />
+                                            </div>
+
+                                            {asignacion.estado === 'DEVUELTA' && asignacion.comentarioInstructor && (
+                                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                                                    <p className="text-xs font-semibold text-red-700 mb-1">Tu instructor pidió:</p>
+                                                    <p className="text-xs text-red-600">{asignacion.comentarioInstructor}</p>
+                                                </div>
                                             )}
-                                        </div>
-                                        <StatusBadge status={asignacion.estado} />
-                                    </div>
 
-                                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                                        <span className="flex items-center gap-1"><MapPin size={10} />{tarea.lote}</span>
-                                        <span className="flex items-center gap-1"><Leaf size={10} />{tarea.cultivo}</span>
-                                    </div>
+                                            {asignacion.estado === 'APROBADA' && asignacion.comentarioInstructor && (
+                                                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                                    <p className="text-xs font-semibold text-emerald-700 mb-1">Comentario del instructor:</p>
+                                                    <p className="text-xs text-emerald-600">{asignacion.comentarioInstructor}</p>
+                                                </div>
+                                            )}
 
-                                    <p className="text-xs text-muted-foreground mb-2">Asignada por: {tarea.asignadaPor}</p>
+                                            {asignacion.estado !== 'ASIGNADA' && (
+                                                <FotosDeLaTarea tarea={tarea} puedeSubir={trabajando} />
+                                            )}
 
-                                    <div className={'flex items-center gap-1 text-xs font-medium mb-3 ' + limite.clase}>
-                                        <Calendar size={12} />
-                                        {limite.texto}
-                                    </div>
-
-                                    {asignacion.estado === 'DEVUELTA' && asignacion.comentarioInstructor && (
-                                        <div className="p-3 bg-red-50 border border-red-200 rounded-xl mb-3">
-                                            <p className="text-xs font-semibold text-red-700 mb-1">Tu instructor pidió:</p>
-                                            <p className="text-xs text-red-600">{asignacion.comentarioInstructor}</p>
+                                            <div className="flex justify-end gap-3 pt-1">
+                                                {asignacion.estado === 'ASIGNADA' && (
+                                                    <Btn disabled={procesando} onClick={() => empezar(tarea)} className="justify-center min-w-40">
+                                                        <Play size={16} />{procesando ? 'Iniciando...' : 'Iniciar tarea'}
+                                                    </Btn>
+                                                )}
+                                                {trabajando && (
+                                                    <Btn
+                                                        onClick={() => { setPorEntregar(tarea); setHoras(''); setComentario(''); }}
+                                                        className="justify-center min-w-40"
+                                                    >
+                                                        <Check size={16} />Entregar tarea
+                                                    </Btn>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
-
-                                    {asignacion.estado === 'APROBADA' && asignacion.comentarioInstructor && (
-                                        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl mb-3">
-                                            <p className="text-xs font-semibold text-emerald-700 mb-1">Comentario del instructor:</p>
-                                            <p className="text-xs text-emerald-600">{asignacion.comentarioInstructor}</p>
-                                        </div>
-                                    )}
-
-                                    {/* mt-auto: el diseño alinea los botones al fondo de la tarjeta */}
-                                    <div className="flex gap-2 mt-auto">
-                                        {/* El Figma pone "Ver actividad" en todas las tarjetas */}
-                                        {asignacion.actividad && (
-                                            <Btn
-                                                variant="outline" size="sm"
-                                                onClick={() => navigate('/actividades/' + asignacion.actividad!.id)}
-                                                className="flex-1 justify-center"
-                                            >
-                                                Ver actividad
-                                            </Btn>
-                                        )}
-                                        {asignacion.estado === 'ASIGNADA' && (
-                                            <Btn size="sm" onClick={() => setPorEmpezar(tarea)} className="flex-1 justify-center">
-                                                Empezar
-                                            </Btn>
-                                        )}
-                                        {asignacion.estado === 'DEVUELTA' && (
-                                            <Btn variant="outline" size="sm" onClick={() => setPorEmpezar(tarea)} className="flex-1 justify-center">
-                                                Retomar
-                                            </Btn>
-                                        )}
-                                        {['EN_PROGRESO', 'DEVUELTA'].includes(asignacion.estado) && (
-                                            <Btn size="sm" onClick={() => { setPorEntregar(tarea); setHoras(''); setComentario(''); }} className="flex-1 justify-center">
-                                                Entregar
-                                            </Btn>
-                                        )}
-                                        {asignacion.estado === 'ENTREGADA' && (
-                                            <span className="flex-1 self-center text-center text-xs text-muted-foreground">
-                                                Esperando revisión...
-                                            </span>
-                                        )}
-                                    </div>
                                 </Card>
                             );
                         })}
                     </div>
                 )}
 
-                <Modal open={!!porEmpezar} onClose={() => setPorEmpezar(null)} title="Empezar tarea">
-                    {porEmpezar && (
-                        <div className="space-y-4">
-                            <p className="text-sm text-muted-foreground">
-                                Al confirmar, <strong className="text-foreground">{porEmpezar.titulo}</strong> pasará a{' '}
-                                <strong className="text-foreground">En progreso</strong>. Podrás registrar
-                                evidencias, insumos y herramientas.
-                            </p>
-                            <div className="flex gap-3">
-                                <Btn
-                                    disabled={procesando}
-                                    onClick={() => iniciar(porEmpezar.asignacion.id, () => {
-                                        toast.success('Tarea iniciada');
-                                        setPorEmpezar(null);
-                                    })}
-                                    className="flex-1 justify-center"
-                                >
-                                    {procesando ? 'Guardando...' : 'Empezar'}
-                                </Btn>
-                                <Btn variant="outline" onClick={() => setPorEmpezar(null)} className="flex-1 justify-center">
-                                    Cancelar
-                                </Btn>
-                            </div>
-                        </div>
-                    )}
-                </Modal>
-
                 <Modal open={!!porEntregar} onClose={cerrarEntrega} title="Entregar tarea">
                     {porEntregar && (
                         <div className="space-y-4">
-                            <ChecklistEntrega
-                                actividadId={porEntregar.asignacion.actividad?.id}
-                                asignacionId={porEntregar.asignacion.id}
-                            />
-
-                            <div className="p-3 bg-[#FFF3E0] border border-[#F16C07]/30 rounded-xl flex items-start gap-2">
-                                <AlertCircle size={14} className="text-[#F16C07] shrink-0 mt-0.5" />
-                                <p className="text-xs text-[#E65100]">
-                                    Tu instructor podría devolverte la tarea si no subes fotos como evidencia.
-                                </p>
-                            </div>
-
                             <Input
                                 label="Horas trabajadas"
                                 type="number"

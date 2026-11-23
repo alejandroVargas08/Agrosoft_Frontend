@@ -25,9 +25,15 @@ export interface TareaPropia {
     diasParaEntregar: number | null;
 }
 
+/** "2026-10-30" es solo fecha: new Date() la lee en UTC y en Colombia sale un día antes. */
+const aFecha = (valor: string) => {
+    const solo = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
+    return solo ? new Date(Number(solo[1]), Number(solo[2]) - 1, Number(solo[3])) : new Date(valor);
+};
+
 const diasHasta = (fecha: string | null): number | null => {
     if (!fecha) return null;
-    const limite = new Date(fecha);
+    const limite = aFecha(fecha);
     limite.setHours(0, 0, 0, 0);
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
