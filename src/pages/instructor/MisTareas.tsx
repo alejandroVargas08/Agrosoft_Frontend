@@ -90,7 +90,9 @@ const FotosDeLaTarea = ({ tarea, puedeSubir }: { tarea: TareaPropia; puedeSubir:
                 <p className="text-sm text-muted-foreground">Cargando fotos...</p>
             ) : fotos.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                    Todavía no hay fotos. Sube fotos del trabajo para que tu instructor pueda revisarlo.
+                    {puedeSubir
+                        ? 'Todavía no hay fotos. Sube fotos del trabajo para que tu instructor pueda revisarlo.'
+                        : 'Esta entrega no tiene fotos.'}
                 </p>
             ) : (
                 <div className="flex flex-wrap gap-2">

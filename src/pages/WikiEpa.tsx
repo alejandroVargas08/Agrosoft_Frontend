@@ -6,6 +6,9 @@ import { Badge, Btn, Card, EmptyState, PageHeader, SearchBar } from '../componen
 import { FILTROS, useWikiEpa } from '../hooks/useWikiEpa';
 import type { Epa, TipoEpa } from '../types/wikiEpa';
 
+/** La etiqueta técnica "agrovision:<clave>" solo sirve para refrescar la ficha; no se muestra. */
+const visibles = (etiquetas: string[]) => etiquetas.filter((t) => !t.startsWith('agrovision:'));
+
 const ICONO: Record<TipoEpa, typeof Bug> = {
     ENFERMEDAD: Bug,
     PLAGA: AlertTriangle,
@@ -126,11 +129,11 @@ const WikiEpa = () => {
                                 </Card>
                             )}
 
-                            {seleccionada.etiquetas.length > 0 && (
+                            {visibles(seleccionada.etiquetas).length > 0 && (
                                 <Card>
                                     <h3 className="font-semibold text-foreground mb-2">Etiquetas</h3>
                                     <div className="flex flex-wrap gap-1">
-                                        {seleccionada.etiquetas.map((etiqueta) => (
+                                        {visibles(seleccionada.etiquetas).map((etiqueta) => (
                                             <span
                                                 key={etiqueta}
                                                 className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded-full"
@@ -140,6 +143,14 @@ const WikiEpa = () => {
                                         ))}
                                     </div>
                                 </Card>
+                            )}
+
+                            {seleccionada.etiquetas.includes('AgroVisión') && (
+                                <p className="text-xs text-muted-foreground">
+                                    Fuente: AgroVisión — SENA, Análisis y Desarrollo de Software, ficha 3225853.
+                                    {seleccionada.etiquetas.includes('Sin avalar') &&
+                                        ' Esta ficha aún no la revisa un agrónomo: tómala como información de apoyo.'}
+                                </p>
                             )}
 
                             <Btn variant="outline" onClick={() => navigate('/incidencias')} className="w-full justify-center">
@@ -211,7 +222,7 @@ const WikiEpa = () => {
                                     <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{epa.sintomas}</p>
 
                                     <div className="flex flex-wrap gap-1">
-                                        {epa.etiquetas.slice(0, 3).map((etiqueta) => (
+                                        {visibles(epa.etiquetas).slice(0, 3).map((etiqueta) => (
                                             <span
                                                 key={etiqueta}
                                                 className="text-xs px-1.5 py-0.5 bg-muted text-muted-foreground rounded-full"
