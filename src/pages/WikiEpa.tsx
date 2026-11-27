@@ -1,13 +1,46 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, AlertTriangle, BookOpen, Bug, CheckCircle, Leaf } from 'lucide-react';
+import { AlertCircle, AlertTriangle, BookOpen, Bug, CheckCircle, ImageOff, Leaf } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { Badge, Btn, Card, EmptyState, PageHeader, SearchBar } from '../components/ui/AgroUI';
 import { FILTROS, useWikiEpa } from '../hooks/useWikiEpa';
 import type { Epa, TipoEpa } from '../types/wikiEpa';
+import { BASE_URL } from '../api/client';
 
-/** La etiqueta técnica "agrovision:<clave>" solo sirve para refrescar la ficha; no se muestra. */
 const visibles = (etiquetas: string[]) => etiquetas.filter((t) => !t.startsWith('agrovision:'));
+
+const urlFoto = (url: string): string => {
+    if (/^(https?:|data:|blob:)/i.test(url)) return url;
+    try {
+        return new URL(url, BASE_URL || window.location.origin).href;
+    } catch {
+        return url;
+    }
+};
+
+const fotosDe = (epa: Epa): string[] =>
+    [...(epa.fotosSintomas ?? []), ...(epa.fotosGenerales ?? [])].filter((url) => !!url?.trim());
+
+const FotoEpa = ({ url, alt, className }: { url: string; alt: string; className: string }) => {
+    const [fallo, setFallo] = useState(false);
+    if (fallo) {
+        return (
+            <div className={className + ' flex items-center justify-center bg-muted text-muted-foreground'}>
+                <ImageOff size={20} />
+            </div>
+        );
+    }
+    return (
+        <img
+            src={urlFoto(url)}
+            alt={alt}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={() => setFallo(true)}
+            className={className + ' object-cover bg-muted'}
+        />
+    );
+};
 
 const ICONO: Record<TipoEpa, typeof Bug> = {
     ENFERMEDAD: Bug,
@@ -40,7 +73,6 @@ const WikiEpa = () => {
     const { entradas, busqueda, setBusqueda, filtro, setFiltro, cargando, error } = useWikiEpa();
     const [seleccionada, setSeleccionada] = useState<Epa | null>(null);
 
-    // ─── Detalle ──────────────────────────────────────────────────────────────
     if (seleccionada) {
         const Icono = ICONO[seleccionada.tipoEpa];
         return (
@@ -82,6 +114,31 @@ const WikiEpa = () => {
                                 </h3>
                                 <p className="text-sm text-foreground whitespace-pre-line">{seleccionada.manejoYControl}</p>
                             </Card>
+
+                            {fotosDe(seleccionada).length > 0 && (
+                                <Card>
+                                    <h3 className="font-semibold text-foreground mb-3">
+                                        Fotos ({fotosDe(seleccionada).length})
+                                    </h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {fotosDe(seleccionada).map((url, i) => (
+                                            <a
+                                                key={url + i}
+                                                href={urlFoto(url)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block"
+                                            >
+                                                <FotoEpa
+                                                    url={url}
+                                                    alt={seleccionada.nombre + ' — foto ' + (i + 1)}
+                                                    className="w-full aspect-square rounded-lg"
+                                                />
+                                            </a>
+                                        ))}
+                                    </div>
+                                </Card>
+                            )}
                         </div>
 
                         <div className="space-y-4 min-w-0">
@@ -164,7 +221,6 @@ const WikiEpa = () => {
         );
     }
 
-    // ─── Listado ──────────────────────────────────────────────────────────────
     return (
         <DashboardLayout>
             <div className="max-w-7xl mx-auto p-4 sm:p-6">
@@ -211,6 +267,13 @@ const WikiEpa = () => {
                             const Icono = ICONO[epa.tipoEpa];
                             return (
                                 <Card key={epa.id} onClick={() => setSeleccionada(epa)}>
+                                    {fotosDe(epa).length > 0 && (
+                                        <FotoEpa
+                                            url={fotosDe(epa)[0]}
+                                            alt={epa.nombre}
+                                            className="w-full h-36 rounded-lg mb-3"
+                                        />
+                                    )}
                                     <div className="flex items-start justify-between mb-2">
                                         <div className={'p-2 rounded-lg ' + COLOR_ICONO[epa.tipoEpa]}>
                                             <Icono size={18} />
